@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Scrollbar ecológica SOLO para ResultsList */
+.scrollbar-eco::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollbar-eco::-webkit-scrollbar-track {
+  background: rgba(16, 185, 129, 0.15); /* emerald */
+  border-radius: 999px;
+}
+
+.scrollbar-eco::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    to bottom,
+    #34d399, /* emerald-400 */
+    #22c55e, /* green-500 */
+    #2dd4bf  /* teal-400 */
+  );
+  border-radius: 999px;
+}
+
+.scrollbar-eco::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    to bottom,
+    #22c55e,
+    #16a34a,
+    #14b8a6
+  );
+}
+
+/* Firefox */
+.scrollbar-eco {
+  scrollbar-width: thin;
+  scrollbar-color: #22c55e rgba(16, 185, 129, 0.15);
+}
