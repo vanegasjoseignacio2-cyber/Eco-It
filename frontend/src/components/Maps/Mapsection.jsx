@@ -5,6 +5,7 @@ import { Map, Trash2, MapPin } from "lucide-react";
 import SearchBar from "./Barra";
 import MapView from "./MapView";
 import ResultsList from "./ResultsList";
+import RutasEco from "./Rutas";
 
 export default function MapSection() {
     const [places, setPlaces] = useState([]);
@@ -115,6 +116,20 @@ export default function MapSection() {
 
                     </div>
                 </div>
+                 {/* Componente RutasEco */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                        duration: 0.8, 
+                        delay: 0.8,
+                        type: "spring",
+                        stiffness: 100
+                    }}
+                    className="px-6"
+                >
+                    <RutasEco />
+                </motion.div>
             </div>
         </section>
     );

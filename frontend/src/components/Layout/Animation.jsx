@@ -161,7 +161,7 @@ export default function LoadingScreen({ onComplete }) {
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 0.2 }}
                                     >
-                                        Reducir-Reutilizar-Reciclar
+                                        Reduce-Reutiliza-Recicla
                                     </motion.p>
 
                                     {/* DOTS */}

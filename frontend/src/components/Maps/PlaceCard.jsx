@@ -1,4 +1,4 @@
-//carta
+//carta donde aparecn los resultados de búsqueda
 export default function PlaceCard({ place, onClick }) {
     return (
         <button
