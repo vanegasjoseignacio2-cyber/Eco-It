@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     UserPlus,
@@ -10,10 +11,14 @@ import {
     ArrowRight,
     User,
     Check,
-    Phone
+    Phone,
+    AlertCircle
 } from "lucide-react";
+import { registrarUsuario } from "../../services/api";
 
 export default function RegisterForm() {
+    const navigate = useNavigate();
+    
     const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState("");
     const [lastname, setLastname] = useState("");
@@ -23,6 +28,11 @@ export default function RegisterForm() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [touched, setTouched] = useState({});
+    
+    // Nuevos estados para la conexión con el backend
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
 
     const isEmpty = (v) => !v || v.trim() === "";
 
@@ -44,8 +54,10 @@ export default function RegisterForm() {
 
     const formValid = passwordRequirements.every((req) => req.met) && acceptTerms && requiredFieldsValid;
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e?.preventDefault?.();
+        
+        // Marcar todos los campos como tocados
         setTouched({
             name: true,
             lastname: true,
@@ -55,9 +67,58 @@ export default function RegisterForm() {
             confirmPassword: true,
             acceptTerms: true,
         });
-        if (!formValid) return;
-        // Lógica de registro
-        console.log({ name, lastname, email, phone, password, acceptTerms });
+
+        // Limpiar mensajes previos
+        setError("");
+        setSuccessMessage("");
+
+        // Validar formulario
+        if (!formValid) {
+            setError("Por favor completa todos los campos correctamente");
+            return;
+        }
+
+        // Iniciar proceso de registro
+        setLoading(true);
+
+        try {
+            // Llamar a la API del backend
+            const response = await registrarUsuario({
+                nombre: name.trim(),
+                apellido: lastname.trim(),
+                email: email.trim().toLowerCase(),
+                telefono: phone.trim(),
+                password: password
+            });
+
+            console.log('Registro exitoso:', response);
+
+            // Guardar token y usuario en localStorage
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+
+            // Mostrar mensaje de éxito
+            setSuccessMessage("¡Registro exitoso! Redirigiendo...");
+
+            // Redirigir después de 1.5 segundos
+            setTimeout(() => {
+                navigate('/'); // Cambia '/' por la ruta a la que quieres redirigir
+            }, 1500);
+
+        } catch (err) {
+            console.error('Error en registro:', err);
+            
+            // Mostrar mensaje de error
+            if (err.message.includes('email ya está registrado')) {
+                setError("Este correo electrónico ya está registrado. ¿Quieres iniciar sesión?");
+            } else if (err.message.includes('Error al registrar')) {
+                setError("Hubo un problema al crear tu cuenta. Por favor intenta de nuevo.");
+            } else {
+                setError(err.message || "Error al registrar. Verifica tu conexión.");
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -99,8 +160,31 @@ export default function RegisterForm() {
                         </motion.p>
                     </div>
 
+                    {/* Mensajes de error y éxito */}
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
+                        >
+                            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-red-800">{error}</p>
+                        </motion.div>
+                    )}
+
+                    {successMessage && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3"
+                        >
+                            <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-green-800">{successMessage}</p>
+                        </motion.div>
+                    )}
+
                     {/* Form */}
-                    <div className="space-y-4 sm:space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
                         {/* Name and Lastname Fields */}
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
@@ -120,7 +204,8 @@ export default function RegisterForm() {
                                         onChange={(e) => setName(e.target.value)}
                                         onBlur={() => setTouched((t) => ({ ...t, name: true }))}
                                         placeholder="Tu nombre"
-                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 ${touched.name && isEmpty(name) ? "border-red-400" : "border-green-200"}`}
+                                        disabled={loading}
+                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.name && isEmpty(name) ? "border-red-400" : "border-green-200"}`}
                                         required
                                     />
                                 </div>
@@ -141,7 +226,8 @@ export default function RegisterForm() {
                                         onChange={(e) => setLastname(e.target.value)}
                                         onBlur={() => setTouched((t) => ({ ...t, lastname: true }))}
                                         placeholder="Tu apellido"
-                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 ${touched.lastname && isEmpty(lastname) ? "border-red-400" : "border-green-200"}`}
+                                        disabled={loading}
+                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.lastname && isEmpty(lastname) ? "border-red-400" : "border-green-200"}`}
                                         required
                                     />
                                 </div>
@@ -168,7 +254,8 @@ export default function RegisterForm() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                                     placeholder="tu@email.com"
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 ${touched.email && isEmpty(email) ? "border-red-400" : "border-green-200"}`}
+                                    disabled={loading}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.email && isEmpty(email) ? "border-red-400" : "border-green-200"}`}
                                     required
                                 />
                             </div>
@@ -194,7 +281,8 @@ export default function RegisterForm() {
                                     onChange={(e) => setPhone(e.target.value)}
                                     onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
                                     placeholder="+57 300 123 4567"
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 ${touched.phone && isEmpty(phone) ? "border-red-400" : "border-green-200"}`}
+                                    disabled={loading}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.phone && isEmpty(phone) ? "border-red-400" : "border-green-200"}`}
                                     required
                                 />
                             </div>
@@ -220,12 +308,15 @@ export default function RegisterForm() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                                     placeholder="••••••••"
-                                    className={`w-full pl-12 pr-12 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 ${(touched.password && isEmpty(password)) ? "border-red-400" : "border-green-200"}`}
+                                    disabled={loading}
+                                    className={`w-full pl-12 pr-12 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${(touched.password && isEmpty(password)) ? "border-red-400" : "border-green-200"}`}
                                     required
                                 />
                                 <button
+                                    type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800 transition-colors"
+                                    disabled={loading}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
                                 >
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
@@ -252,7 +343,8 @@ export default function RegisterForm() {
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     onBlur={() => setTouched((t) => ({ ...t, confirmPassword: true }))}
                                     placeholder="••••••••"
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 ${(touched.confirmPassword && isEmpty(confirmPassword)) ? "border-red-400" : "border-green-200"}`}
+                                    disabled={loading}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${(touched.confirmPassword && isEmpty(confirmPassword)) ? "border-red-400" : "border-green-200"}`}
                                     required
                                 />
                             </div>
@@ -284,9 +376,6 @@ export default function RegisterForm() {
                                     {req.text}
                                 </motion.div>
                             ))}
-                            {touched.password && !passwordRequirements.every(r => r.met) && (
-                                <p className="text-xs text-red-600 mt-1">La contraseña debe cumplir todos los requisitos.</p>
-                            )}
                         </motion.div>
 
                         {/* Terms Checkbox */}
@@ -301,7 +390,8 @@ export default function RegisterForm() {
                                 checked={acceptTerms}
                                 onChange={(e) => setAcceptTerms(e.target.checked)}
                                 onBlur={() => setTouched((t) => ({ ...t, acceptTerms: true }))}
-                                className="rounded border-green-300 mt-1 text-green-600 focus:ring-green-500 cursor-pointer"
+                                disabled={loading}
+                                className="rounded border-green-300 mt-1 text-green-600 focus:ring-green-500 cursor-pointer disabled:opacity-50"
                                 required
                             />
                             <span>
@@ -326,21 +416,31 @@ export default function RegisterForm() {
                             transition={{ delay: 1.7, duration: 0.6 }}
                         >
                             <motion.button
-                                whileHover={formValid ? { scale: 1.02 } : {}}
-                                whileTap={formValid ? { scale: 0.98 } : {}}
-                                onClick={handleSubmit}
-                                disabled={!formValid}
-                                className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${formValid
+                                type="submit"
+                                whileHover={formValid && !loading ? { scale: 1.02 } : {}}
+                                whileTap={formValid && !loading ? { scale: 0.98 } : {}}
+                                disabled={!formValid || loading}
+                                className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                    formValid && !loading
                                         ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
                                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    }`}
+                                }`}
                             >
-                                <UserPlus className="w-5 h-5" />
-                                Crear Cuenta
-                                <ArrowRight className="w-5 h-5" />
+                                {loading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Creando cuenta...
+                                    </>
+                                ) : (
+                                    <>
+                                        <UserPlus className="w-5 h-5" />
+                                        Crear Cuenta
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
                             </motion.button>
                         </motion.div>
-                    </div>
+                    </form>
 
                     {/* Login Link */}
                     <motion.div
