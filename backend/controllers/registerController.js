@@ -13,10 +13,10 @@ const generarToken = (id) => {
 // Controlador: Registrar nuevo usuario
 export const registrarUsuario = async (req, res) => {
   try {
-    const { nombre, apellido, email, telefono, password } = req.body;
+    const { nombre, apellido, email, telefono, password, edad } = req.body;
 
     // 1. Validar campos obligatorios
-    if (!nombre || !apellido || !email || !telefono || !password) {
+    if (!nombre || !apellido || !email || !telefono || !password || !edad) {
       return res.status(400).json({
         success: false,
         mensaje: 'Todos los campos son obligatorios'
@@ -38,7 +38,8 @@ export const registrarUsuario = async (req, res) => {
       apellido,
       email,
       telefono,
-      password
+      password,
+      edad
     });
 
     // 4. Generar token
@@ -54,7 +55,8 @@ export const registrarUsuario = async (req, res) => {
           nombre: usuario.nombre,
           apellido: usuario.apellido,
           email: usuario.email,
-          telefono: usuario.telefono
+          telefono: usuario.telefono,
+          edad: usuario.edad
         },
         token
       }

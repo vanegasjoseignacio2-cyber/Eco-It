@@ -22,6 +22,7 @@ export const obtenerPerfil = async (req, res) => {
         apellido: usuario.apellido,
         email: usuario.email,
         telefono: usuario.telefono,
+        edad: usuario.edad,
         avatar: usuario.avatar,
         createdAt: usuario.createdAt
       }
@@ -40,7 +41,7 @@ export const obtenerPerfil = async (req, res) => {
 // Controlador: Actualizar perfil
 export const actualizarPerfil = async (req, res) => {
   try {
-    const { nombre, apellido, telefono, avatar } = req.body;
+    const { nombre, apellido, telefono, avatar, edad } = req.body;
 
     // Buscar usuario
     const usuario = await User.findById(req.usuario.id);
@@ -57,6 +58,7 @@ export const actualizarPerfil = async (req, res) => {
     if (apellido) usuario.apellido = apellido;
     if (telefono) usuario.telefono = telefono;
     if (avatar) usuario.avatar = avatar;
+    if (edad) usuario.edad = edad;
 
     // Guardar cambios
     await usuario.save();
@@ -70,6 +72,7 @@ export const actualizarPerfil = async (req, res) => {
         apellido: usuario.apellido,
         email: usuario.email,
         telefono: usuario.telefono,
+        edad: usuario.edad,
         avatar: usuario.avatar
       }
     });

@@ -24,7 +24,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/recuperar" element={<RecuperarPage />} />
       <Route path="/verificar-codigo" element={<VerificarCodePage />} />
-      <Route path="/profile" element={<ProfileEcoIt />} />
+      <Route path="/perfil" element={<ProfileEcoIt />} />
       <Route path="/editarperfil" element={<EditProfile />} />
       <Route path="/game" element={<GamePage />} />
     </Routes>

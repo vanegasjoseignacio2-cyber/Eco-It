@@ -25,7 +25,7 @@ export const iniciarSesion = async (req, res) => {
 
     // 2. Buscar usuario (incluir password)
     const usuario = await User.findOne({ email }).select('+password');
-    
+
     if (!usuario) {
       return res.status(401).json({
         success: false,
@@ -35,7 +35,7 @@ export const iniciarSesion = async (req, res) => {
 
     // 3. Verificar contraseña
     const passwordCorrecta = await usuario.compararPassword(password);
-    
+
     if (!passwordCorrecta) {
       return res.status(401).json({
         success: false,
@@ -57,7 +57,8 @@ export const iniciarSesion = async (req, res) => {
           apellido: usuario.apellido,
           email: usuario.email,
           telefono: usuario.telefono,
-          avatar: usuario.avatar
+          avatar: usuario.avatar,
+          edad: usuario.edad
         },
         token
       }

@@ -152,6 +152,7 @@ export default function Navbar() {
                                                     <User className="w-4 h-4" />
                                                     <span className="text-sm font-medium">Mi Perfil</span>
                                                 </Link>
+                                                {/* función a implementar */}
                                                 <Link
                                                     to="/configuracion"
                                                     onClick={() => setShowUserMenu(false)}

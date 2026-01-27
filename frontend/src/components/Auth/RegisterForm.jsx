@@ -18,23 +18,24 @@ import { registrarUsuario } from "../../services/api";
 
 export default function RegisterForm() {
     const navigate = useNavigate();
-    
+
     const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState("");
     const [lastname, setLastname] = useState("");
+    const [age, setAge] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [touched, setTouched] = useState({});
-    
+
     // Nuevos estados para la conexión con el backend
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
-    const isEmpty = (v) => !v || v.trim() === "";
+    const isEmpty = (v) => !v || v.toString().trim() === "";
 
     const passwordRequirements = [
         { text: "Al menos 8 caracteres", met: password.length >= 8 },
@@ -47,6 +48,7 @@ export default function RegisterForm() {
     const requiredFieldsValid =
         !isEmpty(name) &&
         !isEmpty(lastname) &&
+        !isEmpty(age) &&
         !isEmpty(email) &&
         !isEmpty(phone) &&
         !isEmpty(password) &&
@@ -56,11 +58,12 @@ export default function RegisterForm() {
 
     const handleSubmit = async (e) => {
         e?.preventDefault?.();
-        
+
         // Marcar todos los campos como tocados
         setTouched({
             name: true,
             lastname: true,
+            age: true,
             email: true,
             phone: true,
             password: true,
@@ -88,7 +91,8 @@ export default function RegisterForm() {
                 apellido: lastname.trim(),
                 email: email.trim().toLowerCase(),
                 telefono: phone.trim(),
-                password: password
+                password: password,
+                edad: parseInt(age)
             });
 
             console.log('Registro exitoso:', response);
@@ -107,7 +111,7 @@ export default function RegisterForm() {
 
         } catch (err) {
             console.error('Error en registro:', err);
-            
+
             // Mostrar mensaje de error
             if (err.message.includes('email ya está registrado')) {
                 setError("Este correo electrónico ya está registrado. ¿Quieres iniciar sesión?");
@@ -235,6 +239,34 @@ export default function RegisterForm() {
                                     <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
                                 )}
                             </div>
+                        </motion.div>
+
+                        {/* Age Field */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.75, duration: 0.6 }}
+                        >
+                            <label className="block text-sm font-medium text-green-900 mb-2">
+                                Edad
+                            </label>
+                            <div className="relative">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                <input
+                                    type="number"
+                                    value={age}
+                                    onChange={(e) => setAge(e.target.value)}
+                                    onBlur={() => setTouched((t) => ({ ...t, age: true }))}
+                                    placeholder="Tu edad"
+                                    min="1"
+                                    disabled={loading}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.age && isEmpty(age) ? "border-red-400" : "border-green-200"}`}
+                                    required
+                                />
+                            </div>
+                            {touched.age && isEmpty(age) && (
+                                <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                            )}
                         </motion.div>
 
                         {/* Email Field */}
@@ -420,11 +452,10 @@ export default function RegisterForm() {
                                 whileHover={formValid && !loading ? { scale: 1.02 } : {}}
                                 whileTap={formValid && !loading ? { scale: 0.98 } : {}}
                                 disabled={!formValid || loading}
-                                className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${
-                                    formValid && !loading
+                                className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${formValid && !loading
                                         ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
                                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                                    }`}
                             >
                                 {loading ? (
                                     <>

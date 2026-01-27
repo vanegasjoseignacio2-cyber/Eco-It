@@ -27,6 +27,11 @@ const userSchema = new mongoose.Schema({
         required: [true, 'El telefono es obligatorio'],
         trim: true
     },
+    edad: {
+        type: Number,
+        required: [true, 'La edad es obligatoria'],
+        min: [1, 'La edad debe ser mayor a 0']
+    },
     password: {
         type: String,
         required: [true, 'La contraseña es obligatoria'],
@@ -62,21 +67,21 @@ const userSchema = new mongoose.Schema({
 
 // Middleware: Se ejecuta antes de guardar un usuario
 // Encripta la contraseña antes de gaurdarla en la base de datos
-userSchema.pre('save', async function(next) {
-  // Solo encripta si la contraseña fue modificada o es nueva
-  if (!this.isModified('password')) {
-    return;  
-  }
-  
-  // Genera un "salt" (dato aleatorio para mayor seguridad)
-  const salt = await bcrypt.genSalt(10);
-  
-  // Encripta la contraseña
-  this.password = await bcrypt.hash(this.password, salt);
+userSchema.pre('save', async function (next) {
+    // Solo encripta si la contraseña fue modificada o es nueva
+    if (!this.isModified('password')) {
+        return;
+    }
+
+    // Genera un "salt" (dato aleatorio para mayor seguridad)
+    const salt = await bcrypt.genSalt(10);
+
+    // Encripta la contraseña
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Metodo: compara la contrasela ingresada con la encriptada en la BD
-userSchema.methods.compararPassword = async function(passwordIngresada) {
+userSchema.methods.compararPassword = async function (passwordIngresada) {
     return await bcrypt.compare(passwordIngresada, this.password);
 };
 
