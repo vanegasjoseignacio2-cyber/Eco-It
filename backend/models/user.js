@@ -60,7 +60,12 @@ const userSchema = new mongoose.Schema({
     puntosFavoritos: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'PuntoReciclaje'  // referencia a otro modelo
-    }]
+    }],
+
+    // Recuperación de contraseña
+    resetPasswordToken: String,
+    resetPasswordExpires: Date
+
 }, {
     timestamps: true // agrega campos createdAt y updatedAt automaticamente
 });

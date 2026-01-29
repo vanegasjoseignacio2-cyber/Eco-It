@@ -79,6 +79,27 @@ export const cambiarPassword = async (token, passwords) => {
   });
 };
 
+export const recuperarPassword = async (email) => {
+  return fetchAPI('/user/recuperar-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+};
+
+export const verificarCodigo = async (email, codigo) => {
+  return fetchAPI('/user/verificar-codigo', {
+    method: 'POST',
+    body: JSON.stringify({ email, codigo }),
+  });
+};
+
+export const restablecerPassword = async (email, codigo, password) => {
+  return fetchAPI('/user/restablecer-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, codigo, password }),
+  });
+};
+
 // ============= IA =============
 
 export const consultarIA = async (token, pregunta) => {

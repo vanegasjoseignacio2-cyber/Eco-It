@@ -15,9 +15,11 @@ import {
     AlertCircle
 } from "lucide-react";
 import { registrarUsuario } from "../../services/api";
+import { useAuth } from "../../context/authContext";
 
 export default function RegisterForm() {
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState("");
@@ -97,9 +99,11 @@ export default function RegisterForm() {
 
             console.log('Registro exitoso:', response);
 
-            // Guardar token y usuario en localStorage
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+
+            console.log('Registro exitoso:', response);
+
+            // Usar la función login del contexto para actualizar estado global y localStorage
+            login(response.data.token, response.data.usuario);
 
             // Mostrar mensaje de éxito
             setSuccessMessage("¡Registro exitoso! Redirigiendo...");
@@ -453,8 +457,8 @@ export default function RegisterForm() {
                                 whileTap={formValid && !loading ? { scale: 0.98 } : {}}
                                 disabled={!formValid || loading}
                                 className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${formValid && !loading
-                                        ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
-                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     }`}
                             >
                                 {loading ? (

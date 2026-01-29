@@ -1,5 +1,6 @@
 import User from '../models/user.js';
 import jwt from 'jsonwebtoken';
+import { sendWelcomeEmail } from '../utils/emailService.js';
 
 // Función para generar token JWT
 const generarToken = (id) => {
@@ -42,10 +43,14 @@ export const registrarUsuario = async (req, res) => {
       edad
     });
 
-    // 4. Generar token
+    // 4. Enviar correo de bienvenida (No bloqueante)
+    sendWelcomeEmail(usuario.email, usuario.nombre)
+      .catch(err => console.error('Error al enviar bienvenida:', err));
+
+    // 5. Generar token
     const token = generarToken(usuario._id);
 
-    // 5. Responder con éxito
+    // 6. Responder con éxito
     res.status(201).json({
       success: true,
       mensaje: 'Usuario registrado exitosamente',
