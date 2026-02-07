@@ -146,3 +146,33 @@ export const cambiarPassword = async (req, res) => {
     });
   }
 };
+
+// Controlador: Eliminar cuenta de usuario
+export const eliminarUsuario = async (req, res) => {
+  try {
+    // Buscar y eliminar usuario
+    const usuario = await User.findByIdAndDelete(req.usuario.id);
+
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+
+    console.log(`Usuario eliminado: ${usuario.email}`);
+
+    res.status(200).json({
+      success: true,
+      mensaje: 'Cuenta eliminada exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error en eliminarUsuario:', error);
+    res.status(500).json({
+      success: false,
+      mensaje: 'Error al eliminar cuenta',
+      error: error.message
+    });
+  }
+};

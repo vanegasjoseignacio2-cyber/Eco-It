@@ -79,6 +79,15 @@ export const cambiarPassword = async (token, passwords) => {
   });
 };
 
+export const eliminarPerfil = async (token) => {
+  return fetchAPI('/user/perfil', {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
 export const recuperarPassword = async (email) => {
   return fetchAPI('/user/recuperar-password', {
     method: 'POST',

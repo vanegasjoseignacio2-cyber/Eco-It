@@ -2,8 +2,8 @@ import express from 'express';
 import {
   obtenerPerfil,
   actualizarPerfil,
-  cambiarPassword
-
+  cambiarPassword,
+  eliminarUsuario
 } from '../controllers/userController.js';
 import { enviarCodigoRecuperacion, verificarCodigo, restablecerPassword } from '../controllers/recoveryController.js';
 import { proteger } from '../middlewares/authMiddleware.js';
@@ -19,5 +19,6 @@ router.post('/verificar-codigo', verificarCodigo);
 router.get('/perfil', proteger, obtenerPerfil);
 router.put('/perfil', proteger, actualizarPerfil);
 router.put('/cambiar-password', proteger, cambiarPassword);
+router.delete('/perfil', proteger, eliminarUsuario);
 
 export default router;

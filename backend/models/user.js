@@ -46,7 +46,7 @@ const userSchema = new mongoose.Schema({
     },
 
     // historial de consultas a la IA
-    historailConsultas: [{
+    historialConsultas: [{
         pregunta: String,
         respuesta: String,
         imagen: String,

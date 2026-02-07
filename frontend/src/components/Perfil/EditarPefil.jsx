@@ -6,7 +6,7 @@ import Footer from "../Layout/Footer";
 import Toast from "../ui/Toast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import { useAuth } from "../../context/authContext";
-import { actualizarPerfil } from "../../services/api";
+import { actualizarPerfil, eliminarPerfil } from "../../services/api";
 import {
     Mail,
     User,
@@ -18,7 +18,7 @@ import {
     Leaf,
 } from "lucide-react";
 export default function EditProfile() {
-    const { usuario, token, actualizarUsuario } = useAuth();
+    const { usuario, token, actualizarUsuario, logout } = useAuth();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: "",
@@ -82,10 +82,23 @@ export default function EditProfile() {
         setShowDeleteModal(true);
     };
 
-    const handleConfirmDelete = () => {
-        console.log("Eliminando cuenta");
-        // Aquí iría la lógica real de eliminación (llamada a API)
-        showToast("Cuenta eliminada (simulación)", "info");
+    const handleConfirmDelete = async () => {
+        try {
+            const respuesta = await eliminarPerfil(token);
+
+            if (respuesta.success) {
+                showToast("Cuenta eliminada exitosamente", "success");
+
+                // Esperar un momento para que el usuario vea el toast
+                setTimeout(() => {
+                    logout(); // Cerrar sesión
+                    navigate('/login'); // Redirigir al login
+                }, 1500);
+            }
+        } catch (error) {
+            console.error("Error eliminando cuenta:", error);
+            showToast("Error al eliminar cuenta: " + error.message, "error");
+        }
     };
     // Get initials for avatar
     const getInitials = () => {
