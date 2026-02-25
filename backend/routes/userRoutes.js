@@ -6,7 +6,7 @@ import {
   eliminarUsuario
 } from '../controllers/userController.js';
 import { enviarCodigoRecuperacion, verificarCodigo, restablecerPassword } from '../controllers/recoveryController.js';
-import { proteger } from '../middlewares/authMiddleware.js';
+import { verificarToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -16,9 +16,9 @@ router.post('/recuperar-password', enviarCodigoRecuperacion);
 router.post('/verificar-codigo', verificarCodigo);
 
 // Todas estas rutas están protegidas (requieren token)
-router.get('/perfil', proteger, obtenerPerfil);
-router.put('/perfil', proteger, actualizarPerfil);
-router.put('/cambiar-password', proteger, cambiarPassword);
-router.delete('/perfil', proteger, eliminarUsuario);
+router.get('/perfil', verificarToken, obtenerPerfil);
+router.put('/perfil', verificarToken, actualizarPerfil);
+router.put('/cambiar-password', verificarToken, cambiarPassword);
+router.delete('/perfil', verificarToken, eliminarUsuario);
 
 export default router;

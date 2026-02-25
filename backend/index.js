@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import admin from './routes/admin.js';
 
 // Configurar variables de entorno
 dotenv.config();
@@ -29,6 +30,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', authRoutes);      // Rutas de autenticación (registro, login)
 app.use('/api/user', userRoutes);      // Rutas de usuario (perfil, editar)
 app.use('/api/ai', aiRoutes);          // Rutas de IA (consultar, analizar imagen)
+app.use('/api/admin', admin);          // Rutas de administrador
 
 // Ruta raíz (para verificar que el servidor funciona)
 app.get('/', (req, res) => {

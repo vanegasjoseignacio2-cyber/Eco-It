@@ -41,6 +41,10 @@ export const registrarUsuario = async (datosUsuario) => {
   });
 };
 
+// Alias para compatibilidad con RegisterForm
+export const registerUser = registrarUsuario;
+
+
 export const iniciarSesion = async (credenciales) => {
   return fetchAPI('/auth/login', {
     method: 'POST',

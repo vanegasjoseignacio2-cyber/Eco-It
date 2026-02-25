@@ -39,10 +39,10 @@ const userSchema = new mongoose.Schema({
         select: false // no incluye la contraseña en las consultas por defecto (seguridad)
     },
 
-    // avatar/foto de perfil (opcional)
-    avatar: {
+    rol: {
         type: String,
-        default: null
+        enum: ['user', 'admin'],
+        default: 'user'
     },
 
     // historial de consultas a la IA

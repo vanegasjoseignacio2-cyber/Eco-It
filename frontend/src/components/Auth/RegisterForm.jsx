@@ -14,7 +14,7 @@ import {
     Phone,
     AlertCircle
 } from "lucide-react";
-import { registrarUsuario } from "../../services/api";
+import { registerUser } from "../../services/api";
 import { useAuth } from "../../context/authContext";
 
 export default function RegisterForm() {
@@ -88,7 +88,7 @@ export default function RegisterForm() {
 
         try {
             // Llamar a la API del backend
-            const response = await registrarUsuario({
+            const response = await registerUser({
                 nombre: name.trim(),
                 apellido: lastname.trim(),
                 email: email.trim().toLowerCase(),
