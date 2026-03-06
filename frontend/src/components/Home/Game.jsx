@@ -12,7 +12,6 @@ import {
 export default function Ecogame() {
     return (
         <section className="relative py-24 overflow-hidden bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50">
-
             {/* animación de fondo */}
             <motion.div
                 className="absolute top-10 left-10 w-96 h-96 bg-green-300/20 rounded-full blur-3xl"

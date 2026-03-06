@@ -11,6 +11,7 @@ import VerificarCodePage from "./components/pages/VerificarCodePage";
 import ProfileEcoIt from "./components/Perfil/Perfil";
 import EditProfile from "./components/Perfil/EditarPefil";
 import GamePage from "./components/pages/GamePage";
+import AdminLayout from "./components/pages/AdminLayout";
 import 'leaflet/dist/leaflet.css';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
       <Route path="/perfil" element={<ProfileEcoIt />} />
       <Route path="/editarperfil" element={<EditProfile />} />
       <Route path="/game" element={<GamePage />} />
+      <Route path="/admin" element={<AdminLayout />} />
     </Routes>
   );
 }

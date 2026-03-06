@@ -1,0 +1,202 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    LayoutDashboard,
+    Users,
+    Gamepad2,
+    BarChart3,
+    Leaf,
+    ChevronRight,
+    LogOut,
+    Settings,
+    Bell,
+} from "lucide-react";
+
+const navItems = [
+    {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        badge: null,
+    },
+    {
+        id: "users",
+        label: "Usuarios",
+        icon: Users,
+        // badge: número de usuarios nuevos → traer de BD: GET /api/admin/users/new-count
+        badge: null,
+    },
+    {
+        id: "estadisticas",
+        label: "Estadísticas",
+        icon: BarChart3,
+        badge: null,
+    },
+    {
+        id: "ecojuego",
+        label: "Eco-Juego",
+        icon: Gamepad2,
+        // badge: misiones activas → traer de BD: GET /api/admin/game/active-missions-count
+        badge: null,
+    },
+];
+
+export default function AdminSidebar({ activeSection, setActiveSection }) {
+    const [collapsed, setCollapsed] = useState(false);
+
+    return (
+        <motion.aside
+            animate={{ width: collapsed ? 72 : 240 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="relative h-screen bg-gradient-to-b from-green-900 via-emerald-900 to-green-950 flex flex-col shadow-2xl z-20 overflow-hidden"
+        >
+            {/* Fondo decorativo */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <motion.div
+                    className="absolute -top-16 -left-16 w-48 h-48 bg-lime-400/10 rounded-full blur-3xl"
+                    animate={{ opacity: [0.4, 0.7, 0.4] }}
+                    transition={{ duration: 5, repeat: Infinity }}
+                />
+                <motion.div
+                    className="absolute bottom-20 -right-10 w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl"
+                    animate={{ opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ duration: 7, repeat: Infinity }}
+                />
+            </div>
+
+            {/* Logo / Header */}
+            <div className="relative flex items-center justify-between px-4 py-5 border-b border-white/10">
+                <AnimatePresence>
+                    {!collapsed && (
+                        <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex items-center gap-2"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-green-500 flex items-center justify-center shadow-lg">
+                                <Leaf className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="text-white font-bold text-lg tracking-tight">
+                                Eco-It <span className="text-lime-400 text-xs font-medium ml-1">Admin</span>
+                            </span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {collapsed && (
+                    <div className="mx-auto w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-green-500 flex items-center justify-center shadow-lg">
+                        <Leaf className="w-4 h-4 text-white" />
+                    </div>
+                )}
+
+                {/* Botón colapsar */}
+                {!collapsed && (
+                    <motion.button
+                        onClick={() => setCollapsed(true)}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                    >
+                        <ChevronRight className="w-4 h-4 text-white/70 rotate-180" />
+                    </motion.button>
+                )}
+            </div>
+
+            {/* Expand button when collapsed */}
+            {collapsed && (
+                <button
+                    onClick={() => setCollapsed(false)}
+                    className="mt-3 mx-auto w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                >
+                    <ChevronRight className="w-4 h-4 text-white/70" />
+                </button>
+            )}
+
+            {/* Nav Items */}
+            <nav className="relative flex-1 px-2 py-4 space-y-1">
+                {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeSection === item.id;
+                    return (
+                        <motion.button
+                            key={item.id}
+                            onClick={() => setActiveSection(item.id)}
+                            whileHover={{ x: collapsed ? 0 : 4 }}
+                            whileTap={{ scale: 0.97 }}
+                            className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
+                                ${isActive
+                                    ? "bg-gradient-to-r from-lime-500/30 to-green-500/20 border border-lime-400/30 shadow-lg"
+                                    : "hover:bg-white/10"
+                                }`}
+                        >
+                            {/* Indicador activo */}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeIndicator"
+                                    className="absolute left-0 top-1/4 -translate-y-1/4 w-1 h-6 bg-lime-400 rounded-r-full"
+                                />
+                            )}
+
+                            <div className={`flex-shrink-0 ${isActive ? "text-lime-400" : "text-white/60 group-hover:text-white"}`}>
+                                <Icon className="w-5 h-5" />
+                            </div>
+
+                            <AnimatePresence>
+                                {!collapsed && (
+                                    <motion.div
+                                        initial={{ opacity: 0, width: 0 }}
+                                        animate={{ opacity: 1, width: "auto" }}
+                                        exit={{ opacity: 0, width: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="flex items-center justify-between flex-1 overflow-hidden"
+                                    >
+                                        <span className={`text-sm font-medium whitespace-nowrap ${isActive ? "text-white" : "text-white/70 group-hover:text-white"}`}>
+                                            {item.label}
+                                        </span>
+                                        {item.badge && (
+                                            <span className="text-xs bg-lime-400 text-green-900 font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                                {item.badge}
+                                            </span>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.button>
+                    );
+                })}
+            </nav>
+
+            {/* Bottom actions */}
+            <div className="relative px-2 pb-4 space-y-1 border-t border-white/10 pt-3">
+                {[
+                    { icon: Bell, label: "Notificaciones" },
+                    { icon: Settings, label: "Configuración" },
+                    { icon: LogOut, label: "Cerrar Sesión" },
+                ].map(({ icon: Icon, label }) => (
+                    <motion.button
+                        key={label}
+                        whileHover={{ x: collapsed ? 0 : 4 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors group"
+                    >
+                        <Icon className="w-4 h-4 text-white/50 group-hover:text-white/80 flex-shrink-0" />
+                        <AnimatePresence>
+                            {!collapsed && (
+                                <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="text-sm text-white/50 group-hover:text-white/80 whitespace-nowrap overflow-hidden"
+                                >
+                                    {label}
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
+                    </motion.button>
+                ))}
+            </div>
+        </motion.aside>
+    );
+}
