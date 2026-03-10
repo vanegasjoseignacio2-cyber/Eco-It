@@ -48,17 +48,17 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
         <motion.aside
             animate={{ width: collapsed ? 72 : 240 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="relative h-screen bg-gradient-to-b from-green-900 via-emerald-900 to-green-950 flex flex-col shadow-2xl z-20 overflow-hidden"
+            className="relative h-screen bg-gradient-to-l from-green-950 via-emerald-900 to-green-950 flex flex-col shadow-2xl z-20 overflow-hidden"
         >
             {/* Fondo decorativo */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <motion.div
-                    className="absolute -top-16 -left-16 w-48 h-48 bg-lime-400/10 rounded-full blur-3xl"
+                    className="absolute -top-16 -left-16 w-48 h-48 bg-emerald-400/50 rounded-full blur-3xl"
                     animate={{ opacity: [0.4, 0.7, 0.4] }}
                     transition={{ duration: 5, repeat: Infinity }}
                 />
                 <motion.div
-                    className="absolute bottom-20 -right-10 w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl"
+                    className="absolute bottom-20 -right-10 w-40 h-40 bg-emerald-400 rounded-full blur-3xl"
                     animate={{ opacity: [0.3, 0.6, 0.3] }}
                     transition={{ duration: 7, repeat: Infinity }}
                 />
@@ -75,18 +75,18 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
                             transition={{ duration: 0.2 }}
                             className="flex items-center gap-2"
                         >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-green-500 flex items-center justify-center shadow-lg">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-700 flex items-center justify-center shadow-lg">
                                 <Leaf className="w-4 h-4 text-white" />
                             </div>
-                            <span className="text-white font-bold text-lg tracking-tight">
-                                Eco-It <span className="text-lime-400 text-xs font-medium ml-1">Admin</span>
+                            <span className="text-white font-semibold text-lg tracking-tight">
+                                Eco-It <span className="text-emerald-400 text-lg font-medium ml-1">Admin</span>
                             </span>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {collapsed && (
-                    <div className="mx-auto w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-green-500 flex items-center justify-center shadow-lg">
+                    <div className="mx-auto w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-700 flex items-center justify-center shadow-lg">
                         <Leaf className="w-4 h-4 text-white" />
                     </div>
                 )}
@@ -126,16 +126,17 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
                             whileHover={{ x: collapsed ? 0 : 4 }}
                             whileTap={{ scale: 0.97 }}
                             className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
-                                ${isActive
-                                    ? "bg-gradient-to-r from-lime-500/30 to-green-500/20 border border-lime-400/30 shadow-lg"
-                                    : "hover:bg-white/10"
+                            border  // siempre presente
+                                    ${isActive
+                                    ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-lime-400/30 shadow-lg"
+                                    : "hover:bg-white/10 border-transparent hover:border-lime-400/20 hover:"
                                 }`}
                         >
                             {/* Indicador activo */}
                             {isActive && (
                                 <motion.div
                                     layoutId="activeIndicator"
-                                    className="absolute left-0 top-1/4 -translate-y-1/4 w-1 h-6 bg-lime-400 rounded-r-full"
+                                    className="absolute left-0 top-1/4 -translate-y-1/4 w-1 h-6 bg-lime-500 rounded-r-full"
                                 />
                             )}
 
@@ -171,24 +172,22 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
             {/* Bottom actions */}
             <div className="relative px-2 pb-4 space-y-1 border-t border-white/10 pt-3">
                 {[
-                    { icon: Bell, label: "Notificaciones" },
-                    { icon: Settings, label: "Configuración" },
                     { icon: LogOut, label: "Cerrar Sesión" },
                 ].map(({ icon: Icon, label }) => (
                     <motion.button
                         key={label}
                         whileHover={{ x: collapsed ? 0 : 4 }}
                         whileTap={{ scale: 0.97 }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors group"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-600 transition-colors group"
                     >
-                        <Icon className="w-4 h-4 text-white/50 group-hover:text-white/80 flex-shrink-0" />
+                        <Icon className="w-4 h-4 text-white/70 group-hover:text-white flex-shrink-0" />
                         <AnimatePresence>
                             {!collapsed && (
                                 <motion.span
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="text-sm text-white/50 group-hover:text-white/80 whitespace-nowrap overflow-hidden"
+                                    className="text-sm text-white/70 group-hover:text-white whitespace-nowrap overflow-hidden"
                                 >
                                     {label}
                                 </motion.span>

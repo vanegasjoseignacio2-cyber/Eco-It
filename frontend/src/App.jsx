@@ -12,10 +12,14 @@ import ProfileEcoIt from "./components/Perfil/Perfil";
 import EditProfile from "./components/Perfil/EditarPefil";
 import GamePage from "./components/pages/GamePage";
 import AdminLayout from "./components/pages/AdminLayout";
+import PrivateRoute from "./context/PrivateRoute";
+import { AuthProvider } from "./context/AuthContext";
+import RecoveryRoute from "./Routes/RecoveryRoutes";
 import 'leaflet/dist/leaflet.css';
 
 function App() {
   return (
+    <AuthProvider>
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
@@ -24,12 +28,28 @@ function App() {
       <Route path="/ai" element={<AIPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/recuperar" element={<RecuperarPage />} />
-      <Route path="/verificar-codigo" element={<VerificarCodePage />} />
-      <Route path="/perfil" element={<ProfileEcoIt />} />
+      <Route
+          path="/verificar-codigo"
+          element={
+            <RecoveryRoute>
+              <VerificarCodePage />
+            </RecoveryRoute>
+          }
+        />
+      <Route path='/perfil' element={
+            <PrivateRoute>
+              <ProfileEcoIt />
+            </PrivateRoute>
+          } />
+
       <Route path="/editarperfil" element={<EditProfile />} />
       <Route path="/game" element={<GamePage />} />
-      <Route path="/admin" element={<AdminLayout />} />
+      <Route path='/admin' element={
+      <PrivateRoute rolRequerido="admin">
+              <AdminLayout />
+            </PrivateRoute>} />
     </Routes>
+  </AuthProvider>
   );
 }
 

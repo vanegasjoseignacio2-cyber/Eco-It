@@ -8,6 +8,7 @@ import { recuperarPassword, verificarCodigo, restablecerPassword } from "../../s
 
 export default function RecuperarPassword() {
     const navigate = useNavigate();
+    
 
     // Estado del paso: 'email', 'code', 'password'
     const [step, setStep] = useState('email');
@@ -51,8 +52,12 @@ export default function RecuperarPassword() {
 
             if (data.success) {
                 if (data.debugCodigo) alert(`TU CÓDIGO (DEBUG): ${data.debugCodigo}`);
+
+                // guardar email temporal
+                localStorage.setItem("recovery_email", email);
                 setMessage(data.mensaje);
-                setStep('code');
+                // ir a verificar código
+                navigate("/verificar-codigo");
             } else {
                 setError(data.mensaje || "Error al enviar código");
             }
