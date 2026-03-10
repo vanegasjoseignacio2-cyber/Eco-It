@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { CheckCircle, Eye, EyeOff, Lock, Mail, Sparkles, ShieldCheck, User } from "lucide-react";
 import Navbar from "../Layout/Navbar";
 import Footer from "../Layout/Footer";
+//algo
 export default function VerifyCode() {
     const [code, setCode] = useState("");
     const [password, setPassword] = useState("");
