@@ -7,19 +7,20 @@ import Mapapage from "./components/pages/Mapapage";
 import AIPage from "./components/pages/AIPage";
 import Login from "./components/pages/Loginpage";
 import RecuperarPage from "./components/pages/RecuperarPage";
-import VerificarCodePage from "./components/pages/VerificarCodePage";
+import RecoveryRoute from "./Routes/RecoveryRoutes";
 import ProfileEcoIt from "./components/Perfil/Perfil";
 import EditProfile from "./components/Perfil/EditarPefil";
 import GamePage from "./components/pages/GamePage";
 import AdminLayout from "./components/pages/AdminLayout";
 import PrivateRoute from "./context/PrivateRoute";
 import { AuthProvider } from "./context/AuthContext";
-import RecoveryRoute from "./Routes/RecoveryRoutes";
+import ScrollToTop from "./components/animations/Scrolltotop";
 import 'leaflet/dist/leaflet.css';
 
 function App() {
   return (
     <AuthProvider>
+      <ScrollToTop />
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
@@ -29,13 +30,13 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/recuperar" element={<RecuperarPage />} />
       <Route
-          path="/verificar-codigo"
-          element={
-            <RecoveryRoute>
-              <VerificarCodePage />
-            </RecoveryRoute>
-          }
-        />
+        path="/verificar-codigo"
+        element={
+          <RecoveryRoute>
+            <RecuperarPage />
+          </RecoveryRoute>
+        }
+      />
       <Route path='/perfil' element={
             <PrivateRoute>
               <ProfileEcoIt />

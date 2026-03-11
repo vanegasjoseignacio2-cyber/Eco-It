@@ -79,7 +79,7 @@ export default function EfectoEcoOndas({ dark = false }) {
                 ))}
             </div>
 
-            <style jsx>{`
+            <style>{`
                         @keyframes gradientShift {
                         0% {
                             background-position: 0% 50%;

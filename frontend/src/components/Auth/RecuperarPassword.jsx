@@ -1,17 +1,32 @@
 import { useState } from "react";
 import Footer from "../Layout/Footer";
 import { FadeInUp, FadeInLeft, ScaleIn } from "../animations/Animatedlogin"; // ButtonMotion removed
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Leaf, Eye, EyeOff, Lock } from "lucide-react"; // Added Eye, EyeOff, Lock
 import { recuperarPassword, verificarCodigo, restablecerPassword } from "../../services/api"; // Added restablecerPassword
 
 export default function RecuperarPassword() {
     const navigate = useNavigate();
-    
+    const location = useLocation();
 
-    // Estado del paso: 'email', 'code', 'password'
-    const [step, setStep] = useState('email');
+    // Si el usuario llega directo a /verificar-codigo sin email guardado, redirigir
+    const savedEmail = localStorage.getItem("recovery_email");
+
+    // Inicializar step según la URL actual
+    const [step, setStep] = useState(
+        location.pathname === '/verificar-codigo' ? 'code' : 'email'
+    );
+
+    // Función para cambiar step y sincronizar la URL
+    const changeStep = (newStep) => {
+        setStep(newStep);
+        if (newStep === 'code' || newStep === 'password') {
+            navigate('/verificar-codigo', { replace: true });
+        } else {
+            navigate('/recuperar', { replace: true });
+        }
+    };
 
     // Estados del formulario
     const [email, setEmail] = useState("");
@@ -51,13 +66,10 @@ export default function RecuperarPassword() {
             const data = await recuperarPassword(email);
 
             if (data.success) {
-                if (data.debugCodigo) alert(`TU CÓDIGO (DEBUG): ${data.debugCodigo}`);
-
                 // guardar email temporal
                 localStorage.setItem("recovery_email", email);
                 setMessage(data.mensaje);
-                // ir a verificar código
-                navigate("/verificar-codigo");
+                changeStep('code');
             } else {
                 setError(data.mensaje || "Error al enviar código");
             }
@@ -84,8 +96,8 @@ export default function RecuperarPassword() {
             const data = await verificarCodigo(email, code);
 
             if (data.success) {
-                setStep('password'); // Avanzar al paso de cambio de contraseña
-                setMessage(""); // Limpiar mensaje de "código enviado"
+                changeStep('password');
+                setMessage("");
             } else {
                 setError(data.mensaje || "Código inválido o expirado");
             }
@@ -308,7 +320,7 @@ export default function RecuperarPassword() {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    setStep(step === 'password' ? 'code' : 'email');
+                                                    changeStep(step === 'password' ? 'code' : 'email');
                                                     setError("");
                                                 }}
                                                 className="text-sm text-green-600 hover:underline"

@@ -17,8 +17,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares globales
-app.use(cors());  // Permitir peticiones desde el frontend
-app.use(express.json({ limit: '10mb' }));  // Parsear JSON (límite para imágenes base64)
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Conexión a MongoDB
@@ -28,11 +28,11 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);      // Rutas de autenticación (registro, login)
-app.use('/api/user', userRoutes);      // Rutas de usuario (perfil, editar)
+app.use('/api/user', userRoutes);      // Rutas de usuario (perfil, editar, recuperación) ✅
 app.use('/api/ai', aiRoutes);          // Rutas de IA (consultar, analizar imagen)
 app.use('/api/admin', admin);          // Rutas de administrador
 
-// Ruta raíz (para verificar que el servidor funciona)
+// Ruta raíz
 app.get('/', (req, res) => {
   res.json({ 
     success: true,
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Ruta para manejar endpoints no encontrados (404)
+// 404
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -55,7 +55,7 @@ app.use((req, res) => {
   });
 });
 
-// Middleware de manejo de errores global
+// Error global
 app.use((err, req, res, next) => {
   console.error('Error global:', err);
   res.status(err.status || 500).json({
@@ -71,6 +71,9 @@ app.listen(PORT, () => {
   console.log(`📚 Documentación de endpoints:`);
   console.log(`   - POST /api/auth/registro`);
   console.log(`   - POST /api/auth/login`);
+  console.log(`   - POST /api/user/recuperar-password`);
+  console.log(`   - POST /api/user/verificar-codigo`);
+  console.log(`   - POST /api/user/restablecer-password`);
   console.log(`   - GET  /api/user/perfil`);
   console.log(`   - PUT  /api/user/perfil`);
   console.log(`   - PUT  /api/user/cambiar-password`);
