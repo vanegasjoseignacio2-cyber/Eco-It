@@ -37,6 +37,9 @@ export default function LoginForm() {
     : password.length < 8
     ? "La contraseña debe tener al menos 8 caracteres."
     : "";
+    const handleGoogleLogin = () => {
+      window.location.href = "http://localhost:3000/api/auth/google";
+    };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,6 +51,8 @@ export default function LoginForm() {
     if (!canSubmit || isLoading) return;
 
     setIsLoading(true);
+
+    
 
     try {
       const response = await iniciarSesion({
@@ -240,7 +245,7 @@ export default function LoginForm() {
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-4">
-            <button 
+            <button onClick={handleGoogleLogin}
               type="button"
               disabled={isLoading}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
