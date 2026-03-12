@@ -1,25 +1,43 @@
+// ⚠️ dotenv MUST be configured first, before any other imports that read env vars
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import passport from 'passport';
+import session from 'express-session';
 
 // Importar rutas
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import admin from './routes/admin.js';
+import googleAuthRoutes from './routes/googleAuthRoutes.js';
 
-// Configurar variables de entorno
-dotenv.config();
+// Importar configuración de passport
+import { setupGoogleAuth } from './controllers/AutheticationGoogle.js';
 
 // Crear aplicación Express
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Inicializar Google OAuth (debe llamarse DESPUÉS de que dotenv ya cargó las variables)
+setupGoogleAuth();
+
 // Middlewares globales
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Sesión y Passport (necesario para Google OAuth)
+app.use(session({
+  secret: process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -28,7 +46,8 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);      // Rutas de autenticación (registro, login)
-app.use('/api/user', userRoutes);      // Rutas de usuario (perfil, editar, recuperación) ✅
+app.use('/api/auth', googleAuthRoutes); // Rutas de Google OAuth
+app.use('/api/user', userRoutes);      // Rutas de usuario (perfil, editar, recuperación)
 app.use('/api/ai', aiRoutes);          // Rutas de IA (consultar, analizar imagen)
 app.use('/api/admin', admin);          // Rutas de administrador
 
