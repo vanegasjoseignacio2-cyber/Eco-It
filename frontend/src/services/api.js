@@ -106,6 +106,13 @@ export const verificarCodigo = async (email, codigo) => {
   });
 };
 
+export const reenviarCodigo = async (email) => {
+  return fetchAPI('/user/reenviar-codigo', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+};
+
 export const restablecerPassword = async (email, codigo, password) => {
   return fetchAPI('/user/restablecer-password', {
     method: 'POST',

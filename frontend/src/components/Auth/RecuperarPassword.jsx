@@ -1,17 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Footer from "../Layout/Footer";
 import { FadeInUp, FadeInLeft, ScaleIn } from "../animations/Animatedlogin"; // ButtonMotion removed
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Leaf, Eye, EyeOff, Lock } from "lucide-react"; // Added Eye, EyeOff, Lock
-import { recuperarPassword, verificarCodigo, restablecerPassword } from "../../services/api"; // Added restablecerPassword
-
+import { recuperarPassword, verificarCodigo, restablecerPassword, reenviarCodigo } from "../../services/api"; // Added restablecerPassword, reenviarCodigo
 export default function RecuperarPassword() {
     const navigate = useNavigate();
     const location = useLocation();
 
     // Si el usuario llega directo a /verificar-codigo sin email guardado, redirigir
     const savedEmail = localStorage.getItem("recovery_email");
+
+    // Calcular tiempo restante desde localStorage al montar (sobrevive al remount)
+    const calcTimeLeft = () => {
+        const expiry = localStorage.getItem("recovery_code_expiry");
+        if (!expiry) return 0;
+        const secsLeft = Math.floor((parseInt(expiry) - Date.now()) / 1000);
+        return secsLeft > 0 ? secsLeft : 0;
+    };
 
     // Inicializar step según la URL actual
     const [step, setStep] = useState(
@@ -24,16 +31,29 @@ export default function RecuperarPassword() {
         if (newStep === 'code' || newStep === 'password') {
             navigate('/verificar-codigo', { replace: true });
         } else {
+            // Al volver al email, limpiar datos guardados
+            localStorage.removeItem("recovery_email");
+            localStorage.removeItem("recovery_code_expiry");
             navigate('/recuperar', { replace: true });
         }
     };
 
     // Estados del formulario
-    const [email, setEmail] = useState("");
+    const [email, setEmail] = useState(savedEmail || "");
     const [code, setCode] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+
+    // Estado del temporizador — se restaura desde localStorage si el componente fue remontado
+    const [timeLeft, setTimeLeft] = useState(calcTimeLeft);
+
+    useEffect(() => {
+        if (timeLeft > 0) {
+            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [timeLeft]);
 
     // Estados de UI/Validación
     const [touched, setTouched] = useState(false);
@@ -66,15 +86,47 @@ export default function RecuperarPassword() {
             const data = await recuperarPassword(email);
 
             if (data.success) {
-                // guardar email temporal
+                // guardar email y tiempo de expiración del código en localStorage
                 localStorage.setItem("recovery_email", email);
+                localStorage.setItem("recovery_code_expiry", Date.now() + 180 * 1000);
                 setMessage(data.mensaje);
+                setTimeLeft(180); // Iniciar temporizador de 3 minutos
                 changeStep('code');
             } else {
                 setError(data.mensaje || "Error al enviar código");
             }
         } catch (err) {
             setError("Error de conexión con el servidor");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Reenviar Código
+    const handleResendCode = async () => {
+        if (timeLeft > 0 || loading) return;
+        setLoading(true);
+        setError("");
+        setMessage("");
+
+        try {
+            const data = await reenviarCodigo(email);
+            if (data.success) {
+                // Actualizar tiempo de expiración en localStorage
+                localStorage.setItem("recovery_code_expiry", Date.now() + 180 * 1000);
+                setMessage(data.mensaje || "Nuevo código enviado.");
+                setTimeLeft(180); // Reiniciar 3 minutos
+            } else {
+                setError(data.mensaje || "Error al reenviar código");
+            }
+        } catch (err) {
+            setError(err.message || "Error al conectar con el servidor");
+            if (err.message && err.message.includes("espera")) {
+                const match = err.message.match(/espera (\d+)/);
+                if (match && match[1]) {
+                    setTimeLeft(parseInt(match[1]) * 60);
+                }
+            }
         } finally {
             setLoading(false);
         }
@@ -235,6 +287,18 @@ export default function RecuperarPassword() {
                                                 />
                                             </div>
                                             <p className="mt-2 text-xs text-green-600 text-center">Revisa tu bandeja de entrada o spam.</p>
+                                            
+                                            {/* Botón de Reenviar Código */}
+                                            <div className="text-center mt-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResendCode}
+                                                    disabled={timeLeft > 0 || loading}
+                                                    className={`text-sm font-medium transition-colors ${timeLeft > 0 ? "text-gray-400 cursor-not-allowed" : "text-green-600 hover:text-green-800 hover:underline"}`}
+                                                >
+                                                    {timeLeft > 0 ? `Reenviar código en ${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}` : '¿No te llegó el código? Volver a enviar'}
+                                                </button>
+                                            </div>
                                         </motion.div>
                                     )}
 

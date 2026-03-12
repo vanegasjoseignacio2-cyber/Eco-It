@@ -34,9 +34,15 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'La contraseña es obligatoria'],
+        required: false, // opcional para usuarios de Google
         minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
         select: false // no incluye la contraseña en las consultas por defecto (seguridad)
+    },
+
+    // ID de Google para autenticación con OAuth
+    googleId: {
+        type: String,
+        default: null
     },
 
     rol: {
@@ -69,6 +75,7 @@ const userSchema = new mongoose.Schema({
 }, {
     timestamps: true // agrega campos createdAt y updatedAt automaticamente
 });
+
 
 // Middleware: Se ejecuta antes de guardar un usuario
 // Encripta la contraseña antes de gaurdarla en la base de datos

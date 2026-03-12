@@ -1,6 +1,69 @@
 import User from '../models/user.js';
-import bcrypt from 'bcryptjs';
 import { sendRecoveryEmail } from '../utils/emailService.js';
+// Reenviar código
+export const reenviarCodigo = async (req, res) => {
+    try {
+        const { email } = req.body;
+        console.log(`Solicitud de reenvío de código para: ${email}`);
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                mensaje: 'No existe un usuario con ese email'
+            });
+        }
+
+        // Verificar si existe un código previo y si han pasado al menos 3 minutos
+        const tiempoRestante = user.resetPasswordExpires ? user.resetPasswordExpires.getTime() - Date.now() : 0;
+        const tresMinutosEnMs = 12 * 60 * 1000; // 12 minutos en ms (15 - 3)
+
+        // Si el tiempo restante es MAYOR que 12 minutos, significa que han pasado MENOS de 3 minutos
+        if (tiempoRestante > tresMinutosEnMs) {
+            const tiempoEsperaMs = tiempoRestante - tresMinutosEnMs;
+            const minutosEspera = Math.ceil(tiempoEsperaMs / 60000);
+            return res.status(429).json({
+                success: false,
+                mensaje: `Por favor espera ${minutosEspera} minuto(s) antes de solicitar otro código.`
+            });
+        }
+
+        // --- Invalidar el código anterior y generar uno nuevo ---
+        
+        // Generar un NUEVO código numérico aleatorio de 6 dígitos
+        const nuevoResetToken = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Al sobreescribir resetPasswordToken, el código anterior queda automáticamente invalidado
+        user.resetPasswordToken = nuevoResetToken;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // Nuevo tiempo de expiración: 15 minutos desde AHORA
+
+        await user.save();
+
+        // Enviar el nuevo código por correo
+        const emailResult = await sendRecoveryEmail(email, nuevoResetToken);
+
+        if (emailResult.success) {
+            res.status(200).json({
+                success: true,
+                mensaje: 'Nuevo código enviado a tu correo electrónico'
+            });
+        } else {
+            res.status(200).json({
+                success: true,
+                mensaje: 'Nuevo código generado (Error al enviar correo - Revisa logs)'
+            });
+        }
+
+    } catch (error) {
+        console.error('Error en reenviarCodigo:', error);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al procesar la solicitud de reenvío',
+            error: error.message
+        });
+    }
+};
 
 // Enviar código de recuperación
 export const enviarCodigoRecuperacion = async (req, res) => {
@@ -37,8 +100,7 @@ export const enviarCodigoRecuperacion = async (req, res) => {
             // Fallback para desarrollo (si falla el envío real)
             res.status(200).json({
                 success: true,
-                mensaje: 'Código generado (Error al enviar correo - Revisa logs)',
-                debugCodigo: resetToken
+                mensaje: 'Código generado (Error al enviar correo - Revisa logs)'
             });
         }
 
@@ -56,11 +118,12 @@ export const enviarCodigoRecuperacion = async (req, res) => {
 export const verificarCodigo = async (req, res) => {
     try {
         const { email, codigo } = req.body;
+        console.log(`Verificando código para ${email}: '${codigo}'`);
 
         const user = await User.findOne({
             email,
             resetPasswordToken: codigo,
-            resetPasswordExpires: { $gt: Date.now() } // Verifica que no haya expirado
+            resetPasswordExpires: { $gt: new Date() } // Verifica que no haya expirado usando un objeto Date
         });
 
         if (!user) {
@@ -91,7 +154,7 @@ export const restablecerPassword = async (req, res) => {
         const user = await User.findOne({
             email,
             resetPasswordToken: codigo,
-            resetPasswordExpires: { $gt: Date.now() }
+            resetPasswordExpires: { $gt: new Date() } // Verifica que no haya expirado usando un objeto Date
         });
 
         if (!user) {

@@ -6,7 +6,9 @@ let transporter = null;
 const createTransporter = () => {
     if (!transporter) {
         transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 587, // STARTTLS
+            secure: false, // false para puerto 587
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
