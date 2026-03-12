@@ -92,6 +92,7 @@ export default function RecuperarPassword() {
         setError("");
         setMessage("");
 
+        
         try {
             const data = await verificarCodigo(email, code);
 

@@ -10,6 +10,7 @@ import {
     LogOut,
     Settings,
     Bell,
+    Map,
 } from "lucide-react";
 
 const navItems = [
@@ -39,6 +40,13 @@ const navItems = [
         // badge: misiones activas → traer de BD: GET /api/admin/game/active-missions-count
         badge: null,
     },
+
+    {
+        id: "maps",
+        label: "Mapas",
+        icon: Map,
+        badge: null,
+    },
 ];
 
 export default function AdminSidebar({ activeSection, setActiveSection }) {
@@ -48,7 +56,7 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
         <motion.aside
             animate={{ width: collapsed ? 72 : 240 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="relative h-screen bg-gradient-to-l from-green-950 via-emerald-900 to-green-950 flex flex-col shadow-2xl z-20 overflow-hidden"
+            className="relative h-screen bg-gradient-to-l from-teal-800 via-emerald-700 to-green-900 flex flex-col shadow-2xl z-20 overflow-hidden"
         >
             {/* Fondo decorativo */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">

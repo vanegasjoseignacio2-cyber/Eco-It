@@ -4,6 +4,7 @@ import AdminHero from "../Admin/adminHero";
 import AdminUsers from "../Admin/adminUsers";
 import AdminEstadisticas from "../Admin/adminestadistics";
 import AdminEcojuego from "../Admin/adminecojuego";
+import AdminMap from "../Admin/AdminMap";
 
 export default function AdminLayout() {
     const [activeSection, setActiveSection] = useState("dashboard");
@@ -13,6 +14,7 @@ export default function AdminLayout() {
         users: <AdminUsers />,
         estadisticas: <AdminEstadisticas />,
         ecojuego: <AdminEcojuego />,
+        maps: <AdminMap/>
     };
 
     return (

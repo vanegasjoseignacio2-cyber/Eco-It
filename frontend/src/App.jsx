@@ -13,7 +13,7 @@ import EditProfile from "./components/Perfil/EditarPefil";
 import GamePage from "./components/pages/GamePage";
 import AdminLayout from "./components/pages/AdminLayout";
 import PrivateRoute from "./context/PrivateRoute";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider } from "./context/authContext";
 import ScrollToTop from "./components/animations/Scrolltotop";
 import 'leaflet/dist/leaflet.css';
 
