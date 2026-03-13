@@ -7,7 +7,7 @@ import { useAuth } from "../../context/authContext";
 export default function LoginForm() {
   const navigate = useNavigate();
   const { login } = useAuth(); // ← Usar el contexto
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,7 +15,7 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
-  
+
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -27,8 +27,8 @@ export default function LoginForm() {
   const emailMessage = emailEmpty
     ? "Ingresa tu correo electrónico."
     : !isValidEmail
-    ? "Usa un formato válido (ej. nombre@dominio.com)."
-    : "";
+      ? "Usa un formato válido (ej. nombre@dominio.com)."
+      : "";
 
   const passwordEmpty = password.trim() === "";
   const showPasswordError = (passwordEmpty || password.length < 8) && (touched.password || hasTriedSubmit) && !error;
@@ -44,7 +44,7 @@ export default function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setHasTriedSubmit(true);
-    
+
     setError("");
     setSuccessMessage("");
 
@@ -77,7 +77,7 @@ export default function LoginForm() {
 
     } catch (err) {
       console.error('Error en login:', err);
-      
+
       if (err.message.includes('Credenciales inválidas')) {
         setError("Email o contraseña incorrectos. Verifica tus datos.");
       } else if (err.message.includes('email')) {
@@ -96,7 +96,7 @@ export default function LoginForm() {
         <div className="text-center mb-8">
           <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-full items-center justify-center flex
           mx-auto w-16 h-16 text-white shadow-md shadow-gray-400 mb-2">
-            <LogIn className="w-8 h-8 stroke-[2.5]"/>
+            <LogIn className="w-8 h-8 stroke-[2.5]" />
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-green-900 mb-2">
             Bienvenido
@@ -141,11 +141,10 @@ export default function LoginForm() {
                 onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
                 placeholder="tu@email.com"
                 disabled={isLoading}
-                className={`w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 ${
-                  showEmailError 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                className={`w-full pl-12 pr-4 py-3.5 rounded-xl bg-white border-2 ${showEmailError
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
                     : 'border-green-200 focus:border-green-500 focus:ring-green-500/20'
-                } outline-none transition-all text-green-900 placeholder-green-400 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  } outline-none transition-all text-green-900 placeholder-green-400 disabled:opacity-50 disabled:cursor-not-allowed`}
                 required
                 aria-invalid={showEmailError}
                 aria-describedby="email-error"
@@ -172,11 +171,10 @@ export default function LoginForm() {
                 onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
                 placeholder="••••••••"
                 disabled={isLoading}
-                className={`w-full pl-12 pr-12 py-3.5 rounded-xl bg-white border-2 ${
-                  showPasswordError 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
+                className={`w-full pl-12 pr-12 py-3.5 rounded-xl bg-white border-2 ${showPasswordError
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
                     : 'border-green-200 focus:border-green-500 focus:ring-green-500/20'
-                } outline-none transition-all text-green-900 placeholder-green-400 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  } outline-none transition-all text-green-900 placeholder-green-400 disabled:opacity-50 disabled:cursor-not-allowed`}
                 required
                 minLength={8}
                 aria-invalid={showPasswordError}
@@ -253,7 +251,7 @@ export default function LoginForm() {
               <Chrome className="w-5 h-5" />
               Google
             </button>
-            <button 
+            <button
               type="button"
               disabled={isLoading}
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"

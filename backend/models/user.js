@@ -1,18 +1,19 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-// definimos la eestrutura del usuario
+// definimos la estructura del usuario
 const userSchema = new mongoose.Schema({
     // informacion personal
     nombre: {
         type: String,
         required: [true, 'El nombre es obligatorio'],
-        trim: true // elimina espacios en blanco al inicio y final
+        trim: true
     },
     apellido: {
         type: String,
-        required: [true, 'El apellido es obligatorio'],
-        trim: true
+        required: function () {
+            return this.authProvider !== 'google';
+        }
     },
     email: {
         type: String,
@@ -20,38 +21,46 @@ const userSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Por favor ingresa un email válido'] // validacion de formato email
+        match: [/^\S+@\S+\.\S+$/, 'Por favor ingresa un email válido']
     },
     telefono: {
         type: String,
-        required: [true, 'El telefono es obligatorio'],
-        trim: true
+        required: function () {
+            return this.authProvider !== 'google';
+        }
     },
     edad: {
         type: Number,
-        required: [true, 'La edad es obligatoria'],
-        min: [1, 'La edad debe ser mayor a 0']
+        required: function () {
+            return this.authProvider !== 'google';
+        }
     },
     password: {
         type: String,
-        required: false, // opcional para usuarios de Google
+        required: function () {
+            return this.authProvider !== 'google';
+        },
         minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
-        select: false // no incluye la contraseña en las consultas por defecto (seguridad)
+        select: false
     },
-
-    // ID de Google para autenticación con OAuth
+    perfilCompleto: {
+        type: Boolean,
+        default: false
+    },
+    authProvider: {
+        type: String,
+        enum: ['local', 'google'],
+        default: 'local'
+    },
     googleId: {
         type: String,
         default: null
     },
-
     rol: {
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
     },
-
-    // historial de consultas a la IA
     historialConsultas: [{
         pregunta: String,
         respuesta: String,
@@ -61,43 +70,30 @@ const userSchema = new mongoose.Schema({
             default: Date.now
         }
     }],
-
-    // Puntos de reciclaje favoritos (para futuras funcionalidades)
     puntosFavoritos: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'PuntoReciclaje'  // referencia a otro modelo
+        ref: 'PuntoReciclaje'
     }],
-
-    // Recuperación de contraseña
     resetPasswordToken: String,
     resetPasswordExpires: Date
 
 }, {
-    timestamps: true // agrega campos createdAt y updatedAt automaticamente
+    timestamps: true
 });
 
-
-// Middleware: Se ejecuta antes de guardar un usuario
-// Encripta la contraseña antes de gaurdarla en la base de datos
-userSchema.pre('save', async function (next) {
-    // Solo encripta si la contraseña fue modificada o es nueva
-    if (!this.isModified('password')) {
+// ✅ Middleware corregido: maneja usuarios de Google sin password
+userSchema.pre('save', async function () {
+    if (!this.isModified('password') || !this.password) {
         return;
     }
-
-    // Genera un "salt" (dato aleatorio para mayor seguridad)
     const salt = await bcrypt.genSalt(10);
-
-    // Encripta la contraseña
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Metodo: compara la contrasela ingresada con la encriptada en la BD
 userSchema.methods.compararPassword = async function (passwordIngresada) {
     return await bcrypt.compare(passwordIngresada, this.password);
 };
 
-// Crea y exporta el modelo del usuario
 const User = mongoose.model('User', userSchema);
 
 export default User;

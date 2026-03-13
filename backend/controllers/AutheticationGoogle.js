@@ -1,28 +1,45 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/user.js';
+import { sendWelcomeEmail } from '../utils/emailService.js';
 
 // Exported as a function so it only runs AFTER dotenv.config() has loaded env vars
 export function setupGoogleAuth() {
   passport.use(new GoogleStrategy({
-      clientID: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      callbackURL: "http://localhost:3000/api/auth/google/callback"
-    },
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/api/auth/google/callback"
+  },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Buscar si el usuario ya existe
+        const email = profile.emails[0].value;
+
+        // Primero buscar por googleId
         let user = await User.findOne({ googleId: profile.id });
 
         if (!user) {
-          // Crear nuevo usuario con datos de Google
-          user = await User.create({
-            googleId: profile.id,
-            nombre: profile.name.givenName,
-            apellido: profile.name.familyName,
-            email: profile.emails[0].value,
-            // No requiere password para login con Google
-          });
+          // Si no existe por googleId, buscar por email
+          user = await User.findOne({ email });
+
+          if (user) {
+            // Usuario existe con email pero sin googleId → vincular cuenta
+            user.googleId = profile.id;
+            user.authProvider = 'google';
+            await user.save();
+          } else {
+            // Usuario nuevo → crear
+            user = await User.create({
+              googleId: profile.id,
+              nombre: profile.name.givenName,
+              apellido: profile.name.familyName,
+              email,
+              authProvider: 'google',
+              perfilCompleto: false
+            });
+            // envia el correo de bienvenida al registrar con google
+            sendWelcomeEmail(user.email, user.nombre)
+              .catch(err => console.error('Error al enviar bienvenida:', err));
+          }
         }
 
         return done(null, user);
