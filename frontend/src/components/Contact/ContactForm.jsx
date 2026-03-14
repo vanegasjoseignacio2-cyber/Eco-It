@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Send, CheckCircle, SendIcon, SendHorizonal } from "lucide-react";
 import ViewportMotion from "../animations/ViewportMotion";
+import SendButton from "../button/Buttom";
 
 export default function ContactForm() {
     const [formData, setFormData] = useState({
@@ -124,24 +125,10 @@ export default function ContactForm() {
                             className="w-full px-4 py-3 rounded-xl border-2 border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all resize-none bg-white/50"
                         />
                     </div>
-
-                    {/* Botón */}
-                    <motion.button
-                        type="submit"
-                        disabled={isLoading}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg flex justify-center items-center gap-2 hover:from-emerald-600 hover:to-green-500 hover:transition-all duration-500"
-                    >
-                        {isLoading ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <>
-                                <Send className="w-5 h-5" />
-                                Enviar Mensaje
-                            </>
-                        )}
-                    </motion.button>
+                    <SendButton
+                        isLoading={isLoading}
+                        isSuccess={isSuccess}
+                    />
                 </form>
 
 
