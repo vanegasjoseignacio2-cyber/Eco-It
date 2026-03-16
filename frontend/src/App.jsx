@@ -1,5 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-
 import Home from "./components/pages/Home";
 import Register from "./components/pages/Registerpage";
 import Contact from "./components/pages/Contactpage";
@@ -14,7 +13,10 @@ import ProfileEcoIt from "./components/Perfil/Perfil";
 import EditProfile from "./components/Perfil/EditarPefil";
 import GamePage from "./components/pages/GamePage";
 import AdminLayout from "./components/pages/AdminLayout";
+
 import PrivateRoute from "./context/PrivateRoute";
+import PublicRoute from "./context/PublicRoute";
+
 import { AuthProvider } from "./context/authContext";
 import ScrollToTop from "./components/animations/Scrolltotop";
 import 'leaflet/dist/leaflet.css';
@@ -25,13 +27,29 @@ function App() {
       <ScrollToTop />
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/register" element={<Register />} />
+        <Route path='/register' element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          } />
+
       <Route path="/contact" element={<Contact />} />
       <Route path="/maps" element={<Mapapage />} />
       <Route path="/ai" element={<AIPage />} />
-      <Route path="/login" element={<Login />} />
+      <Route path='/login' element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+
       <Route path="/auth/google/success" element={<GoogleSuccess />} />
-      <Route path="/completar-perfil" element={<CompletarPerfil />} />
+
+      <Route path='/completar-perfil' element={
+              <PrivateRoute>
+                <CompletarPerfil />
+              </PrivateRoute>
+              
+          } />
       <Route path="/recuperar" element={<RecuperarPage />} />
       <Route
         path="/verificar-codigo"

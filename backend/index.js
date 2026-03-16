@@ -13,7 +13,6 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import admin from './routes/admin.js';
-import googleAuthRoutes from './routes/googleAuthRoutes.js';
 
 // Importar configuración de passport
 import { setupGoogleAuth } from './controllers/AutheticationGoogle.js';
@@ -45,8 +44,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch((error) => console.error('❌ Error al conectar a MongoDB:', error));
 
 // Rutas de la API
-app.use('/api/auth', authRoutes);      // Rutas de autenticación (registro, login)
-app.use('/api/auth', googleAuthRoutes); // Rutas de Google OAuth
+app.use('/api/auth', authRoutes);      // Rutas de autenticación, registro y Google OAuth
 app.use('/api/user', userRoutes);      // Rutas de usuario (perfil, editar, recuperación)
 app.use('/api/ai', aiRoutes);          // Rutas de IA (consultar, analizar imagen)
 app.use('/api/admin', admin);          // Rutas de administrador
