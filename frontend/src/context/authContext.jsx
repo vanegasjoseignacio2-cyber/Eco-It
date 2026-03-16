@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
 
   // Función para hacer login
   const login = (tokenNuevo, usuarioNuevo) => {
-    console.log('Login - Guardando usuario:', usuarioNuevo);
+
     
     // Actualizar estado
     setToken(tokenNuevo);

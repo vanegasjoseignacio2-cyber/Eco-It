@@ -6,6 +6,8 @@ import Contact from "./components/pages/Contactpage";
 import Mapapage from "./components/pages/Mapapage";
 import AIPage from "./components/pages/AIPage";
 import Login from "./components/pages/Loginpage";
+import GoogleSuccess from "./components/Auth/GoogleSuccess";
+import CompletarPerfil from "./components/Auth/CompletarPerfil";
 import RecuperarPage from "./components/pages/RecuperarPage";
 import RecoveryRoute from "./Routes/RecoveryRoutes";
 import ProfileEcoIt from "./components/Perfil/Perfil";
@@ -28,6 +30,8 @@ function App() {
       <Route path="/maps" element={<Mapapage />} />
       <Route path="/ai" element={<AIPage />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/auth/google/success" element={<GoogleSuccess />} />
+      <Route path="/completar-perfil" element={<CompletarPerfil />} />
       <Route path="/recuperar" element={<RecuperarPage />} />
       <Route
         path="/verificar-codigo"
