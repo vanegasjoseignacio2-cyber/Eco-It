@@ -9,7 +9,7 @@ router.get('/admin', verificarToken, soloAdmin, (req, res) => {
         nombre: req.usuario.nombre,
         email: req.usuario.email,
         rol: req.usuario.rol
-       }
+        }
     });
 });
 
