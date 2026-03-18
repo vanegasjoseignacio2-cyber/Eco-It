@@ -24,11 +24,11 @@ export const loginUsuario = async (req, res) => {
             return res.status(401).json({ message: "Contraseña incorrecta" });
         }
 
-        // Generamos el token JWT
         const token = jwt.sign(
             {
                 id: usuario._id,
                 rol: usuario.rol,
+                perfilCompleto: usuario.perfilCompleto
             },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
@@ -46,7 +46,8 @@ export const loginUsuario = async (req, res) => {
                     edad: usuario.edad,
                     email: usuario.email,
                     telefono: usuario.telefono,
-                    rol: usuario.rol
+                    rol: usuario.rol,
+                    perfilCompleto: usuario.perfilCompleto
                 }
             }
         });

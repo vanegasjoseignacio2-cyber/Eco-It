@@ -36,9 +36,12 @@ export const registrarUser = async (req, res) => {
     sendWelcomeEmail(nuevoUser.email, nuevoUser.nombre)
       .catch(err => console.error('Error al enviar bienvenida:', err));
 
-    // Generar token JWT igual que el login
     const token = jwt.sign(
-      { id: nuevoUser._id },
+      { 
+        id: nuevoUser._id, 
+        rol: nuevoUser.rol,
+        perfilCompleto: nuevoUser.perfilCompleto 
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -54,6 +57,8 @@ export const registrarUser = async (req, res) => {
           email: nuevoUser.email,
           telefono: nuevoUser.telefono,
           edad: nuevoUser.edad,
+          rol: nuevoUser.rol,
+          perfilCompleto: nuevoUser.perfilCompleto
         }
       }
     });
