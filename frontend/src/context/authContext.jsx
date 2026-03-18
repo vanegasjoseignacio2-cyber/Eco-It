@@ -16,7 +16,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
   const [token, setToken] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  // renombrado a 'loading' para que coincida con consumidores (PrivateRoute)
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       setUsuario(null);
     }
-    setCargando(false);
+    setLoading(false);
   };
 
   /**
@@ -72,18 +73,23 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', tokenNuevo);
     localStorage.setItem('usuario', JSON.stringify(usuarioNuevo));
 
+    // actualizar estado primero
     setToken(tokenNuevo);
     setUsuario(usuarioNuevo);
 
-    if (redirectOverride) {
-      navigate(redirectOverride);
-    } else if (usuarioNuevo.rol === "admin") {
-      navigate("/admin");
-    } else {
-      navigate("/");
-    }
+    // permitir que React aplique el setState antes de navegar
+    setTimeout(() => {
+      if (redirectOverride) {
+        navigate(redirectOverride, { replace: true });
+      } else if (usuarioNuevo.rol === "admin") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
 
-    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+      // notificar otros listeners
+      window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+    }, 0);
   };
 
   const logout = () => {
@@ -110,14 +116,14 @@ export const AuthProvider = ({ children }) => {
   const value = {
     usuario,
     token,
-    cargando,
+    loading,
     login,
     logout,
     actualizarUsuario,
     estaAutenticado: !!token,
   };
 
-  if (cargando) {
+  if (loading) {
     return <div>Cargando...</div>;
   }
 

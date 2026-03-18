@@ -1,6 +1,6 @@
-// src/router/PrivateRoute.jsx
-import { Navigate } from "react-router-dom";
-import { useAuth } from "./AuthContext";
+// src/context/PrivateRoute.jsx
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "./authContext";
 
 /**
  * Protege una ruta verificando autenticación y rol.
@@ -8,6 +8,7 @@ import { useAuth } from "./AuthContext";
  */
 export default function PrivateRoute({ children, rolRequerido }) {
     const { usuario, loading } = useAuth();
+    const location = useLocation();
 
     // Mientras el login está procesando, no redirige
     if (loading) return null;
@@ -17,15 +18,15 @@ export default function PrivateRoute({ children, rolRequerido }) {
         return <Navigate to="/login" replace />;
     }
 
-     // Perfil incompleto
+    // Perfil incompleto
     if (!usuario.perfilCompleto && location.pathname !== "/completar-perfil") {
         return <Navigate to="/completar-perfil" replace />;
     }
+
     // Si YA tiene perfil completo → impedir volver a esa ruta
     if (usuario.perfilCompleto && location.pathname === "/completar-perfil") {
         return <Navigate to="/" replace />;
     }
-    
 
     // Rol incorrecto → redirige al inicio
     if (rolRequerido && usuario.rol !== rolRequerido) {
