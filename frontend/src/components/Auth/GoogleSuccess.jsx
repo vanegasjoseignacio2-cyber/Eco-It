@@ -10,7 +10,12 @@ const GoogleSuccess = () => {
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
 
-        if (token) {
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        try {
             const payload = JSON.parse(atob(token.split('.')[1]));
 
             const usuario = {
@@ -25,17 +30,13 @@ const GoogleSuccess = () => {
                 perfilCompleto: payload.perfilCompleto
             };
 
-            login(token, usuario);
+            // Si el perfil está incompleto, forzar esa ruta sin importar el rol.
+            // Si está completo, login() decide: admin → /admin, usuario → /
+            const redirect = !payload.perfilCompleto ? '/completar-perfil' : null;
+            login(token, usuario, redirect);
 
-            // Pequeño delay para asegurar que el contexto se actualice antes de navegar
-            setTimeout(() => {
-                if (!payload.perfilCompleto) {
-                    navigate('/completar-perfil');
-                } else {
-                    navigate('/');
-                }
-            }, 100);
-        } else {
+        } catch (error) {
+            console.error('Error al procesar token de Google:', error);
             navigate('/login');
         }
     }, []);

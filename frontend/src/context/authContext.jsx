@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
-// Evento personalizado para sincronización
 const AUTH_CHANGE_EVENT = 'auth-change';
 
 export const useAuth = () => {
@@ -17,12 +17,11 @@ export const AuthProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
   const [token, setToken] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const navigate = useNavigate();
 
-  // Cargar usuario del localStorage al iniciar
   useEffect(() => {
     cargarUsuario();
 
-    // Listener para detectar cambios de autenticación
     const handleAuthChange = () => {
       cargarUsuario();
     };
@@ -57,45 +56,54 @@ export const AuthProvider = ({ children }) => {
     setCargando(false);
   };
 
-  // Función para hacer login
-  const login = (tokenNuevo, usuarioNuevo) => {
-
-    
-    // Actualizar estado
-    setToken(tokenNuevo);
-    setUsuario(usuarioNuevo);
-    
-    // Guardar en localStorage
+  /**
+   * login(tokenNuevo, usuarioNuevo, redirectOverride?)
+   *
+   * redirectOverride: ruta opcional para forzar una redirección específica.
+   * Si no se pasa, redirige según el rol:
+   *   - admin → /admin
+   *   - usuario normal → /
+   *
+   * Úsalo desde GoogleSuccess para el caso perfilCompleto:
+   *   login(token, usuario, '/completar-perfil')
+   */
+  const login = (tokenNuevo, usuarioNuevo, redirectOverride = null) => {
+    localStorage.setItem("sesionActiva", "true");
     localStorage.setItem('token', tokenNuevo);
     localStorage.setItem('usuario', JSON.stringify(usuarioNuevo));
-    
-    // Disparar evento de cambio
+
+    setToken(tokenNuevo);
+    setUsuario(usuarioNuevo);
+
+    if (redirectOverride) {
+      navigate(redirectOverride);
+    } else if (usuarioNuevo.rol === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/");
+    }
+
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
   };
 
-  // Función para hacer logout
   const logout = () => {
     console.log('Logout - Limpiando sesión');
-    
-    // Limpiar estado
+
     setToken(null);
     setUsuario(null);
-    
-    // Limpiar localStorage
+
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
     localStorage.removeItem('rememberMe');
-    
-    // Disparar evento de cambio
+    localStorage.removeItem('sesionActiva');
+
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
   };
 
-  // Función para actualizar usuario
   const actualizarUsuario = (usuarioActualizado) => {
     setUsuario(usuarioActualizado);
     localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
-    
-    // Disparar evento de cambio
+
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
   };
 
@@ -110,7 +118,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   if (cargando) {
-    return <div>Cargando...</div>; // O un spinner
+    return <div>Cargando...</div>;
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
