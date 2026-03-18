@@ -30,7 +30,7 @@ export const io = new Server(httpServer, {
     }
 });
 
-// Mapa de usuarios conectados: socketId → { userId, nombre }
+// Mapa de usuarios conectados: userId → { nombre, sockets: Set<socketId> }
 export const usuariosConectados = new Map();
 
 io.on('connection', (socket) => {
@@ -38,21 +38,39 @@ io.on('connection', (socket) => {
 
     // El cliente envía sus datos al conectarse
     socket.on('usuario:conectado', (usuario) => {
-        usuariosConectados.set(socket.id, {
-            userId: usuario._id,
-            nombre: usuario.nombre
-        });
-        // Emitir conteo actualizado a todos
+        const userId = usuario._id;
+
+        if (usuariosConectados.has(userId)) {
+            // Ya existe: solo agrega el nuevo socketId (nueva pestaña)
+            usuariosConectados.get(userId).sockets.add(socket.id);
+        } else {
+            // Usuario nuevo: crea su entrada
+            usuariosConectados.set(userId, {
+                nombre: usuario.nombre,
+                sockets: new Set([socket.id])
+            });
+        }
+
         io.emit('usuarios:online', usuariosConectados.size);
-        console.log(`${usuario.nombre} conectado. Total: ${usuariosConectados.size}`);
+        console.log(`${usuario.nombre} conectado. Total usuarios únicos: ${usuariosConectados.size}`);
     });
 
     // Al desconectarse
     socket.on('disconnect', () => {
-        const usuario = usuariosConectados.get(socket.id);
-        usuariosConectados.delete(socket.id);
-        io.emit('usuarios:online', usuariosConectados.size);
-        console.log(`${usuario?.nombre || 'Anónimo'} desconectado. Total: ${usuariosConectados.size}`);
+        for (const [userId, data] of usuariosConectados.entries()) {
+            if (data.sockets.has(socket.id)) {
+                data.sockets.delete(socket.id);
+
+                // Solo elimina al usuario si no tiene más pestañas abiertas
+                if (data.sockets.size === 0) {
+                    usuariosConectados.delete(userId);
+                    console.log(`${data.nombre} desconectado totalmente.`);
+                }
+
+                io.emit('usuarios:online', usuariosConectados.size);
+                break;
+            }
+        }
     });
 });
 
