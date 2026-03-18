@@ -1,6 +1,6 @@
 // src/router/PrivateRoute.jsx
 import { Navigate } from "react-router-dom";
-import { useAuth } from "./authContext";
+import { useAuth } from "./AuthContext";
 
 /**
  * Protege una ruta verificando autenticación y rol.

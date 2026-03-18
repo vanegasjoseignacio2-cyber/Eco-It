@@ -5,7 +5,7 @@ import Navbar from "../Layout/Navbar";
 import Footer from "../Layout/Footer";
 import Toast from "../ui/Toast";
 import ConfirmationModal from "../ui/ConfirmationModal";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 import { actualizarPerfil, eliminarPerfil } from "../../services/api";
 import {
     Mail,

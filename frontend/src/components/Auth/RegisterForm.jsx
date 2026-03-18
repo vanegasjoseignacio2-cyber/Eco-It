@@ -15,7 +15,7 @@ import {
     AlertCircle
 } from "lucide-react";
 import { registerUser } from "../../services/api";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function RegisterForm() {
     const navigate = useNavigate();

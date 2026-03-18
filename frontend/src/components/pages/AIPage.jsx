@@ -6,7 +6,7 @@ import HeroSection from "../Eco-IA/HeroSection";
 import EcoSidebar from "../Eco-IA/Ecosidebar";
 import ChatWindow from "../Eco-IA/Chatwindow";
 import ChatInput from "../Eco-IA/Charinput";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 import { consultarIA, analizarImagen } from "../../services/api";
 
 export default function AIPage() {

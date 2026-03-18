@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, LogIn, CheckCircle } from "lucide-react";
 import { iniciarSesion } from "../../services/api";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function LoginForm() {
   const { login } = useAuth();

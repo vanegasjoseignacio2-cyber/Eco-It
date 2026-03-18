@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import Navbar from "../Layout/Navbar";
 import Footer from "../Layout/Footer";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext";
 import {
     User,
     Mail,

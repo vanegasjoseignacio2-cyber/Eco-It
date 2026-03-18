@@ -1,3 +1,6 @@
+import { useSocket } from "../../context/SocketContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     Users,
@@ -12,16 +15,12 @@ import {
     RefreshCw,
 } from "lucide-react";
 
-// ─── DATOS DE EJEMPLO ───────────────────────────────────────────────────────
-// TODO: Reemplazar con fetch real a la BD
-// GET /api/admin/dashboard/stats → devuelve { users, activeSessions, queries, recyclePoints }
+
 const kpis = [
     {
         id: "users",
         label: "Usuarios Totales",
-        // TODO: value → res.data.users.total
         value: "0",
-        // TODO: change → res.data.users.growthPercent (positivo = subida, negativo = bajada)
         change: "+0%",
         up: true,
         icon: Users,
@@ -31,10 +30,9 @@ const kpis = [
     },
     {
         id: "active",
-        label: "Sesiones Activas",
-        // TODO: value → res.data.activeSessions
-        value: "0",
-        change: "+0%",
+        label: "Usuarios en Línea",
+        value: null,
+        change: "En vivo",
         up: true,
         icon: Activity,
         color: "from-lime-500 to-green-500",
@@ -44,7 +42,6 @@ const kpis = [
     {
         id: "queries",
         label: "Consultas IA Hoy",
-        // TODO: value → res.data.queries.today
         value: "0",
         change: "+0%",
         up: true,
@@ -56,7 +53,6 @@ const kpis = [
     {
         id: "points",
         label: "Puntos Reciclaje",
-        // TODO: value → res.data.recyclePoints.total
         value: "0",
         change: "+0%",
         up: false,
@@ -67,16 +63,8 @@ const kpis = [
     },
 ];
 
-// TODO: GET /api/admin/dashboard/recent-activity → últimas 5 acciones del sistema
-const recentActivity = [
-    // { user: "Nombre", action: "Se registró", time: "hace 2 min", type: "register" },
-    // { user: "Nombre", action: "Completó misión", time: "hace 5 min", type: "game" },
-];
-
-// TODO: GET /api/admin/dashboard/top-users?limit=5 → usuarios más activos
-const topUsers = [
-    // { name: "Nombre", points: 1200, rank: 1 },
-];
+const recentActivity = [];
+const topUsers = [];
 
 const containerVariants = {
     hidden: {},
@@ -88,6 +76,27 @@ const cardVariants = {
 };
 
 export default function AdminHero() {
+    const { usuariosOnline } = useSocket();
+    const { token } = useAuth();
+    const [totalUsuarios, setTotalUsuarios] = useState(0);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/stats', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setTotalUsuarios(data.totalUsuarios);
+                }
+            } catch (error) {
+                console.error('Error al obtener stats:', error);
+            }
+        };
+        fetchStats();
+    }, [token]);
+
     const now = new Date().toLocaleDateString("es-CO", {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
@@ -115,8 +124,15 @@ export default function AdminHero() {
                     </div>
 
                     <motion.button
-                        whileHover={{ y: -5, scale: 1.05}}
+                        whileHover={{ y: -5, scale: 1.05 }}
                         transition={{ duration: 0.2 }}
+                        onClick={() => {
+                            fetch('http://localhost:3000/api/admin/stats', {
+                                headers: { Authorization: `Bearer ${token}` }
+                            })
+                                .then(r => r.json())
+                                .then(data => { if (data.success) setTotalUsuarios(data.totalUsuarios); });
+                        }}
                         className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-green-200 text-green-700 text-sm font-medium shadow-sm hover:shadow-md hover:border-green-400 transition-all"
                     >
                         <RefreshCw className="w-4 h-4" />
@@ -133,14 +149,20 @@ export default function AdminHero() {
                 >
                     {kpis.map((kpi) => {
                         const Icon = kpi.icon;
+                        const displayValue = kpi.id === 'active'
+                            ? usuariosOnline
+                            : kpi.id === 'users'
+                                ? totalUsuarios
+                                : kpi.value;
+                        const isLive = kpi.id === 'active';
+
                         return (
                             <motion.div
                                 key={kpi.id}
                                 variants={cardVariants}
-                                whileHover={{ y: -4, shadow: "xl" }}
+                                whileHover={{ y: -4 }}
                                 className={`relative bg-gradient-to-br ${kpi.bg} border ${kpi.border} rounded-2xl p-5 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300`}
                             >
-                                {/* Fondo decorativo */}
                                 <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${kpi.color} opacity-10`} />
 
                                 <div className="flex items-start justify-between mb-4">
@@ -148,15 +170,26 @@ export default function AdminHero() {
                                         <Icon className="w-5 h-5 text-white" />
                                     </div>
                                     <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full
-                                        ${kpi.up ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-                                        {kpi.up
-                                            ? <ArrowUpRight className="w-3 h-3" />
-                                            : <ArrowDownRight className="w-3 h-3" />}
-                                        {kpi.change}
+                                        ${isLive
+                                            ? 'bg-lime-100 text-lime-700'
+                                            : kpi.up
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-red-100 text-red-600'
+                                        }`}>
+                                        {isLive ? (
+                                            <>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-lime-500 animate-pulse" />
+                                                En vivo
+                                            </>
+                                        ) : kpi.up ? (
+                                            <><ArrowUpRight className="w-3 h-3" />{kpi.change}</>
+                                        ) : (
+                                            <><ArrowDownRight className="w-3 h-3" />{kpi.change}</>
+                                        )}
                                     </div>
                                 </div>
 
-                                <p className="text-3xl font-bold text-green-900 mb-1">{kpi.value}</p>
+                                <p className="text-3xl font-bold text-green-900 mb-1">{displayValue}</p>
                                 <p className="text-sm text-green-600 font-medium">{kpi.label}</p>
                             </motion.div>
                         );
@@ -165,8 +198,6 @@ export default function AdminHero() {
 
                 {/* Lower Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
-                    {/* Actividad reciente */}
                     <motion.div
                         initial={{ opacity: 0, x: -24 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -178,13 +209,10 @@ export default function AdminHero() {
                                 <Activity className="w-5 h-5 text-green-500" />
                                 Actividad Reciente
                             </h2>
-                            {/* TODO: botón "Ver todo" → navega a sección usuarios o logs */}
                             <button className="text-sm text-green-600 hover:text-green-800 font-medium transition-colors">
                                 Ver todo
                             </button>
                         </div>
-
-                        {/* TODO: map sobre recentActivity → GET /api/admin/dashboard/recent-activity */}
                         {recentActivity.length === 0 ? (
                             <EmptyState icon={Activity} message="No hay actividad reciente aún." />
                         ) : (
@@ -196,7 +224,6 @@ export default function AdminHero() {
                         )}
                     </motion.div>
 
-                    {/* Top usuarios */}
                     <motion.div
                         initial={{ opacity: 0, x: 24 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -209,8 +236,6 @@ export default function AdminHero() {
                                 Top Usuarios
                             </h2>
                         </div>
-
-                        {/* TODO: map sobre topUsers → GET /api/admin/dashboard/top-users?limit=5 */}
                         {topUsers.length === 0 ? (
                             <EmptyState icon={Users} message="Sin datos de ranking aún." />
                         ) : (
@@ -236,11 +261,9 @@ export default function AdminHero() {
                         </div>
                         <div>
                             <p className="text-white font-semibold">Eco-Juego activo</p>
-                            {/* TODO: misiones activas → GET /api/admin/game/active-missions-count */}
                             <p className="text-green-200 text-sm">0 misiones disponibles ahora mismo</p>
                         </div>
                     </div>
-                    {/* TODO: navegar a sección ecojuego */}
                     <button className="px-5 py-2.5 rounded-full bg-white text-green-700 font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all">
                         Administrar Juego
                     </button>
@@ -249,8 +272,6 @@ export default function AdminHero() {
         </div>
     );
 }
-
-/* ─── Sub-componentes ──────────────────────────────────────────────────────── */
 
 function EmptyState({ icon: Icon, message }) {
     return (

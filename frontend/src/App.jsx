@@ -17,13 +17,12 @@ import AdminLayout from "./components/pages/AdminLayout";
 import PrivateRoute from "./context/PrivateRoute";
 import PublicRoute from "./context/PublicRoute";
 
-import { AuthProvider } from "./context/authContext";
 import ScrollToTop from "./components/animations/Scrolltotop";
 import 'leaflet/dist/leaflet.css';
 
 function App() {
   return (
-    <AuthProvider>
+    <>
       <ScrollToTop />
     <Routes>
       <Route path="/" element={<Home />} />
@@ -72,7 +71,7 @@ function App() {
               <AdminLayout />
             </PrivateRoute>} />
     </Routes>
-  </AuthProvider>
+    </>
   );
 }
 
