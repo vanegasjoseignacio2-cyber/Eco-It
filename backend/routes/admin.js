@@ -1,6 +1,7 @@
 import User from "../models/user.js";
 import express from 'express';
 import { verificarToken,soloAdmin } from '../middlewares/authMiddleware.js';
+import { usuariosConectados } from "../index.js";
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ router.get('/usuarios', verificarToken, soloAdmin, async (req, res) => {
 router.get('/stats', verificarToken, soloAdmin, async (req, res) => {
     try {
         const totalUsuarios = await User.countDocuments();
-        res.json({ success: true, totalUsuarios });
+        res.json({ success: true, totalUsuarios, usuariosOnline: usuariosConectados.size });
     } catch (error) {
         res.json({ success: false, mensaje: error.message });
     }

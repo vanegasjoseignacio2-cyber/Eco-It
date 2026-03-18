@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-import { useAuth } from './authContext';
+import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
 
@@ -11,7 +11,7 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
-  const { token } = useAuth();
+  const { token, usuario } = useAuth();
   const socketRef = useRef(null);
   const [usuariosOnline, setUsuariosOnline] = useState(0);
 
@@ -31,11 +31,11 @@ export const SocketProvider = ({ children }) => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('Socket conectado:', socket.id);
+      socket.emit('usuario:conectado', usuario);
     });
 
-    // Example event from server with number of online users
-    socket.on('usuariosOnline', (count) => {
+    // Escuchar conteo de usuarios online
+    socket.on('usuarios:online', (count) => {
       setUsuariosOnline(count);
     });
 
