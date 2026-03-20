@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     BarChart3,
@@ -104,6 +105,29 @@ const fadeUp = {
 };
 
 export default function AdminEstadisticas() {
+    const { token } = useAuth();
+    const [stats, setStats] = useState({ totalUsuarios: "0", usuariosOnline: "0" });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/stats', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setStats({
+                        totalUsuarios: data.totalUsuarios.toString(),
+                        usuariosOnline: data.usuariosOnline.toString()
+                    });
+                }
+            } catch (error) {
+                console.error("Error al obtener estadísticas:", error);
+            }
+        };
+        if (token) fetchStats();
+    }, [token]);
+
     const [activeChart, setActiveChart] = useState("users");
     const [period, setPeriod] = useState("year");
 
@@ -169,6 +193,7 @@ export default function AdminEstadisticas() {
                 >
                     {KPI_LIST.map((kpi) => {
                         const Icon = kpi.icon;
+                        const displayValue = kpi.id === "users" ? stats.totalUsuarios : kpi.value;
                         return (
                             <motion.div
                                 key={kpi.id}
@@ -202,7 +227,7 @@ export default function AdminEstadisticas() {
                                     </span>
                                 </div>
 
-                                <p className="text-3xl font-black text-green-950 tracking-tight mb-1">{kpi.value}</p>
+                                <p className="text-3xl font-black text-green-950 tracking-tight mb-1">{displayValue}</p>
                                 <p className="text-xs text-green-400 font-medium">{kpi.label}</p>
                             </motion.div>
                         );
