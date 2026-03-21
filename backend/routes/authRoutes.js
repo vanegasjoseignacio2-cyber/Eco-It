@@ -6,11 +6,15 @@ import { registrarUser } from '../controllers/registerController.js';
 import { loginUsuario } from '../controllers/loginController.js';
 import { enviarCodigoRecuperacion, verificarCodigo, restablecerPassword, reenviarCodigo } from '../controllers/recoveryController.js';
 import passport from '../controllers/AutheticationGoogle.js';
-
+import { enviarCodigoRegistro, verificarYRegistrar, reenviarCodigoRegistro } from '../controllers/registerController.js';
 const router = express.Router();
 
 // Rutas de autenticación
 router.post('/registro', registrarUser);
+router.post('/enviar-codigo-registro',   enviarCodigoRegistro);
+router.post('/verificar-registro',       verificarYRegistrar);
+router.post('/reenviar-codigo-registro', reenviarCodigoRegistro);
+
 router.post('/login', loginUsuario);
 
 // Rutas de recuperación de contraseña

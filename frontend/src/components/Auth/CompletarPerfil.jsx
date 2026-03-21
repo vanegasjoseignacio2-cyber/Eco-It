@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Phone, Calendar, ArrowRight, Leaf,
     CheckCircle2, AlertCircle, Sparkles, TreeDeciduous,
-    Recycle, Globe, ChevronRight,
+    Recycle, Globe, ChevronRight, ShieldAlert,
     TreePine,
     Trees,
 } from 'lucide-react';
@@ -40,6 +40,30 @@ export default function CompletarPerfil() {
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
     const [exito, setExito] = useState(false);
+    const [showBlockModal, setShowBlockModal] = useState(false);
+
+    // ── Solo se permite salir tras guardar con éxito ─────────────────────────
+    const puedeNavegar = exito;
+
+    // ── 1. Bloquear flechas del navegador ────────────────────────────────────
+    useEffect(() => {
+        if (puedeNavegar) return;
+        window.history.pushState(null, '', window.location.pathname);
+        const handlePopState = () => {
+            window.history.pushState(null, '', window.location.pathname);
+            setShowBlockModal(true);
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [puedeNavegar]);
+
+    // ── 3. Bloquear cierre/recarga de pestaña ────────────────────────────────
+    useEffect(() => {
+        if (puedeNavegar) return;
+        const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [puedeNavegar]);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -453,6 +477,59 @@ export default function CompletarPerfil() {
                     </motion.div>
                 </motion.div>
             </div>
+
+            {/* ── Modal: bloqueo de navegación ───────────────────────────────── */}
+            <AnimatePresence>
+                {showBlockModal && (
+                    <>
+                        <motion.div
+                            key="overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+                        />
+                        <motion.div
+                            key="modal"
+                            initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                        >
+                            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+                                <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 pt-6 pb-8 text-center">
+                                    <div className="w-14 h-14 bg-white/20 border-2 border-white/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                        <ShieldAlert className="w-7 h-7 text-white" />
+                                    </div>
+                                    <h3 className="text-white font-bold text-lg">Perfil incompleto</h3>
+                                    <p className="text-white/80 text-sm mt-1">
+                                        Necesitas completar tu perfil para usar Eco-It.
+                                    </p>
+                                </div>
+                                <div className="px-6 py-5">
+                                    <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-100 mb-5">
+                                        <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-amber-700 leading-relaxed">
+                                            Si sales ahora, tu cuenta quedará incompleta y no podrás acceder a todas las funciones de la plataforma.
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col gap-2.5">
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => setShowBlockModal(false)}
+                                            className="w-full py-3 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-sm shadow-lg shadow-green-500/25 hover:shadow-xl transition-all"
+                                        >
+                                            Completar mi perfil
+                                        </motion.button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

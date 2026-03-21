@@ -152,15 +152,6 @@ export default function Navbar() {
                                                     <User className="w-4 h-4" />
                                                     <span className="text-sm font-medium">Mi Perfil</span>
                                                 </Link>
-                                                {/* función a implementar */}
-                                                <Link
-                                                    to="/configuracion"
-                                                    onClick={() => setShowUserMenu(false)}
-                                                    className="flex items-center gap-3 px-4 py-2 text-green-700 hover:bg-green-50 transition-colors"
-                                                >
-                                                    <Settings className="w-4 h-4" />
-                                                    <span className="text-sm font-medium">Configuración</span>
-                                                </Link>
                                             </div>
 
                                             {/* Logout */}
@@ -287,12 +278,6 @@ export default function Navbar() {
                                         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-green-50 transition-all text-green-800">
                                             <User className="w-5 h-5 text-green-500" />
                                             <span className="font-medium">Mi Perfil</span>
-                                        </button>
-                                    </Link>
-                                    <Link to="/configuracion" onClick={() => setIsOpen(false)}>
-                                        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-green-50 transition-all text-green-800">
-                                            <Settings className="w-5 h-5 text-green-500" />
-                                            <span className="font-medium">Configuración</span>
                                         </button>
                                     </Link>
                                     <button

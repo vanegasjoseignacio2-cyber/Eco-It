@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import User from '../models/user.js';
 import { sendRecoveryEmail } from '../utils/emailService.js';
 // Reenviar código
@@ -31,11 +32,12 @@ export const reenviarCodigo = async (req, res) => {
 
         // --- Invalidar el código anterior y generar uno nuevo ---
         
-        // Generar un NUEVO código numérico aleatorio de 6 dígitos
+        // Generar nuevo código y hashearlo antes de guardar en BD
         const nuevoResetToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const nuevoResetTokenHash = crypto.createHash('sha256').update(nuevoResetToken).digest('hex');
 
         // Al sobreescribir resetPasswordToken, el código anterior queda automáticamente invalidado
-        user.resetPasswordToken = nuevoResetToken;
+        user.resetPasswordToken = nuevoResetTokenHash;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // Nuevo tiempo de expiración: 15 minutos desde AHORA
 
         await user.save();
@@ -80,10 +82,11 @@ export const enviarCodigoRecuperacion = async (req, res) => {
             });
         }
 
-        // Generar código numérico aleatorio de 6 dígitos
+        // Generar código y hashearlo antes de guardar en BD
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-        user.resetPasswordToken = resetToken;
+        user.resetPasswordToken = resetTokenHash;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutos
 
         await user.save();
@@ -120,9 +123,11 @@ export const verificarCodigo = async (req, res) => {
         const { email, codigo } = req.body;
         console.log(`Verificando código para ${email}: '${codigo}'`);
 
+        const codigoHash = crypto.createHash('sha256').update(codigo.trim()).digest('hex');
+
         const user = await User.findOne({
             email,
-            resetPasswordToken: codigo,
+            resetPasswordToken: codigoHash,
             resetPasswordExpires: { $gt: new Date() } // Verifica que no haya expirado usando un objeto Date
         });
 
@@ -151,9 +156,11 @@ export const restablecerPassword = async (req, res) => {
     try {
         const { email, codigo, password } = req.body;
 
+        const codigoHash = crypto.createHash('sha256').update(codigo.trim()).digest('hex');
+
         const user = await User.findOne({
             email,
-            resetPasswordToken: codigo,
+            resetPasswordToken: codigoHash,
             resetPasswordExpires: { $gt: new Date() } // Verifica que no haya expirado usando un objeto Date
         });
 

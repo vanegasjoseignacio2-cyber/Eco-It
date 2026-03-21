@@ -81,9 +81,10 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// ✅ Middleware corregido: maneja usuarios de Google sin password
+// ✅ Middleware: maneja usuarios de Google sin password y registros
+//    verificados por email (contraseña ya hasheada en PendingRegistration)
 userSchema.pre('save', async function () {
-    if (!this.isModified('password') || !this.password) {
+    if (this.$skipPasswordHash || !this.isModified('password') || !this.password) {
         return;
     }
     const salt = await bcrypt.genSalt(10);

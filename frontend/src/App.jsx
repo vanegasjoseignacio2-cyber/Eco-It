@@ -1,22 +1,26 @@
 import { Routes, Route } from "react-router-dom";
-import Home from "./components/pages/Home";
-import Register from "./components/pages/Registerpage";
-import Contact from "./components/pages/Contactpage";
-import Mapapage from "./components/pages/Mapapage";
-import AIPage from "./components/pages/AIPage";
-import Login from "./components/pages/Loginpage";
-import GoogleSuccess from "./components/Auth/GoogleSuccess";
+
+// ── Páginas ──────────────────────────────────────────────────────────────────
+import Home            from "./components/pages/Home";
+import Register        from "./components/pages/Registerpage";
+import Contact         from "./components/pages/Contactpage";
+import Mapapage        from "./components/pages/Mapapage";
+import AIPage          from "./components/pages/AIPage";
+import Login           from "./components/pages/Loginpage";
+import GoogleSuccess   from "./components/Auth/GoogleSuccess";
 import CompletarPerfil from "./components/Auth/CompletarPerfil";
-import RecuperarPage from "./components/pages/RecuperarPage";
+import RecuperarPage   from "./components/pages/RecuperarPage";
+import ProfileEcoIt    from "./components/Perfil/Perfil";
+import EditProfile     from "./components/Perfil/EditarPefil";
+import GamePage        from "./components/pages/GamePage";
+import AdminLayout     from "./components/pages/AdminLayout";
+
+// ── Guards ───────────────────────────────────────────────────────────────────
+import PrivateRoute  from "./context/PrivateRoute";
+import PublicRoute   from "./context/PublicRoute";
 import RecoveryRoute from "./Routes/RecoveryRoutes";
-import ProfileEcoIt from "./components/Perfil/Perfil";
-import EditProfile from "./components/Perfil/EditarPefil";
-import GamePage from "./components/pages/GamePage";
-import AdminLayout from "./components/pages/AdminLayout";
 
-import PrivateRoute from "./context/PrivateRoute";
-import PublicRoute from "./context/PublicRoute";
-
+// ── Utilidades ───────────────────────────────────────────────────────────────
 import ScrollToTop from "./components/animations/Scrolltotop";
 import 'leaflet/dist/leaflet.css';
 
@@ -24,53 +28,46 @@ function App() {
   return (
     <>
       <ScrollToTop />
-    <Routes>
-      <Route path="/" element={<Home />} />
-        <Route path='/register' element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          } />
 
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/maps" element={<Mapapage />} />
-      <Route path="/ai" element={<AIPage />} />
-      <Route path='/login' element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } />
+      <Routes>
 
-      <Route path="/auth/google/success" element={<GoogleSuccess />} />
+        {/* ── Abiertas (cualquiera, con o sin sesión) ──────────────────────── */}
+        <Route path="/"        element={<Home />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/maps"    element={<Mapapage />} />
 
-      <Route path='/completar-perfil' element={
-              <PrivateRoute>
-                <CompletarPerfil />
-              </PrivateRoute>
-              
-          } />
-      <Route path="/recuperar" element={<RecuperarPage />} />
-      <Route
-        path="/verificar-codigo"
-        element={
-          <RecoveryRoute>
-            <RecuperarPage />
-          </RecoveryRoute>
-        }
-      />
-      <Route path='/perfil' element={
-            <PrivateRoute>
-              <ProfileEcoIt />
-            </PrivateRoute>
-          } />
+        {/* ── Solo sin sesión activa ───────────────────────────────────────── */}
+        <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-      <Route path="/editarperfil" element={<EditProfile />} />
-      <Route path="/game" element={<GamePage />} />
-      <Route path='/admin' element={
-      <PrivateRoute rolRequerido="admin">
-              <AdminLayout />
-            </PrivateRoute>} />
-    </Routes>
+        {/* ── Recuperación de contraseña ───────────────────────────────────── */}
+        <Route path="/recuperar"        element={<RecuperarPage />} />
+        <Route path="/verificar-codigo" element={<RecoveryRoute><RecuperarPage /></RecoveryRoute>} />
+
+        {/* ── OAuth Google ─────────────────────────────────────────────────── */}
+        <Route path="/auth/google/success" element={<GoogleSuccess />} />
+
+        {/* ── Completar perfil ─────────────────────────────────────────────── */}
+        <Route path="/completar-perfil" element={
+          <PrivateRoute>
+            <CompletarPerfil />
+          </PrivateRoute>
+        } />
+
+        {/* ── Privadas (requieren sesión + perfil completo) ────────────────── */}
+        <Route path="/ai"           element={<PrivateRoute><AIPage /></PrivateRoute>} />
+        <Route path="/perfil"       element={<PrivateRoute><ProfileEcoIt /></PrivateRoute>} />
+        <Route path="/editarperfil" element={<PrivateRoute><EditProfile /></PrivateRoute>} />
+        <Route path="/game"         element={<PrivateRoute><GamePage /></PrivateRoute>} />
+
+        {/* ── Privadas con rol admin ───────────────────────────────────────── */}
+        <Route path="/admin" element={
+          <PrivateRoute rolRequerido="admin">
+            <AdminLayout />
+          </PrivateRoute>
+        } />
+
+      </Routes>
     </>
   );
 }

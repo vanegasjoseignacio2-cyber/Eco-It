@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext"; // ajusta la ruta si es distinta
 import {
     LayoutDashboard,
     Users,
@@ -8,49 +10,26 @@ import {
     Leaf,
     ChevronRight,
     LogOut,
-    Settings,
-    Bell,
     Map,
 } from "lucide-react";
 
 const navItems = [
-    {
-        id: "dashboard",
-        label: "Dashboard",
-        icon: LayoutDashboard,
-        badge: null,
-    },
-    {
-        id: "users",
-        label: "Usuarios",
-        icon: Users,
-        // badge: número de usuarios nuevos → traer de BD: GET /api/admin/users/new-count
-        badge: null,
-    },
-    {
-        id: "estadisticas",
-        label: "Estadísticas",
-        icon: BarChart3,
-        badge: null,
-    },
-    {
-        id: "ecojuego",
-        label: "Eco-Juego",
-        icon: Gamepad2,
-        // badge: misiones activas → traer de BD: GET /api/admin/game/active-missions-count
-        badge: null,
-    },
-
-    {
-        id: "maps",
-        label: "Mapas",
-        icon: Map,
-        badge: null,
-    },
+    { id: "dashboard",   label: "Dashboard",    icon: LayoutDashboard, badge: null },
+    { id: "users",       label: "Usuarios",     icon: Users,           badge: null },
+    { id: "estadisticas",label: "Estadísticas", icon: BarChart3,       badge: null },
+    { id: "ecojuego",    label: "Eco-Juego",    icon: Gamepad2,        badge: null },
+    { id: "maps",        label: "Mapas",        icon: Map,             badge: null },
 ];
 
 export default function AdminSidebar({ activeSection, setActiveSection }) {
     const [collapsed, setCollapsed] = useState(false);
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
     return (
         <motion.aside
@@ -133,14 +112,12 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
                             onClick={() => setActiveSection(item.id)}
                             whileHover={{ x: collapsed ? 0 : 4 }}
                             whileTap={{ scale: 0.97 }}
-                            className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
-                            border  // siempre presente
-                                    ${isActive
+                            className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group border
+                                ${isActive
                                     ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-lime-400/30 shadow-lg"
-                                    : "hover:bg-white/10 border-transparent hover:border-lime-400/20 hover:"
+                                    : "hover:bg-white/10 border-transparent hover:border-lime-400/20"
                                 }`}
                         >
-                            {/* Indicador activo */}
                             {isActive && (
                                 <motion.div
                                     layoutId="activeIndicator"
@@ -177,32 +154,28 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
                 })}
             </nav>
 
-            {/* Bottom actions */}
-            <div className="relative px-2 pb-4 space-y-1 border-t border-white/10 pt-3">
-                {[
-                    { icon: LogOut, label: "Cerrar Sesión" },
-                ].map(({ icon: Icon, label }) => (
-                    <motion.button
-                        key={label}
-                        whileHover={{ x: collapsed ? 0 : 4 }}
-                        whileTap={{ scale: 0.97 }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-600 transition-colors group"
-                    >
-                        <Icon className="w-4 h-4 text-white/70 group-hover:text-white flex-shrink-0" />
-                        <AnimatePresence>
-                            {!collapsed && (
-                                <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="text-sm text-white/70 group-hover:text-white whitespace-nowrap overflow-hidden"
-                                >
-                                    {label}
-                                </motion.span>
-                            )}
-                        </AnimatePresence>
-                    </motion.button>
-                ))}
+            {/* Bottom — Cerrar Sesión */}
+            <div className="relative px-2 pb-4 border-t border-white/10 pt-3">
+                <motion.button
+                    onClick={handleLogout}
+                    whileHover={{ x: collapsed ? 0 : 4 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-600/80 transition-colors group"
+                >
+                    <LogOut className="w-4 h-4 text-white/70 group-hover:text-white flex-shrink-0" />
+                    <AnimatePresence>
+                        {!collapsed && (
+                            <motion.span
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="text-sm text-white/70 group-hover:text-white whitespace-nowrap overflow-hidden"
+                            >
+                                Cerrar Sesión
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
+                </motion.button>
             </div>
         </motion.aside>
     );

@@ -14,6 +14,7 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import admin from './routes/admin.js';
+import contactRoutes from './routes/contactRoutes.js';
 
 // Importar configuración de passport
 import { setupGoogleAuth } from './controllers/AutheticationGoogle.js';
@@ -103,6 +104,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/admin', admin);
+app.use('/api/contact', contactRoutes);
 
 // Ruta raíz
 app.get('/', (req, res) => {
