@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Layout/Navbar";
 import Footer from "../Layout/Footer";
@@ -8,363 +8,416 @@ import ConfirmationModal from "../ui/ConfirmationModal";
 import { useAuth } from "../../context/AuthContext";
 import { actualizarPerfil, eliminarPerfil } from "../../services/api";
 import {
-    Mail,
-    User,
-    Calendar,
-    Phone,
-    Save,
-    X,
-    Trash2,
-    Leaf,
+    Mail, User, Calendar, Phone,
+    Save, X, Trash2, Leaf, ArrowLeft,
+    Shield, Sparkles,
 } from "lucide-react";
+
 export default function EditProfile() {
     const { usuario, token, actualizarUsuario, logout } = useAuth();
     const navigate = useNavigate();
+
     const [formData, setFormData] = useState({
-        email: "",
-        nombre: "",
-        apellido: "",
-        edad: "",
-        telefono: "",
+        email: "", nombre: "", apellido: "", edad: "", telefono: "",
     });
-    const [loading, setLoading] = useState(false);
-    const [toast, setToast] = useState({ message: "", type: "" });
+    const [loading, setLoading]           = useState(false);
+    const [toast, setToast]               = useState({ message: "", type: "" });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [focusedField, setFocusedField] = useState(null);
+
     useEffect(() => {
         if (usuario) {
             setFormData({
-                email: usuario.email || "",
-                nombre: usuario.nombre || "",
+                email:    usuario.email    || "",
+                nombre:   usuario.nombre   || "",
                 apellido: usuario.apellido || "",
-                edad: usuario.edad || "",
+                edad:     usuario.edad     || "",
                 telefono: usuario.telefono || "",
             });
         }
     }, [usuario]);
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-    };
-    const showToast = (message, type = "success") => {
-        setToast({ message, type });
-    };
-    const closeToast = () => {
-        setToast({ message: "", type: "" });
-    };
+
+    const handleChange = (e) =>
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    const showToast  = (message, type = "success") => setToast({ message, type });
+    const closeToast = () => setToast({ message: "", type: "" });
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             const respuesta = await actualizarPerfil(token, formData);
             if (respuesta.success) {
-                // Actualizar contexto
                 actualizarUsuario({ ...usuario, ...formData });
                 showToast("Cambios guardados exitosamente!", "success");
-                // Esperar un momento para que el usuario vea el toast antes de redirigir
-                setTimeout(() => {
-                    navigate("/perfil");
-                }, 1500);
+                setTimeout(() => navigate("/perfil"), 1500);
             }
         } catch (error) {
-            console.error("Error actualizando perfil:", error);
             showToast("Error al guardar cambios: " + error.message, "error");
         } finally {
             setLoading(false);
         }
     };
-    const handleCancel = () => {
-        console.log("Cancelando edición");
-        window.history.back();
-    };
-    const handleDeleteClick = () => {
-        setShowDeleteModal(true);
-    };
+
+    const handleCancel      = () => window.history.back();
+    const handleDeleteClick = () => setShowDeleteModal(true);
 
     const handleConfirmDelete = async () => {
         try {
             const respuesta = await eliminarPerfil(token);
-
             if (respuesta.success) {
                 showToast("Cuenta eliminada exitosamente", "success");
-
-                // Esperar un momento para que el usuario vea el toast
-                setTimeout(() => {
-                    logout(); // Cerrar sesión
-                    navigate('/login'); // Redirigir al login
-                }, 1500);
+                setTimeout(() => { logout(); navigate('/login'); }, 1500);
             }
         } catch (error) {
-            console.error("Error eliminando cuenta:", error);
             showToast("Error al eliminar cuenta: " + error.message, "error");
         }
     };
-    // Get initials for avatar
+
     const getInitials = () => {
-        if (formData.nombre && formData.apellido) {
+        if (formData.nombre && formData.apellido)
             return `${formData.nombre.charAt(0)}${formData.apellido.charAt(0)}`.toUpperCase();
-        }
         if (formData.nombre) return formData.nombre.charAt(0).toUpperCase();
-        if (formData.email && formData.email.length > 0) return formData.email.charAt(0).toUpperCase();
+        if (formData.email)  return formData.email.charAt(0).toUpperCase();
         return "?";
     };
-    return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-            <div className="mb-20">
-                {/* Navbar */}
-                <Navbar />
-            </div>
-            <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-8 px-4 sm:py-12 relative overflow-hidden">
-                <div className="relative  z-10 max-w-4xl mx-auto">
-                    {/* Header */}
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="text-center mb-8"
-                    >
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 text-green-600 mb-4"
-                        >
-                            <Leaf className="w-4 h-4" />
-                            Perfil Eco-It
-                        </motion.div>
-                        <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 mb-2">
-                            Editar Mi Perfil
-                        </h1>
-                        <p className="text-gray-600 text-lg">
-                            Actualiza tu información personal
-                        </p>
-                    </motion.div>
-                    {/* Card */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                        className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl overflow-visible"
-                    >
-                        <div className="relative">
-                            {/* Header */}
-                            <div className=" h-32 sm:h-40 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 overflow-hidden rounded-t-3xl">
-                                {/* Animated pattern overlay */}
-                                <motion.div
-                                    className="absolute inset-0 opacity-20"
-                                    animate={{ backgroundPosition: ["0% 0%", "100% 100%"] }}
-                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                    style={{
-                                        backgroundImage: "radial-gradient(circle, white 2px, transparent 2px)",
-                                        backgroundSize: "30px 30px",
-                                    }}
-                                />
-                                {/* Avatar centrado correctamente */}
-                                <motion.div
-                                    initial={{ scale: 0, rotate: -180 }}
-                                    animate={{ scale: 1, rotate: 0 }}
-                                    transition={{ type: "spring", stiffness: 200, delay: 0.5 }}
-                                    className="absolute -bottom-14 sm:-bottom-16 inset-x-0 flex justify-center z-30"
-                                >
-                                    <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-4xl sm:text-5xl font-bold shadow-2xl border-4 border-white">
-                                        {getInitials()}
-                                    </div>
-                                </motion.div>
-                            </div>
-                        </div>
-                        {/* Form */}
-                        <div className=" z-0 sm:pt-24 pb-20 px-4 sm:px-8">
-                            <div className="max-w-2xl mx-auto space-y-6">
-                                {/* Email (readonly) */}
-                                <motion.div
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.6 }}
-                                >
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Correo Electrónico
-                                    </label>
-                                    <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                            <Mail className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform" />
-                                        </div>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            readOnly
-                                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed transition-all"
-                                        />
-                                    </div>
-                                </motion.div>
-                                {/* Name and Lastname grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* Nombre */}
-                                    <motion.div
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.7 }}
-                                    >
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Nombre
-                                        </label>
-                                        <div className="relative group">
-                                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                                <User className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform" />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                name="nombre"
-                                                value={formData.nombre}
-                                                onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all hover:border-green-300"
-                                                placeholder="Ingresa tu nombre"
-                                            />
-                                        </div>
-                                    </motion.div>
-                                    {/* Apellido */}
-                                    <motion.div
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.7 }}
-                                    >
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Apellido
-                                        </label>
-                                        <div className="relative group">
-                                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                                <User className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform" />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                name="apellido"
-                                                value={formData.apellido}
-                                                onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all hover:border-green-300"
-                                                placeholder="Ingresa tu apellido"
-                                            />
-                                        </div>
-                                    </motion.div>
-                                    {/* Edad */}
-                                    <motion.div
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.8 }}
-                                    >
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Edad
-                                        </label>
-                                        <div className="relative group">
-                                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                                <Calendar className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform" />
-                                            </div>
-                                            <input
-                                                type="number"
-                                                name="edad"
-                                                value={formData.edad}
-                                                onChange={handleChange}
-                                                min="1"
-                                                max="120"
-                                                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all hover:border-green-300"
-                                                placeholder="Ingresa tu edad"
-                                            />
-                                        </div>
-                                    </motion.div>
-                                    {/* Teléfono */}
-                                    <motion.div
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.8 }}
-                                    >
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Teléfono
-                                        </label>
-                                        <div className="relative group">
-                                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                                                <Phone className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform" />
-                                            </div>
-                                            <input
-                                                type="tel"
-                                                name="telefono"
-                                                value={formData.telefono}
-                                                onChange={handleChange}
-                                                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all hover:border-green-300"
-                                                placeholder="Ingresa tu teléfono"
-                                            />
-                                        </div>
-                                    </motion.div>
-                                </div>
-                                {/* Buttons */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.9 }}
-                                    className="space-y-3 pt-4"
-                                >
-                                    {/* Save and Cancel buttons */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <motion.button
-                                            onClick={handleSubmit}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 hover:from-green-600 hover:via-emerald-600 hover:to-green-700 text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                                        >
-                                            <Save className="w-5 h-5" />
-                                            Guardar Cambios
-                                        </motion.button>
-                                        <motion.button
-                                            onClick={handleCancel}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                                        >
-                                            <X className="w-5 h-5" />
-                                            Cancelar
-                                        </motion.button>
-                                    </div>
-                                    {/* Delete button */}
-                                    <motion.button
-                                        onClick={handleDeleteClick}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                        Eliminar la cuenta
-                                    </motion.button>
-                                </motion.div>
-                            </div>
-                        </div>
-                    </motion.div>
 
-                    {/* Footer note */}
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.2 }}
-                        className="text-center text-gray-600 mt-6 flex items-center justify-center gap-2"
-                    >
-                        <Leaf className="w-4 h-4 text-green-600" />
-                        Cuidando el planeta juntos
-                    </motion.p>
+    const fields = [
+        { name: "nombre",   label: "Nombre",   icon: User,     type: "text",   placeholder: "Tu nombre"   },
+        { name: "apellido", label: "Apellido",  icon: User,     type: "text",   placeholder: "Tu apellido" },
+        { name: "edad",     label: "Edad",      icon: Calendar, type: "number", placeholder: "Tu edad", min: 1, max: 120 },
+        { name: "telefono", label: "Teléfono",  icon: Phone,    type: "tel",    placeholder: "Tu teléfono" },
+        { name: "email",    label: "Correo",    icon: Mail,     type: "email",  placeholder: "tu@email.com", readOnly: true },
+    ];
+
+    return (
+        <>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&display=swap');
+                .edit-root { font-family: 'Sora', sans-serif; }
+                .card-glass {
+                    background: rgba(255,255,255,0.75);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid rgba(74,222,128,0.35);
+                    box-shadow: 0 4px 24px rgba(16,185,129,0.08);
+                }
+                .field-input {
+                    background: rgba(240,253,244,0.8) !important;
+                    border: 1px solid rgba(74,222,128,0.35) !important;
+                    color: #14532d !important;
+                    transition: all 0.2s ease;
+                    outline: none;
+                }
+                .field-input::placeholder { color: rgba(20,83,45,0.35); }
+                .field-input:focus {
+                    border-color: rgba(22,163,74,0.7) !important;
+                    box-shadow: 0 0 0 3px rgba(74,222,128,0.18), 0 0 20px rgba(74,222,128,0.1) !important;
+                    background: rgba(220,252,231,0.9) !important;
+                }
+                .field-input:read-only {
+                    opacity: 0.45;
+                    cursor: not-allowed;
+                }
+                .field-input::-webkit-inner-spin-button { opacity: 0.3; }
+            `}</style>
+
+            <div className="edit-root min-h-screen flex flex-col"
+                 style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 40%, #ecfdf5 70%, #f0fdf4 100%)" }}>
+
+                <Navbar />
+
+                {/* Orbes de fondo */}
+                <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+                    <motion.div
+                        animate={{ scale: [1, 1.12, 1], opacity: [0.1, 0.18, 0.1] }}
+                        transition={{ duration: 9, repeat: Infinity }}
+                        className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full"
+                        style={{ background: "radial-gradient(circle, rgba(74,222,128,0.18) 0%, transparent 70%)" }}
+                    />
+                    <motion.div
+                        animate={{ scale: [1, 1.08, 1], opacity: [0.07, 0.13, 0.07] }}
+                        transition={{ duration: 13, repeat: Infinity, delay: 4 }}
+                        className="absolute -bottom-32 -left-32 w-[450px] h-[450px] rounded-full"
+                        style={{ background: "radial-gradient(circle, rgba(52,211,153,0.15) 0%, transparent 70%)" }}
+                    />
+                    <div className="absolute inset-0 opacity-[0.025]"
+                         style={{
+                             backgroundImage: "linear-gradient(rgba(74,222,128,1) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,1) 1px, transparent 1px)",
+                             backgroundSize: "80px 80px"
+                         }} />
                 </div>
+
+                <main className="flex-1 mt-16 relative z-10 py-12 px-4">
+                    <div className="max-w-4xl mx-auto">
+
+                        {/* Header */}
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="mb-10"
+                        >
+                            <motion.button
+                                onClick={handleCancel}
+                                whileHover={{ x: -4 }}
+                                className="flex items-center gap-2 text-sm mb-5 transition-colors"
+                                style={{ color: "rgba(21,128,61,0.7)" }}
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Volver al perfil
+                            </motion.button>
+
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                                     style={{ background: "rgba(74,222,128,0.18)", border: "1px solid rgba(74,222,128,0.4)" }}>
+                                    <Shield className="w-4 h-4" style={{ color: "#16a34a" }} />
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-widest"
+                                      style={{ color: "rgba(21,128,61,0.6)" }}>
+                                    Editar cuenta
+                                </span>
+                            </div>
+                            <h1 className="text-4xl md:text-5xl font-bold"
+                                style={{ color: "#14532d", letterSpacing: "-1.5px" }}>
+                                Tu <span style={{ color: "#16a34a" }}>Información</span>
+                            </h1>
+                        </motion.div>
+
+                        {/* Layout split */}
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+                            {/* ── Panel izquierdo: Avatar preview ── */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -24 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.7, delay: 0.2 }}
+                                className="lg:col-span-2"
+                            >
+                                <div className="card-glass rounded-3xl p-8 text-center sticky top-24">
+                                    {/* Avatar live preview */}
+                                    <div className="relative inline-block mb-6">
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
+                                            className="absolute rounded-full"
+                                            style={{
+                                                inset: "-3px",
+                                                background: "conic-gradient(from 0deg, #4ade80, #059669, #065f46, transparent, #4ade80)",
+                                            }}
+                                        />
+                                        <motion.div
+                                            key={getInitials()}
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="relative w-28 h-28 rounded-full flex items-center justify-center text-4xl font-black"
+                                            style={{
+                                                background: "linear-gradient(145deg, #bbf7d0, #86efac, #4ade80)",
+                                                color: "#14532d",
+                                                boxShadow: "0 0 0 3px rgba(74,222,128,0.4), 0 0 30px rgba(74,222,128,0.18)",
+                                                zIndex: 1,
+                                            }}
+                                        >
+                                            {getInitials()}
+                                        </motion.div>
+                                    </div>
+
+                                    {/* Nombre preview */}
+                                    <AnimatePresence mode="wait">
+                                        <motion.h3
+                                            key={formData.nombre + formData.apellido}
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -6 }}
+                                            className="text-xl font-bold mb-1"
+                                            style={{ color: "#14532d" }}
+                                        >
+                                            {formData.nombre || "Tu"} {formData.apellido || "Nombre"}
+                                        </motion.h3>
+                                    </AnimatePresence>
+
+                                    <p className="text-sm mb-8" style={{ color: "rgba(21,128,61,0.6)" }}>
+                                        {formData.email || "tu@email.com"}
+                                    </p>
+
+                                    {/* Info extra */}
+                                    <div className="space-y-2 text-left">
+                                        {[
+                                            { label: "Edad",     value: formData.edad     || "—" },
+                                            { label: "Teléfono", value: formData.telefono || "—" },
+                                        ].map(item => (
+                                            <div key={item.label}
+                                                 className="flex justify-between items-center px-3 py-2 rounded-xl"
+                                                 style={{ background: "rgba(220,252,231,0.7)", border: "1px solid rgba(74,222,128,0.25)" }}>
+                                                <span className="text-xs" style={{ color: "rgba(21,128,61,0.55)" }}>
+                                                    {item.label}
+                                                </span>
+                                                <span className="text-xs font-semibold" style={{ color: "#15803d" }}>
+                                                    {item.value}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-6 flex items-center justify-center gap-2 text-xs"
+                                         style={{ color: "rgba(21,128,61,0.4)" }}>
+                                        <Sparkles className="w-3 h-3" />
+                                        Vista previa en tiempo real
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* ── Panel derecho: Formulario ── */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 24 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.7, delay: 0.3 }}
+                                className="lg:col-span-3"
+                            >
+                                <div className="card-glass rounded-3xl p-6 sm:p-8">
+
+                                    <div className="flex items-center gap-2 mb-7">
+                                        <Leaf className="w-4 h-4" style={{ color: "#4ade80" }} />
+                                        <h3 className="text-xs font-bold uppercase tracking-widest"
+                                            style={{ color: "rgba(21,128,61,0.65)" }}>
+                                            Datos personales
+                                        </h3>
+                                    </div>
+
+                                    <form onSubmit={handleSubmit} className="space-y-4">
+                                        {fields.map((field, i) => (
+                                            <motion.div
+                                                key={field.name}
+                                                initial={{ opacity: 0, y: 12 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.4 + i * 0.08 }}
+                                            >
+                                                <label className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                                                       style={{ color: focusedField === field.name ? "#16a34a" : "rgba(21,128,61,0.55)",
+                                                                transition: "color 0.2s" }}>
+                                                    {field.label}
+                                                    {field.readOnly && (
+                                                        <span className="ml-2 normal-case tracking-normal font-normal opacity-50">
+                                                            (no editable)
+                                                        </span>
+                                                    )}
+                                                </label>
+                                                <div className="relative">
+                                                    <field.icon
+                                                        className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors"
+                                                        style={{ color: focusedField === field.name ? "#16a34a" : "rgba(22,163,74,0.5)" }}
+                                                    />
+                                                    <input
+                                                        type={field.type}
+                                                        name={field.name}
+                                                        value={formData[field.name]}
+                                                        onChange={handleChange}
+                                                        onFocus={() => setFocusedField(field.name)}
+                                                        onBlur={() => setFocusedField(null)}
+                                                        placeholder={field.placeholder}
+                                                        readOnly={field.readOnly}
+                                                        min={field.min}
+                                                        max={field.max}
+                                                        disabled={loading}
+                                                        className="field-input w-full pl-11 pr-4 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-50"
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        ))}
+
+                                        {/* Botones */}
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.9 }}
+                                            className="pt-4 space-y-3"
+                                        >
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <motion.button
+                                                    type="submit"
+                                                    disabled={loading}
+                                                    whileHover={{ scale: 1.02, boxShadow: "0 0 24px rgba(74,222,128,0.3)" }}
+                                                    whileTap={{ scale: 0.97 }}
+                                                    className="py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                                    style={{
+                                                        background: "linear-gradient(135deg, #16a34a, #059669)",
+                                                        color: "#f0fdf4",
+                                                    }}
+                                                >
+                                                    {loading ? (
+                                                        <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                                    ) : (
+                                                        <Save className="w-4 h-4" />
+                                                    )}
+                                                    {loading ? "Guardando..." : "Guardar"}
+                                                </motion.button>
+
+                                                <motion.button
+                                                    type="button"
+                                                    onClick={handleCancel}
+                                                    whileHover={{ scale: 1.02 }}
+                                                    whileTap={{ scale: 0.97 }}
+                                                    className="py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                                                    style={{
+                                                        background: "rgba(220,252,231,0.6)",
+                                                        border: "1px solid rgba(74,222,128,0.3)",
+                                                        color: "rgba(21,128,61,0.8)",
+                                                    }}
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                    Cancelar
+                                                </motion.button>
+                                            </div>
+
+                                            {/* Eliminar cuenta */}
+                                            <motion.button
+                                                type="button"
+                                                onClick={handleDeleteClick}
+                                                whileHover={{ scale: 1.01, backgroundColor: "rgba(239,68,68,0.18)" ,color:"#ef4444"}}
+                                                whileTap={{ scale: 0.98 }}
+                                                className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                                                style={{
+                                                    background: "rgba(239,68,68,0.08)",
+                                                    border: "1px solid rgba(239,68,68,0.25)",
+                                                    color:  "#f87171" ,
+                                                }}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                Eliminar mi cuenta
+                                            </motion.button>
+                                        </motion.div>
+                                    </form>
+                                </div>
+
+                                {/* Footer note */}
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 1.1 }}
+                                    className="text-center text-xs mt-5 flex items-center justify-center gap-2"
+                                    style={{ color: "rgba(21,128,61,0.45)" }}
+                                >
+                                    <Leaf className="w-3.5 h-3.5" />
+                                    Cuidando el planeta juntos
+                                </motion.p>
+                            </motion.div>
+                        </div>
+                    </div>
+                </main>
+
+                <Footer />
+
+                <Toast message={toast.message} type={toast.type} onClose={closeToast} />
+                <ConfirmationModal
+                    isOpen={showDeleteModal}
+                    onClose={() => setShowDeleteModal(false)}
+                    onConfirm={handleConfirmDelete}
+                    title="¿Eliminar cuenta?"
+                    message="¿Estás seguro de que deseas eliminar tu cuenta permanentemente? Esta acción no se puede deshacer y perderás todo tu progreso."
+                    confirmText="Sí, eliminar"
+                    cancelText="Mmm, mejor no"
+                />
             </div>
-            <Footer />
-            <Toast
-                message={toast.message}
-                type={toast.type}
-                onClose={closeToast}
-            />
-            <ConfirmationModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleConfirmDelete}
-                title="¿Eliminar cuenta?"
-                message="¿Estás seguro de que deseas eliminar tu cuenta permanentemente? Esta acción no se puede deshacer y perderás todo tu progreso."
-                confirmText="Sí, eliminar"
-                cancelText="Mmm, mejor no"
-            />
-        </div>
+        </>
     );
 }

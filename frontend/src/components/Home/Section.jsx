@@ -1,8 +1,11 @@
 import { Leaf, MessageSquare } from "lucide-react";
 import AnimatedSection from "../animations/Animatedsection";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Section() {
+    const { estaAutenticado } = useAuth();
+
     return (
         <section className="py-24 bg-gradient-to-br from-green-600 to-emerald-700 text-white relative overflow-hidden">
             {/* Fondo decorativo */}
@@ -30,24 +33,24 @@ export default function Section() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link to="/register">
-                        <button className="btn-hover px-8 py-4 rounded-full bg-white text-green-600 font-semibold text-lg shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 transition-transform hover:scale-105">
-                            <Leaf className="w-5 h-5" />
-                            Crear Cuenta Gratis
-                        </button>
+                        {!estaAutenticado && (
+                            <Link to="/register">
+                                <button className="btn-hover px-8 py-4 rounded-full bg-white text-green-600 font-semibold text-lg shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 transition-transform hover:scale-105">
+                                    <Leaf className="w-5 h-5" />
+                                    Crear Cuenta Gratis
+                                </button>
+                            </Link>
+                        )}
+
+                        <Link to="/contact">
+                            <button className="btn-hover px-8 py-4 rounded-full border-2 border-white text-white font-semibold text-lg hover:bg-white/10 flex items-center justify-center gap-3 transition-transform hover:scale-105">
+                                <MessageSquare className="w-5 h-5" />
+                                Contáctanos
+                            </button>
                         </Link>
-
-                        <Link to="/contact">   
-                        <button className="btn-hover px-8 py-4 rounded-full border-2 border-white text-white font-semibold text-lg hover:bg-white/10 flex items-center justify-center gap-3 transition-transform hover:scale-105">
-                            <MessageSquare className="w-5 h-5" />
-                            Contáctanos
-                        </button>
-                        </Link> 
-
                     </div>
                 </AnimatedSection>
             </div>
         </section>
     );
 }
-
