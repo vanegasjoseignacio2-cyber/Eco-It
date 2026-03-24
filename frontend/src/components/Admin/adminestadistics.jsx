@@ -106,7 +106,15 @@ const fadeUp = {
 
 export default function AdminEstadisticas() {
     const { token } = useAuth();
-    const [stats, setStats] = useState({ totalUsuarios: "0", usuariosOnline: "0" });
+    const [stats, setStats] = useState({ 
+        totalUsuarios: "0", 
+        usuariosOnline: "0",
+        consultasHoy: 0,
+        mejorMes: "—",
+        picoDiario: 0,
+        nuevosHoy: 0,
+        chartData: null
+    });
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -118,7 +126,12 @@ export default function AdminEstadisticas() {
                 if (data.success) {
                     setStats({
                         totalUsuarios: data.totalUsuarios.toString(),
-                        usuariosOnline: data.usuariosOnline.toString()
+                        usuariosOnline: data.usuariosOnline.toString(),
+                        consultasHoy: data.consultasHoy,
+                        mejorMes: data.mejorMes,
+                        picoDiario: data.picoDiario,
+                        nuevosHoy: data.nuevosHoy,
+                        chartData: data.chartData
                     });
                 }
             } catch (error) {
@@ -131,9 +144,69 @@ export default function AdminEstadisticas() {
     const [activeChart, setActiveChart] = useState("users");
     const [period, setPeriod] = useState("year");
 
-    const tab    = CHART_TABS.find((c) => c.id === activeChart);
-    const bars   = DATA[activeChart] || [];
-    const maxVal = Math.max(...bars.map((d) => d.value), 1);
+    const tab = CHART_TABS.find((c) => c.id === activeChart);
+    
+    // Inyectar dinámica o estática si aun no carga
+    const baseChart = { 
+        users: MONTHS.map((m) => ({ label: m, value: 0 })),
+        queries: MONTHS.map((m) => ({ label: m, value: 0 })),
+        recycling: MONTHS.map((m) => ({ label: m, value: 0 }))
+    };
+    
+    // Si viene la data del servidor usamos esa, sino la base en cero
+    const chartSource = stats.chartData ? stats.chartData : baseChart;
+    const bars = chartSource[activeChart] || baseChart.users;
+    
+    // Máximo valor real para saber si el gráfico está en cero absoluto
+    const actualMax = Math.max(...bars.map(d => d.value));
+    const allZero = actualMax === 0;
+
+    // Se mantiene un maxVal fallback de 1 para evitar divisiones matemáticas por cero en el renderizado
+    const maxVal = Math.max(actualMax, 1);
+
+    // KPI dinámicos
+    const dynamicCards = [
+        {
+            id: "users",
+            label: "Usuarios Totales",
+            value: stats.totalUsuarios,
+            change: "0%",
+            up: true,
+            icon: Users,
+            accent: "#22c55e",
+            pill: "bg-green-100 text-green-700",
+        },
+        {
+            id: "retention",
+            label: "Tasa de Retención",
+            value: "100%",
+            change: "0%",
+            up: true,
+            icon: Target,
+            accent: "#84cc16",
+            pill: "bg-lime-100 text-lime-700",
+        },
+        {
+            id: "queries",
+            label: "Consultas IA (Hoy)",
+            value: stats.consultasHoy.toString(),
+            change: "0%",
+            up: true,
+            icon: Sparkles,
+            accent: "#10b981",
+            pill: "bg-emerald-100 text-emerald-700",
+        },
+        {
+            id: "avg_points",
+            label: "Puntos Promedio",
+            value: "0",
+            change: "0%",
+            up: true,
+            icon: Award,
+            accent: "#14b8a6",
+            pill: "bg-teal-100 text-teal-700",
+        },
+    ];
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50/80 via-white to-emerald-50/50">
@@ -191,9 +264,9 @@ export default function AdminEstadisticas() {
                     animate="show"
                     className="grid grid-cols-2 xl:grid-cols-4 gap-4"
                 >
-                    {KPI_LIST.map((kpi) => {
+                    {dynamicCards.map((kpi) => {
                         const Icon = kpi.icon;
-                        const displayValue = kpi.id === "users" ? stats.totalUsuarios : kpi.value;
+                        const displayValue = kpi.value;
                         return (
                             <motion.div
                                 key={kpi.id}
@@ -326,11 +399,11 @@ export default function AdminEstadisticas() {
                                     })}
                                 </div>
 
-                                {maxVal <= 1 && (
+                                {allZero && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center pb-8 gap-2">
                                         <Activity className="w-8 h-8 text-green-100" />
                                         <p className="text-sm text-green-300 font-medium">Sin datos aún</p>
-                                        <p className="text-xs text-green-200">Conecta la BD para ver métricas</p>
+                                        <p className="text-xs text-green-200">Esperando actividad para generar la gráfica...</p>
                                     </div>
                                 )}
                             </motion.div>
@@ -360,11 +433,10 @@ export default function AdminEstadisticas() {
                             className="bg-white rounded-2xl border border-green-100 shadow-sm p-5"
                         >
                             <p className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">Métricas clave</p>
-                            {/* TODO: GET /api/admin/stats/key-metrics */}
                             {[
-                                { label: "Mejor mes",   value: "—", icon: Award,    color: "text-lime-500" },
-                                { label: "Pico diario", value: "0", icon: Zap,      color: "text-green-500" },
-                                { label: "Nuevos hoy",  value: "0", icon: Users,    color: "text-emerald-500" },
+                                { label: "Mejor mes",   value: stats.mejorMes, icon: Award,    color: "text-lime-500" },
+                                { label: "Pico diario", value: stats.picoDiario, icon: Zap,      color: "text-green-500" },
+                                { label: "Nuevos hoy",  value: stats.nuevosHoy,  icon: Users,    color: "text-emerald-500" },
                             ].map(({ label, value, icon: Icon, color }) => (
                                 <div key={label} className="flex items-center justify-between py-2.5 border-b border-green-50 last:border-0">
                                     <div className="flex items-center gap-2">

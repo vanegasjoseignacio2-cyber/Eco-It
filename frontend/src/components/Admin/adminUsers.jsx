@@ -61,6 +61,83 @@ export default function AdminUsers() {
         fetchUsers();
     }, [token]);
 
+    const handleDeleteUser = async (userId) => {
+        if (!window.confirm("¿Estás seguro de que deseas eliminar este usuario de manera permanente?")) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 
+                    Authorization: `Bearer ${token}` 
+                }
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setUsers((prevUsers) => prevUsers.filter(user => user._id !== userId));
+                alert("Usuario eliminado correctamente");
+            } else {
+                alert(data.mensaje || "Error al eliminar usuario");
+            }
+        } catch (error) {
+            console.error('Error al eliminar:', error);
+            alert("Ocurrió un error al intentar eliminar al usuario.");
+        }
+    };
+
+    const handleBanUser = async (userId) => {
+        const diasDelBaneo = window.prompt("¿Por cuántos días deseas banear a este usuario?", "7");
+        if (!diasDelBaneo) return;
+
+        try {
+            const res = await fetch(`http://localhost:3000/api/admin/users/${userId}/ban`, {
+                method: 'PATCH',
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ dias: parseInt(diasDelBaneo) })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setUsers((prev) => prev.map(u => u._id === userId ? { ...u, status: 'banned', banHasta: data.usuario.banHasta } : u));
+                alert(`Usuario baneado por ${diasDelBaneo} días.`);
+            } else {
+                alert(data.mensaje || "Error al banear usuario");
+            }
+        } catch (error) {
+            console.error('Error al banear:', error);
+            alert("Ocurrió un error al intentar banear al usuario.");
+        }
+    };
+
+    const handleUnbanUser = async (userId) => {
+        if (!window.confirm("¿Seguro que deseas desbanear a este usuario?")) return;
+
+        try {
+            const res = await fetch(`http://localhost:3000/api/admin/users/${userId}/unban`, {
+                method: 'PATCH',
+                headers: { 
+                    Authorization: `Bearer ${token}` 
+                }
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setUsers((prev) => prev.map(u => u._id === userId ? { ...u, status: 'active', banHasta: null } : u));
+                alert("Usuario desbaneado correctamente.");
+            } else {
+                alert(data.mensaje || "Error al desbanear usuario");
+            }
+        } catch (error) {
+            console.error('Error al desbanear:', error);
+            alert("Ocurrió un error al intentar desbanear al usuario.");
+        }
+    };
+
     // Filtrado local (eliminar cuando haya BD real)
     const filtered = users.filter((u) => {
         const fullName = `${u.nombre || ''} ${u.apellido || ''}`.toLowerCase();
@@ -206,6 +283,9 @@ export default function AdminUsers() {
                                         isOpen={openMenu === user._id}
                                         onToggleMenu={() => setOpenMenu(openMenu === user._id ? null : user._id)}
                                         onCloseMenu={() => setOpenMenu(null)}
+                                        onBan={() => handleBanUser(user._id)}
+                                        onUnban={() => handleUnbanUser(user._id)}
+                                        onDelete={() => handleDeleteUser(user._id)}
                                     />
                                 ))
                             )}
@@ -247,7 +327,7 @@ export default function AdminUsers() {
 }
 
 /* ─── Sub-componente fila de usuario ──────────────────────────────────────── */
-function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu }) {
+function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onBan, onUnban }) {
     const userStatus = user.status || 'active';
     const status = STATUS_STYLES[userStatus];
     const role = ROLE_STYLES[user.rol] || ROLE_STYLES.user;
@@ -337,11 +417,34 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu }) {
                                 <MenuBtn icon={Eye} label="Ver perfil" color="text-green-700" onClick={onCloseMenu} />
                                 {/* TODO: onClick → PATCH /api/admin/users/:id/role para cambiar rol */}
                                 <MenuBtn icon={user.rol === "admin" ? ShieldOff : ShieldCheck} label={user.rol === "admin" ? "Quitar admin" : "Hacer admin"} color="text-lime-700" onClick={onCloseMenu} />
-                                {/* TODO: onClick → PATCH /api/admin/users/:id/status { status: "banned" } */}
-                                <MenuBtn icon={userStatus === "banned" ? UserCheck : UserX} label={userStatus === "banned" ? "Desbanear" : "Banear usuario"} color="text-amber-600" onClick={onCloseMenu} />
+                                
+                                {userStatus === "banned" ? (
+                                    <MenuBtn 
+                                        icon={UserCheck} 
+                                        label="Desbanear" 
+                                        color="text-amber-600" 
+                                        onClick={() => { onCloseMenu(); onUnban(); }} 
+                                    />
+                                ) : (
+                                    <MenuBtn 
+                                        icon={UserX} 
+                                        label="Banear usuario" 
+                                        color="text-amber-600" 
+                                        onClick={() => { onCloseMenu(); onBan(); }} 
+                                    />
+                                )}
+                                
                                 <div className="my-1 border-t border-green-50" />
                             {/* TODO: onClick → DELETE /api/admin/users/:id con confirmación */}
-                            <MenuBtn icon={Trash2} label="Eliminar" color="text-red-500" onClick={onCloseMenu} />
+                            <MenuBtn 
+                                icon={Trash2} 
+                                label="Eliminar" 
+                                color="text-red-500" 
+                                onClick={() => {
+                                    onCloseMenu();
+                                    onDelete();
+                                }} 
+                            />
                         </motion.div>
                     )}
                 </AnimatePresence>
