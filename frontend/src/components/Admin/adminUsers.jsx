@@ -328,6 +328,7 @@ export default function AdminUsers() {
                                 <option value="all">Todos los roles</option>
                                 <option value="user">Usuario</option>
                                 <option value="admin">Admin</option>
+                                <option value="superadmin">Super admin</option>
                             </select>
                         </div>
                         <select
@@ -434,7 +435,7 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
     const colorIdx       = nombreCompleto.charCodeAt(0) % AVATAR_GRADIENTS.length;
 
     const isSelf = currentUserId === user._id;
-    const canDelete = !isSelf && !(currentUserRole === "admin" && (user.rol === "superadmin" || user.rol === "admin"));
+    const canDelete = !isSelf && user.rol !== "superadmin" && !(currentUserRole === "admin" && user.rol === "admin");
     const canBan = !isSelf && user.rol !== "superadmin" && user.rol !== "admin";
 
     /* Calcular posición del menú usando coordenadas absolutas del botón */
