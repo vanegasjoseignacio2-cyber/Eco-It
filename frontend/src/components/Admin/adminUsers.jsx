@@ -433,6 +433,10 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
     const initials       = nombreCompleto.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";
     const colorIdx       = nombreCompleto.charCodeAt(0) % AVATAR_GRADIENTS.length;
 
+    const isSelf = currentUserId === user._id;
+    const canDelete = !isSelf && !(currentUserRole === "admin" && (user.rol === "superadmin" || user.rol === "admin"));
+    const canBan = !isSelf && user.rol !== "superadmin" && user.rol !== "admin";
+
     /* Calcular posición del menú usando coordenadas absolutas del botón */
     useEffect(() => {
         if (isOpen && btnRef.current) {
@@ -552,28 +556,29 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
                             />
                         )}
 
-                        {currentUserId !== user._id && !(currentUserRole === 'admin' && user.rol === 'superadmin') && (
+                        {canBan && (
+                            userStatus === "banned" ? (
+                                <MenuBtn
+                                    icon={UserCheck}
+                                    label="Desbanear usuario"
+                                    color="text-amber-600"
+                                    hoverBg="hover:bg-amber-50"
+                                    onClick={() => { onCloseMenu(); onUnban(); }}
+                                />
+                            ) : (
+                                <MenuBtn
+                                    icon={UserX}
+                                    label="Banear usuario"
+                                    color="text-amber-600"
+                                    hoverBg="hover:bg-amber-50"
+                                    onClick={() => { onCloseMenu(); onBan(); }}
+                                />
+                            )
+                        )}
+
+                        {canDelete && (
                             <>
-                                {userStatus === "banned" ? (
-                                    <MenuBtn
-                                        icon={UserCheck}
-                                        label="Desbanear usuario"
-                                        color="text-amber-600"
-                                        hoverBg="hover:bg-amber-50"
-                                        onClick={() => { onCloseMenu(); onUnban(); }}
-                                    />
-                                ) : (
-                                    <MenuBtn
-                                        icon={UserX}
-                                        label="Banear usuario"
-                                        color="text-amber-600"
-                                        hoverBg="hover:bg-amber-50"
-                                        onClick={() => { onCloseMenu(); onBan(); }}
-                                    />
-                                )}
-
                                 <div className="mx-3 my-1 border-t border-green-50" />
-
                                 <MenuBtn
                                     icon={Trash2}
                                     label="Eliminar usuario"
