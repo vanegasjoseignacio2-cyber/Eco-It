@@ -447,42 +447,6 @@ export default function AdminEstadisticas() {
                                 </div>
                             ))}
                         </motion.div>
-
-                        {/* Distribución */}
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.32 }}
-                            className="flex-1 bg-white rounded-2xl border border-green-100 shadow-sm p-5"
-                        >
-                            <p className="text-xs font-bold text-green-400 uppercase tracking-wider mb-4">Distribución</p>
-                            {/* TODO: GET /api/admin/stats/activity-breakdown */}
-                            <div className="space-y-4">
-                                {BREAKDOWN.map((row, i) => (
-                                    <div key={i}>
-                                        <div className="flex justify-between items-center mb-1.5">
-                                            <span className="text-xs text-green-700 font-medium truncate pr-2">{row.label}</span>
-                                            <span className="text-xs font-bold text-green-400 flex-shrink-0">{row.pct}%</span>
-                                        </div>
-                                        <div className="h-2 rounded-full bg-green-50 overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${row.pct || 0}%` }}
-                                                transition={{ duration: 0.9, delay: i * 0.1, ease: "easeOut" }}
-                                                className="h-full rounded-full"
-                                                style={{
-                                                    background: `linear-gradient(to right, ${row.color}77, ${row.color})`,
-                                                    minWidth: row.pct > 0 ? "4px" : "0",
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <p className="text-[10px] text-green-200 mt-5 text-center">
-                                Datos disponibles al conectar la BD
-                            </p>
-                        </motion.div>
                     </div>
                 </div>
 
