@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
     setTimeout(() => {
       if (redirectOverride) {
         navigate(redirectOverride, { replace: true });
-      } else if (usuarioNuevo.rol === "admin") {
+      } else if (usuarioNuevo.rol === "admin" || usuarioNuevo.rol === "superadmin") {
         navigate("/admin", { replace: true });
       } else {
         navigate("/", { replace: true });

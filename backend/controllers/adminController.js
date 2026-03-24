@@ -1,6 +1,43 @@
 import User from "../models/user.js";
 import { usuariosConectados } from "../index.js";
 
+export const cambiarRolUsuario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rol } = req.body;
+
+        if (req.usuario.id === id) {
+            return res.status(400).json({ success: false, mensaje: "No puedes cambiar tu propio rol" });
+        }
+
+        if (rol === "superadmin") {
+            return res.status(400).json({ success: false, mensaje: "No tienes permisos para crear otro superadmin" });
+        }
+
+        if (!['user', 'admin'].includes(rol)) {
+            return res.status(400).json({ success: false, mensaje: "Rol inválido" });
+        }
+
+        const usuario = await User.findById(id);
+        if (!usuario) {
+            return res.status(404).json({ success: false, mensaje: "Usuario no encontrado" });
+        }
+        
+        // Evitar modificar a otro superadmin
+        if (usuario.rol === "superadmin") {
+            return res.status(403).json({ success: false, mensaje: "No puedes modificar a otro superadmin" });
+        }
+
+        usuario.rol = rol;
+        await usuario.save();
+
+        res.status(200).json({ success: true, mensaje: `El rol del usuario ha sido cambiado a ${rol}`, usuario });
+    } catch (error) {
+        console.error("Error al cambiar rol:", error);
+        res.status(500).json({ success: false, mensaje: "Error en el servidor al cambiar rol" });
+    }
+};
+
 export const banearUsuarioAdmin = async (req, res) => {
     try {
         const { id } = req.params;

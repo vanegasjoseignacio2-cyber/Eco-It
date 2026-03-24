@@ -31,7 +31,7 @@ const ROLE_STYLES = {
 };
 
 export default function AdminUsers() {
-    const { token } = useAuth();
+    const { token, usuario: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -135,6 +135,33 @@ export default function AdminUsers() {
         } catch (error) {
             console.error('Error al desbanear:', error);
             alert("Ocurrió un error al intentar desbanear al usuario.");
+        }
+    };
+
+    const handleChangeRole = async (userId, currentRole) => {
+        const newRole = currentRole === "admin" ? "user" : "admin";
+        if (!window.confirm(`¿Seguro que deseas cambiar el rol a ${newRole}?`)) return;
+
+        try {
+            const res = await fetch(`http://localhost:3000/api/admin/users/${userId}/role`, {
+                method: 'PATCH',
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ rol: newRole })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setUsers((prev) => prev.map(u => u._id === userId ? { ...u, rol: newRole } : u));
+                alert(`Rol actualizado a ${newRole} exitosamente.`);
+            } else {
+                alert(data.mensaje || "Error al cambiar de rol");
+            }
+        } catch (error) {
+            console.error('Error al cambiar rol:', error);
+            alert("Ocurrió un error al intentar cambiar el rol del usuario.");
         }
     };
 
@@ -286,6 +313,8 @@ export default function AdminUsers() {
                                         onBan={() => handleBanUser(user._id)}
                                         onUnban={() => handleUnbanUser(user._id)}
                                         onDelete={() => handleDeleteUser(user._id)}
+                                        onChangeRole={() => handleChangeRole(user._id, user.rol)}
+                                        currentUserRole={currentUser?.rol}
                                     />
                                 ))
                             )}
@@ -327,7 +356,7 @@ export default function AdminUsers() {
 }
 
 /* ─── Sub-componente fila de usuario ──────────────────────────────────────── */
-function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onBan, onUnban }) {
+function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onBan, onUnban, onChangeRole, currentUserRole }) {
     const userStatus = user.status || 'active';
     const status = STATUS_STYLES[userStatus];
     const role = ROLE_STYLES[user.rol] || ROLE_STYLES.user;
@@ -415,8 +444,15 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
                         >
                             {/* TODO: onClick → GET /api/admin/users/:id para ver detalle */}
                                 <MenuBtn icon={Eye} label="Ver perfil" color="text-green-700" onClick={onCloseMenu} />
-                                {/* TODO: onClick → PATCH /api/admin/users/:id/role para cambiar rol */}
-                                <MenuBtn icon={user.rol === "admin" ? ShieldOff : ShieldCheck} label={user.rol === "admin" ? "Quitar admin" : "Hacer admin"} color="text-lime-700" onClick={onCloseMenu} />
+                                
+                                {currentUserRole === 'superadmin' && user.rol !== 'superadmin' && (
+                                    <MenuBtn 
+                                        icon={user.rol === "admin" ? ShieldOff : ShieldCheck} 
+                                        label={user.rol === "admin" ? "Quitar admin" : "Hacer admin"} 
+                                        color="text-lime-700" 
+                                        onClick={() => { onCloseMenu(); onChangeRole(); }} 
+                                    />
+                                )}
                                 
                                 {userStatus === "banned" ? (
                                     <MenuBtn 

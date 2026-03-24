@@ -1,6 +1,6 @@
 // src/context/PrivateRoute.jsx
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "./authContext";
+import { useAuth } from "./AuthContext";
 
 /**
  * Protege una ruta verificando autenticación y rol.
@@ -29,7 +29,11 @@ export default function PrivateRoute({ children, rolRequerido }) {
     }
 
     // Rol incorrecto → redirige al inicio
-    if (rolRequerido && usuario.rol !== rolRequerido) {
+    if (rolRequerido === "admin") {
+        if (usuario.rol !== "admin" && usuario.rol !== "superadmin") {
+            return <Navigate to="/" replace />;
+        }
+    } else if (rolRequerido && usuario.rol !== rolRequerido) {
         return <Navigate to="/" replace />;
     }
 
