@@ -552,7 +552,7 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
                             />
                         )}
 
-                        {currentUserId !== user._id && (
+                        {currentUserId !== user._id && !(currentUserRole === 'admin' && user.rol === 'superadmin') && (
                             <>
                                 {userStatus === "banned" ? (
                                     <MenuBtn
