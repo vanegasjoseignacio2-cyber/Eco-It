@@ -1,5 +1,5 @@
 import { useSocket } from "../../context/SocketContext.jsx";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
