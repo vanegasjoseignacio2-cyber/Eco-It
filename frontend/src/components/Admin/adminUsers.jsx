@@ -81,7 +81,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmLabel
 
 /* ─── Componente principal ────────────────────────────────────────────────── */
 export default function AdminUsers() {
-    const { token } = useAuth();
+    const { token, usuario: currentUser } = useAuth();
     const [users, setUsers]               = useState([]);
     const [loading, setLoading]           = useState(true);
     const [search, setSearch]             = useState("");
@@ -208,6 +208,7 @@ export default function AdminUsers() {
             showToast("Error al cambiar el rol.", "error");
         }
     };
+
 
     const filtered = users.filter((u) => {
         const fullName    = `${u.nombre || ""} ${u.apellido || ""}`.toLowerCase();
@@ -393,6 +394,7 @@ export default function AdminUsers() {
                                             onUnban={() => handleUnbanUser(user._id, `${user.nombre || ""} ${user.apellido || ""}`.trim())}
                                             onDelete={() => setDeleteModal({ open: true, userId: user._id, nombre: `${user.nombre || ""} ${user.apellido || ""}`.trim() })}
                                             onToggleAdmin={() => handleToggleAdmin(user._id, `${user.nombre || ""} ${user.apellido || ""}`.trim(), user.rol)}
+                                            currentUserRole={currentUser?.rol}
                                         />
                                     ))}
                                 </AnimatePresence>
@@ -418,7 +420,7 @@ export default function AdminUsers() {
 }
 
 /* ─── Fila de usuario ─────────────────────────────────────────────────────── */
-function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onBan, onUnban, onToggleAdmin }) {
+function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onBan, onUnban, onToggleAdmin, currentUserRole }) {
     const btnRef             = useRef(null);
     const [menuPos, setMenuPos] = useState({});
 
@@ -508,6 +510,7 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
                 >
                     <MoreVertical className="w-4 h-4" />
                 </button>
+
             </div>
 
             {/* Dropdown con posición fixed — siempre visible sobre el scroll */}
@@ -536,13 +539,15 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
                             </div>
                         </div>
 
-                        <MenuBtn
-                            icon={user.rol === "admin" ? ShieldOff : ShieldCheck}
-                            label={user.rol === "admin" ? "Quitar admin" : "Hacer admin"}
-                            color="text-lime-700"
-                            hoverBg="hover:bg-lime-50"
-                            onClick={() => { onCloseMenu(); onToggleAdmin(); }}
-                        />
+                        {currentUserRole === 'superadmin' && user.rol !== 'superadmin' && (
+                            <MenuBtn
+                                icon={user.rol === "admin" ? ShieldOff : ShieldCheck}
+                                label={user.rol === "admin" ? "Quitar admin" : "Hacer admin"}
+                                color="text-lime-700"
+                                hoverBg="hover:bg-lime-50"
+                                onClick={() => { onCloseMenu(); onToggleAdmin(); }}
+                            />
+                        )}
 
                         {userStatus === "banned" ? (
                             <MenuBtn

@@ -36,10 +36,18 @@ export const verificarToken = async (req, res, next) => {
     }
 };
 
-//solo administradores
+//solo administradores y superadministradores
 export const soloAdmin = (req, res, next) => {
-    if (req.usuario?.rol !== "admin") {
-        return res.status(403).json({ message: "Acesso denegado: se requiere rol admin"});
+    if (req.usuario?.rol !== "admin" && req.usuario?.rol !== "superadmin") {
+        return res.status(403).json({ message: "Acesso denegado: se requiere rol admin o superadmin"});
+    }
+    next();
+};
+
+// solo superadministradores
+export const soloSuperadmin = (req, res, next) => {
+    if (req.usuario?.rol !== "superadmin") {
+        return res.status(403).json({ message: "Acceso denegado: se requiere rol superadmin" });
     }
     next();
 };

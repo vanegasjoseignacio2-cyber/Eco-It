@@ -1,12 +1,13 @@
 import express from 'express';
-import { verificarToken, soloAdmin } from '../middlewares/authMiddleware.js';
+import { verificarToken, soloAdmin, soloSuperadmin } from '../middlewares/authMiddleware.js';
 import { 
     obtenerUsuarios, 
     obtenerStats, 
     obtenerDatosAdmin, 
     eliminarUsuarioAdmin,
     banearUsuarioAdmin,
-    desbanearUsuarioAdmin
+    desbanearUsuarioAdmin,
+    cambiarRolUsuario
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.get('/admin', verificarToken, soloAdmin, obtenerDatosAdmin);
 router.delete('/users/:id', verificarToken, soloAdmin, eliminarUsuarioAdmin);
 router.patch('/users/:id/ban', verificarToken, soloAdmin, banearUsuarioAdmin);
 router.patch('/users/:id/unban', verificarToken, soloAdmin, desbanearUsuarioAdmin);
+router.patch('/users/:id/role', verificarToken, soloSuperadmin, cambiarRolUsuario);
 
 export default router;
