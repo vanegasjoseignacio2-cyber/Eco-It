@@ -26,6 +26,7 @@ const STATUS_STYLES = {
 };
 
 const ROLE_STYLES = {
+    superadmin: { label: "Super Admin", cls: "bg-teal-100 text-teal-700 font-semibold" },
     admin: { label: "Admin", cls: "bg-lime-100 text-lime-700 font-semibold" },
     user: { label: "Usuario", cls: "bg-emerald-50 text-emerald-600" },
 };
@@ -315,6 +316,7 @@ export default function AdminUsers() {
                                         onDelete={() => handleDeleteUser(user._id)}
                                         onChangeRole={() => handleChangeRole(user._id, user.rol)}
                                         currentUserRole={currentUser?.rol}
+                                        currentUserId={currentUser?._id}
                                     />
                                 ))
                             )}
@@ -356,7 +358,7 @@ export default function AdminUsers() {
 }
 
 /* ─── Sub-componente fila de usuario ──────────────────────────────────────── */
-function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onBan, onUnban, onChangeRole, currentUserRole }) {
+function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onBan, onUnban, onChangeRole, currentUserRole, currentUserId }) {
     const userStatus = user.status || 'active';
     const status = STATUS_STYLES[userStatus];
     const role = ROLE_STYLES[user.rol] || ROLE_STYLES.user;
@@ -454,33 +456,36 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
                                     />
                                 )}
                                 
-                                {userStatus === "banned" ? (
-                                    <MenuBtn 
-                                        icon={UserCheck} 
-                                        label="Desbanear" 
-                                        color="text-amber-600" 
-                                        onClick={() => { onCloseMenu(); onUnban(); }} 
-                                    />
-                                ) : (
-                                    <MenuBtn 
-                                        icon={UserX} 
-                                        label="Banear usuario" 
-                                        color="text-amber-600" 
-                                        onClick={() => { onCloseMenu(); onBan(); }} 
-                                    />
+                                {currentUserId !== user._id && (
+                                    <>
+                                        {userStatus === "banned" ? (
+                                            <MenuBtn 
+                                                icon={UserCheck} 
+                                                label="Desbanear" 
+                                                color="text-amber-600" 
+                                                onClick={() => { onCloseMenu(); onUnban(); }} 
+                                            />
+                                        ) : (
+                                            <MenuBtn 
+                                                icon={UserX} 
+                                                label="Banear usuario" 
+                                                color="text-amber-600" 
+                                                onClick={() => { onCloseMenu(); onBan(); }} 
+                                            />
+                                        )}
+                                        
+                                        <div className="my-1 border-t border-green-50" />
+                                        <MenuBtn 
+                                            icon={Trash2} 
+                                            label="Eliminar" 
+                                            color="text-red-500" 
+                                            onClick={() => {
+                                                onCloseMenu();
+                                                onDelete();
+                                            }} 
+                                        />
+                                    </>
                                 )}
-                                
-                                <div className="my-1 border-t border-green-50" />
-                            {/* TODO: onClick → DELETE /api/admin/users/:id con confirmación */}
-                            <MenuBtn 
-                                icon={Trash2} 
-                                label="Eliminar" 
-                                color="text-red-500" 
-                                onClick={() => {
-                                    onCloseMenu();
-                                    onDelete();
-                                }} 
-                            />
                         </motion.div>
                     )}
                 </AnimatePresence>
