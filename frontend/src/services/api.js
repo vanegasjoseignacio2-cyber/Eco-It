@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const BASE_URL = 'http://localhost:3000/api';
 
 // Función auxiliar para hacer peticiones
 const fetchAPI = async (endpoint, options = {}) => {
@@ -17,7 +17,7 @@ const fetchAPI = async (endpoint, options = {}) => {
       fetchOptions.body = options.body;
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, fetchOptions);
+    const response = await fetch(`${OPENROUTER_API_KEY}${endpoint}`, fetchOptions);
 
     const data = await response.json();
 
@@ -122,14 +122,42 @@ export const restablecerPassword = async (email, codigo, password) => {
 
 // ============= IA =============
 
-export const consultarIA = async (token, pregunta) => {
-  return fetchAPI('/ai/consultar', {
+export const consultarIA = async (token, pregunta, onChunk) => {
+  const response = await fetch(`${BASE_URL}/ai/consultar`, {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ pregunta }),
   });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.message || data.mensaje || 'Error en la petición');
+  }
+
+  // Leer stream chunk a chunk
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const text = decoder.decode(value);
+    const lines = text.split('\n').filter(line => line.startsWith('data: '));
+
+    for (const line of lines) {
+      const data = line.replace('data: ', '').trim();
+      if (data === '[DONE]') return;
+
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.content) onChunk(parsed.content); // ✅ dispara el callback con cada trozo
+      } catch { }
+    }
+  }
 };
 
 export const analizarImagen = async (token, imagen, contexto = '') => {

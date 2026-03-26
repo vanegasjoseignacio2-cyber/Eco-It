@@ -122,9 +122,15 @@ export const eliminarUsuarioAdmin = async (req, res) => {
 
 export const obtenerUsuarios = async (req, res) => {
     try {
-        const usuarios = await User.find()
+        const usuariosDocs = await User.find()
             .select('-password -resetPasswordToken -resetPasswordExpires')
             .sort({ createdAt: -1 });
+
+        const usuarios = usuariosDocs.map(user => {
+            const userObj = user.toObject();
+            userObj.isOnline = usuariosConectados.has(user._id.toString());
+            return userObj;
+        });
 
         res.json({ success: true, usuarios });
     } catch (error) {

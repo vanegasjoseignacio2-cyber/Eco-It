@@ -11,7 +11,7 @@ import { consultarIA, analizarImagen } from "../../services/api";
 
 export default function AIPage() {
     const { token, estaAutenticado } = useAuth();
-    
+
     const [messages, setMessages] = useState([
         { id: "1", type: "bot", content: "¡Hola! Soy Eco-IA, tu asistente ecológico 🌱\n\n¿Tienes alguna pregunta sobre reciclaje o gestión de residuos?" }
     ]);
@@ -22,19 +22,11 @@ export default function AIPage() {
 
     const handleSend = async () => {
         if (!inputValue.trim() && !selectedImage) return;
-        
-        // Verificar autenticación
         if (!estaAutenticado) {
             setError("Debes iniciar sesión para usar el chat");
             return;
         }
 
-        console.log('🔵 handleSend iniciado');
-        console.log('Token:', token);
-        console.log('Input value:', inputValue);
-        console.log('Selected image:', selectedImage ? 'Sí' : 'No');
-
-        // Crear mensaje del usuario
         const userMsg = {
             id: Date.now().toString(),
             type: "user",
@@ -43,8 +35,7 @@ export default function AIPage() {
         };
 
         setMessages(prev => [...prev, userMsg]);
-        
-        // Limpiar inputs
+
         const pregunta = inputValue;
         const imagen = selectedImage;
         setInputValue("");
@@ -52,45 +43,35 @@ export default function AIPage() {
         setError("");
         setIsTyping(true);
 
+        // Crear mensaje del bot vacío que se irá llenando
+        const botMsgId = Date.now().toString() + "_bot";
+        setMessages(prev => [...prev, { id: botMsgId, type: "bot", content: "" }]);
+
         try {
-            let response;
-
             if (imagen) {
-                console.log('📸 Analizando imagen...');
-                console.log('Contexto:', pregunta || '(sin contexto)');
-                // Analizar imagen con contexto opcional
-                response = await analizarImagen(token, imagen, pregunta || "");
+                const response = await analizarImagen(token, imagen, pregunta || "");
+                setMessages(prev => prev.map(msg =>
+                    msg.id === botMsgId
+                        ? { ...msg, content: response.data.respuesta }
+                        : msg
+                ));
             } else {
-                console.log('💬 Enviando pregunta:', pregunta);
-                // Consulta de texto
-                response = await consultarIA(token, pregunta);
+                // Cada chunk actualiza el mensaje del bot en tiempo real
+                await consultarIA(token, pregunta, (chunk) => {
+                    setMessages(prev => prev.map(msg =>
+                        msg.id === botMsgId
+                            ? { ...msg, content: msg.content + chunk }
+                            : msg
+                    ));
+                });
             }
-
-            console.log('✅ Respuesta recibida:', response);
-
-            // Agregar respuesta de la IA
-            setMessages(prev => [
-                ...prev,
-                {
-                    id: Date.now().toString(),
-                    type: "bot",
-                    content: response.data.respuesta
-                }
-            ]);
-
         } catch (err) {
             console.error('❌ Error al consultar IA:', err);
-            
-            // Mostrar error en el chat
-            setMessages(prev => [
-                ...prev,
-                {
-                    id: Date.now().toString(),
-                    type: "bot",
-                    content: `❌ Error: ${err.message || 'No pude procesar tu consulta. Por favor intenta de nuevo.'}`
-                }
-            ]);
-            
+            setMessages(prev => prev.map(msg =>
+                msg.id === botMsgId
+                    ? { ...msg, content: `❌ Error: ${err.message || 'No pude procesar tu consulta.'}` }
+                    : msg
+            ));
             setError(err.message || 'Error al comunicarse con la IA');
         } finally {
             setIsTyping(false);

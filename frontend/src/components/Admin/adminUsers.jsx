@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import Toast from "../ui/Toast";
 import {
     Users, Search, Filter, MoreVertical,
@@ -83,6 +84,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmLabel
 /* ─── Componente principal ────────────────────────────────────────────────── */
 export default function AdminUsers() {
     const { token, usuario: currentUser } = useAuth();
+    const { socket }                      = useSocket();
     const [users, setUsers]               = useState([]);
     const [loading, setLoading]           = useState(true);
     const [search, setSearch]             = useState("");
@@ -115,6 +117,15 @@ export default function AdminUsers() {
     };
 
     useEffect(() => { fetchUsers(); }, [token]);
+
+    useEffect(() => {
+        if (!socket) return;
+        const handleStatus = ({ userId, isOnline }) => {
+            setUsers((prev) => prev.map((u) => (u._id === userId ? { ...u, isOnline } : u)));
+        };
+        socket.on("usuario:estado", handleStatus);
+        return () => socket.off("usuario:estado", handleStatus);
+    }, [socket]);
 
     /* Cerrar dropdown al click fuera */
     useEffect(() => {
@@ -216,7 +227,8 @@ export default function AdminUsers() {
         const email       = (u.email || "").toLowerCase();
         const matchSearch = fullName.includes(search.toLowerCase()) || email.includes(search.toLowerCase());
         const matchRole   = filterRole   === "all" || u.rol === filterRole;
-        const matchStatus = filterStatus === "all" || (u.status || "active") === filterStatus;
+        const computedStatus = u.status === "banned" ? "banned" : (u.isOnline ? "active" : "inactive");
+        const matchStatus = filterStatus === "all" || computedStatus === filterStatus;
         return matchSearch && matchRole && matchStatus;
     });
 
@@ -427,8 +439,8 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
     const btnRef             = useRef(null);
     const [menuPos, setMenuPos] = useState({});
 
-    const userStatus     = user.status || "active";
-    const status         = STATUS_STYLES[userStatus] || STATUS_STYLES.active;
+    const userStatus     = user.status === "banned" ? "banned" : (user.isOnline ? "active" : "inactive");
+    const status         = STATUS_STYLES[userStatus] || STATUS_STYLES.inactive;
     const role           = ROLE_STYLES[user.rol]     || ROLE_STYLES.user;
     const nombreCompleto = `${user.nombre || ""} ${user.apellido || ""}`.trim() || "Usuario";
     const initials       = nombreCompleto.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";

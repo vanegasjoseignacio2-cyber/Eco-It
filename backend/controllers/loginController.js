@@ -31,7 +31,7 @@ export const loginUsuario = async (req, res) => {
                 perfilCompleto: usuario.perfilCompleto
             },
             process.env.JWT_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "12h" }
         );
 
         // Si todo es correcto

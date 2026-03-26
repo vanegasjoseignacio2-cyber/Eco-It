@@ -1,5 +1,9 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, '.env') });
 
 import express from 'express';
 import cors from 'cors';
@@ -12,7 +16,7 @@ import { Server } from 'socket.io';
 // Importar rutas
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import aiRoutes from './routes/aiRoutes.js';
+import { aiRouter } from './routes/aiRoutes.js';
 import admin from './routes/admin.js';
 import contactRoutes from './routes/contactRoutes.js';
 
@@ -50,6 +54,8 @@ io.on('connection', (socket) => {
                 nombre: usuario.nombre,
                 sockets: new Set([socket.id])
             });
+            // Notificar que se conectó en tiempo real
+            io.emit('usuario:estado', { userId, isOnline: true });
         }
 
         io.emit('usuarios:online', usuariosConectados.size);
@@ -66,6 +72,8 @@ io.on('connection', (socket) => {
                 if (data.sockets.size === 0) {
                     usuariosConectados.delete(userId);
                     console.log(`${data.nombre} desconectado totalmente.`);
+                    // Notificar que se desconectó en tiempo real
+                    io.emit('usuario:estado', { userId, isOnline: false });
                 }
 
                 io.emit('usuarios:online', usuariosConectados.size);
@@ -102,9 +110,10 @@ mongoose.connect(process.env.MONGODB_URI)
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', aiRouter );
 app.use('/api/admin', admin);
 app.use('/api/contact', contactRoutes);
+
 
 // Ruta raíz
 app.get('/', (req, res) => {
