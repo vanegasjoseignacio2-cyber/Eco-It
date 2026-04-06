@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useOfensiveValidator } from '../Contact/ContactForm';
 import {
     User, Phone, Calendar, ArrowRight, Leaf,
     CheckCircle2, AlertCircle, Sparkles, TreeDeciduous,
@@ -11,7 +12,6 @@ import {
 } from 'lucide-react';
 
 // ── Variantes de animación ───────────────────────────────────────────────────
-
 const pageVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -31,13 +31,79 @@ const slideRight = {
 // ── Íconos flotantes del fondo ───────────────────────────────────────────────
 const FLOAT_ICONS = [Leaf, Recycle, TreeDeciduous, Globe, Leaf, Recycle];
 
+// ── Reglas de validación ──────────────────────────────────────────────────────
+const VALIDATIONS = {
+    apellido: {
+        filter: /[^a-zA-ZÀ-ÿñÑüÜ\s]/g,
+        validate: (v, validarOfensivas) => {
+            const letras = v.replace(/\s/g, '');
+
+            if (!v.trim()) return 'El apellido es obligatorio.';
+            if (letras.length < 3) return 'El apellido debe tener al menos 3 letras.';
+            if (/\s{2,}/.test(v)) return 'No uses espacios dobles.';
+
+            // 🔥 VALIDACIÓN DE GROSERÍAS
+            const res = validarOfensivas(v);
+            if (!res.valido) {
+                return 'El apellido contiene palabras ofensivas 🚫';
+            }
+
+            return '';
+        },
+    },
+    edad: {
+        filter: /[^0-9]/g,          // solo dígitos
+        validate: (v) => {
+            if (!v) return 'La edad es obligatoria.';
+            const n = Number(v);
+            if (!Number.isInteger(n)) return 'Ingresa un número entero.';
+            if (n < 6) return 'Debes tener al menos 6 años.';
+            if (n > 110) return 'Ingresa una edad válida (máx. 110).';
+            return '';
+        },
+    },
+    telefono: {
+        filter: /[^0-9]/g,          // solo dígitos
+        validate: (v) => {
+            if (!v) return 'El teléfono es obligatorio.';
+            if (!/^3\d{9}$/.test(v))
+                return 'Ingresa un celular colombiano válido (10 dígitos, empieza por 3).';
+            return '';
+        },
+    },
+};
+
+// ── Componente de error inline ─────────────────────────────────────────────────
+function FieldError({ msg }) {
+    return (
+        <AnimatePresence>
+            {msg && (
+                <motion.span
+                    key={msg}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className="flex items-center gap-1 text-xs text-red-500 font-medium mt-1"
+                >
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {msg}
+                </motion.span>
+            )}
+        </AnimatePresence>
+    );
+}
+
 export default function CompletarPerfil() {
     const { token, usuario, login } = useAuth();
     const navigate = useNavigate();
+    const { validar } = useOfensiveValidator();
 
     const [form, setForm] = useState({ apellido: '', edad: '', telefono: '' });
+    const [fieldErrors, setFieldErrors] = useState({ apellido: '', edad: '', telefono: '' });
+    const [touched, setTouched] = useState({ apellido: false, edad: false, telefono: false });
     const [focused, setFocused] = useState(null);
-    const [error, setError] = useState('');
+    const [submitError, setSubmitError] = useState('');
     const [cargando, setCargando] = useState(false);
     const [exito, setExito] = useState(false);
     const [showBlockModal, setShowBlockModal] = useState(false);
@@ -45,7 +111,7 @@ export default function CompletarPerfil() {
     // ── Solo se permite salir tras guardar con éxito ─────────────────────────
     const puedeNavegar = exito;
 
-    // ── 1. Bloquear flechas del navegador ────────────────────────────────────
+    // ── Bloquear flechas del navegador ───────────────────────────────────────
     useEffect(() => {
         if (puedeNavegar) return;
         window.history.pushState(null, '', window.location.pathname);
@@ -57,7 +123,7 @@ export default function CompletarPerfil() {
         return () => window.removeEventListener('popstate', handlePopState);
     }, [puedeNavegar]);
 
-    // ── 3. Bloquear cierre/recarga de pestaña ────────────────────────────────
+    // ── Bloquear cierre/recarga de pestaña ──────────────────────────────────
     useEffect(() => {
         if (puedeNavegar) return;
         const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
@@ -65,11 +131,56 @@ export default function CompletarPerfil() {
         return () => window.removeEventListener('beforeunload', handler);
     }, [puedeNavegar]);
 
-    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+    // ── Validar campo individual ─────────────────────────────────────────────
+    const validateField = (name, value) => {
+        const rule = VALIDATIONS[name];
+        return rule ? rule.validate(value, validar) : '';
+    };
 
+    // ── Cambio de valor con filtro ────────────────────────────────────────────
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        const rule = VALIDATIONS[name];
+        const filtered = rule?.filter ? value.replace(rule.filter, '') : value;
+
+        // Límite de longitud para evitar pegar texto enorme
+        const maxLen = { apellido: 60, edad: 3, telefono: 10 };
+        const capped = maxLen[name] ? filtered.slice(0, maxLen[name]) : filtered;
+
+        setForm(prev => ({ ...prev, [name]: capped }));
+        setSubmitError('');
+
+        if (touched[name]) {
+            setFieldErrors(prev => ({ ...prev, [name]: validateField(name, capped) }));
+        }
+    };
+
+    // ── Marcar como tocado al salir del campo ────────────────────────────────
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setFocused(null);
+        setTouched(prev => ({ ...prev, [name]: true }));
+        setFieldErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
+    };
+
+    // ── Validar todo antes de enviar ──────────────────────────────────────────
+    const validateAll = () => {
+        const errors = {
+            apellido: validateField('apellido', form.apellido),
+            edad: validateField('edad', form.edad),
+            telefono: validateField('telefono', form.telefono),
+        };
+        setFieldErrors(errors);
+        setTouched({ apellido: true, edad: true, telefono: true });
+        return Object.values(errors).every(e => e === '');
+    };
+
+    // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        if (!validateAll()) return;
+
+        setSubmitError('');
         setCargando(true);
         try {
             const res = await fetch('http://localhost:3000/api/auth/completar-perfil', {
@@ -79,7 +190,7 @@ export default function CompletarPerfil() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    apellido: form.apellido,
+                    apellido: form.apellido.trim(),
                     edad: Number(form.edad),
                     telefono: form.telefono,
                 }),
@@ -90,10 +201,10 @@ export default function CompletarPerfil() {
                 setExito(true);
                 setTimeout(() => navigate('/'), 1800);
             } else {
-                setError(data.mensaje || 'Error al guardar los datos.');
+                setSubmitError(data.mensaje || 'Error al guardar los datos.');
             }
         } catch {
-            setError('Error de conexión. Intenta de nuevo.');
+            setSubmitError('Error de conexión. Intenta de nuevo.');
         } finally {
             setCargando(false);
         }
@@ -106,21 +217,21 @@ export default function CompletarPerfil() {
             hint: 'Como aparece en tu documento',
         },
         {
-            name: 'edad', label: 'Edad', type: 'number',
+            name: 'edad', label: 'Edad', type: 'text',  // text para controlar mejor el input
             placeholder: '25', icon: Calendar,
             hint: 'Debes tener al menos 6 años',
-            min: 6, max: 110,
         },
         {
             name: 'telefono', label: 'Teléfono', type: 'tel',
-            placeholder: '+57 300 123 4567', icon: Phone,
-            hint: 'Para notificaciones eco-importantes',
+            placeholder: '3001234567', icon: Phone,
+            hint: 'Celular colombiano: 10 dígitos, empieza por 3',
         },
     ];
 
     const completados = [form.apellido, form.edad, form.telefono].filter(Boolean).length;
     const progreso = (completados / 3) * 100;
-    
+
+    const showErr = (field) => touched[field] ? fieldErrors[field] : '';
 
     return (
         <div className="min-h-screen flex overflow-hidden relative bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
@@ -180,7 +291,7 @@ export default function CompletarPerfil() {
                     transition={{ duration: 6, repeat: Infinity }}
                 />
 
-                {/* Logo — absoluto arriba */}
+                {/* Logo */}
                 <div className="absolute top-10 left-12 z-10">
                     <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-lime-500 backdrop-blur flex items-center justify-center">
@@ -192,7 +303,6 @@ export default function CompletarPerfil() {
 
                 {/* Ilustración central */}
                 <div className="relative z-10 text-center w-full">
-                    {/* Círculo animado con ícono */}
                     <div className="relative mx-auto w-48 h-48">
                         <motion.div
                             className="absolute inset-0 rounded-full bg-white/10"
@@ -208,7 +318,6 @@ export default function CompletarPerfil() {
                             <User className="w-14 h-14 text-white" />
                         </div>
 
-                        {/* Íconos orbitando */}
                         {[Sparkles, Recycle, Leaf].map((Icon, i) => (
                             <motion.div
                                 key={i}
@@ -280,7 +389,7 @@ export default function CompletarPerfil() {
                             {/* Header */}
                             <motion.div variants={fadeUp} className="mb-8">
                                 <div className="flex items-center justify-between mb-5">
-                                    {/* Avatar del usuario */}
+                                    {/* Avatar */}
                                     <div className="flex items-center gap-3">
                                         <div className="w-11 h-11 rounded-full bg-gradient-to-br from-lime-500 via-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
                                             {usuario?.nombre?.charAt(0).toUpperCase() || '?'}
@@ -301,7 +410,7 @@ export default function CompletarPerfil() {
                                 </div>
 
                                 <h1 className="text-2xl font-bold text-green-950 mb-1.5 flex items-center gap-2">
-                                    Completa tu perfil <Trees className='inline text-green-600'/>
+                                    Completa tu perfil <Trees className='inline text-green-600' />
                                 </h1>
                                 <p className="text-sm text-green-500 leading-relaxed">
                                     Solo faltan unos datos para unirte a la comunidad Eco-It.
@@ -321,16 +430,16 @@ export default function CompletarPerfil() {
                                             <CheckCircle2 className="w-5 h-5 text-white" />
                                         </div>
                                         <div>
-                                            <p className="text-white font-bold text-sm">¡Perfil completado! </p>
+                                            <p className="text-white font-bold text-sm">¡Perfil completado!</p>
                                             <p className="text-white/80 text-xs mt-0.5">Redirigiendo a Eco-It...</p>
                                         </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
-                            {/* Error */}
+                            {/* Error de envío */}
                             <AnimatePresence>
-                                {error && (
+                                {submitError && (
                                     <motion.div
                                         initial={{ opacity: 0, y: -8, scale: 0.97 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -338,39 +447,42 @@ export default function CompletarPerfil() {
                                         className="mb-5 p-4 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-2.5"
                                     >
                                         <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                                        <p className="text-sm text-red-700 font-medium">{error}</p>
+                                        <p className="text-sm text-red-700 font-medium">{submitError}</p>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
                             {/* Formulario */}
-                            <form onSubmit={handleSubmit} className="space-y-5">
+                            <form onSubmit={handleSubmit} noValidate className="space-y-5">
                                 {campos.map((campo, i) => {
                                     const Icon = campo.icon;
                                     const isFocused = focused === campo.name;
                                     const hasValue = Boolean(form[campo.name]);
+                                    const errMsg = showErr(campo.name);
+                                    const hasError = Boolean(errMsg);
 
                                     return (
-                                        <motion.div
-                                            key={campo.name}
-                                            variants={fadeUp}
-                                            custom={i}
-                                        >
+                                        <motion.div key={campo.name} variants={fadeUp} custom={i}>
                                             <label className="block text-xs font-bold text-green-700 uppercase tracking-wider mb-2">
                                                 {campo.label}
                                             </label>
 
                                             <div className={`relative flex items-center rounded-2xl border-2 transition-all duration-200 overflow-hidden
-                                                ${isFocused
-                                                    ? 'border-green-400 bg-white shadow-lg shadow-green-500/10'
-                                                    : hasValue
-                                                        ? 'border-green-200 bg-white'
-                                                        : 'border-green-100 bg-green-50/50 hover:border-green-200'
+                                                ${hasError && touched[campo.name]
+                                                    ? 'border-red-400 bg-red-50/30'
+                                                    : isFocused
+                                                        ? 'border-green-400 bg-white shadow-lg shadow-green-500/10'
+                                                        : hasValue
+                                                            ? 'border-green-200 bg-white'
+                                                            : 'border-green-100 bg-green-50/50 hover:border-green-200'
                                                 }`}
                                             >
                                                 {/* Ícono izquierdo */}
                                                 <div className={`pl-4 flex items-center flex-shrink-0 transition-colors duration-200
-                                                    ${isFocused ? 'text-green-500' : 'text-green-300'}`}
+                                                    ${hasError && touched[campo.name]
+                                                        ? 'text-red-400'
+                                                        : isFocused ? 'text-green-500' : 'text-green-300'
+                                                    }`}
                                                 >
                                                     <Icon className="w-5 h-5" />
                                                 </div>
@@ -381,18 +493,17 @@ export default function CompletarPerfil() {
                                                     value={form[campo.name]}
                                                     onChange={handleChange}
                                                     onFocus={() => setFocused(campo.name)}
-                                                    onBlur={() => setFocused(null)}
+                                                    onBlur={handleBlur}
                                                     placeholder={campo.placeholder}
                                                     required
-                                                    min={campo.min}
-                                                    max={campo.max}
+                                                    inputMode={campo.name === 'edad' || campo.name === 'telefono' ? 'numeric' : 'text'}
                                                     disabled={cargando || exito}
                                                     className="flex-1 px-3 py-3.5 bg-transparent text-sm text-green-900 placeholder:text-green-300 focus:outline-none disabled:opacity-50"
                                                 />
 
-                                                {/* Check si tiene valor */}
+                                                {/* Check si tiene valor y sin error */}
                                                 <AnimatePresence>
-                                                    {hasValue && !isFocused && (
+                                                    {hasValue && !isFocused && !hasError && (
                                                         <motion.div
                                                             initial={{ scale: 0, opacity: 0 }}
                                                             animate={{ scale: 1, opacity: 1 }}
@@ -402,12 +513,26 @@ export default function CompletarPerfil() {
                                                             <CheckCircle2 className="w-4 h-4 text-green-400" />
                                                         </motion.div>
                                                     )}
+                                                    {/* Ícono de error */}
+                                                    {hasError && touched[campo.name] && (
+                                                        <motion.div
+                                                            initial={{ scale: 0, opacity: 0 }}
+                                                            animate={{ scale: 1, opacity: 1 }}
+                                                            exit={{ scale: 0, opacity: 0 }}
+                                                            className="pr-4"
+                                                        >
+                                                            <AlertCircle className="w-4 h-4 text-red-400" />
+                                                        </motion.div>
+                                                    )}
                                                 </AnimatePresence>
                                             </div>
 
-                                            {/* Hint con animación */}
+                                            {/* Error inline */}
+                                            <FieldError msg={errMsg} />
+
+                                            {/* Hint cuando está enfocado y sin error */}
                                             <AnimatePresence>
-                                                {isFocused && (
+                                                {isFocused && !hasError && (
                                                     <motion.p
                                                         initial={{ opacity: 0, height: 0, y: -4 }}
                                                         animate={{ opacity: 1, height: 'auto', y: 0 }}

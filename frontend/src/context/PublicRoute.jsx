@@ -1,9 +1,12 @@
 import { Navigate } from "react-router-dom";
+import { useAuth } from "./AuthContext";
 
 export default function PublicRoute({ children }) {
-    const token = localStorage.getItem("token"); // o tu método de auth
+    const { usuario, loading } = useAuth();
 
-    if (token) {
+    if (loading) return null;
+
+    if (usuario) {
         return <Navigate to="/" replace />;
     }
 

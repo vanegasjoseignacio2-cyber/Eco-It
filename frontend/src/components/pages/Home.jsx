@@ -6,30 +6,37 @@ import LoadingScreen from "../Layout/Animation";
 import Index from "../Home/Index";
 import Ecogame from "../Home/Game";
 import Section from "../Home/Section";
+import { useCookieConsent } from "../../context/Cookieconsentcontext";
 
 export default function Home() {
     const [loading, setLoading] = useState(() => {
-        // Solo mostrar loading si no se ha visto antes en esta sesión
         return !sessionStorage.getItem('hasSeenLoading');
     });
 
+    const { checkAndShow } = useCookieConsent();
+
     useEffect(() => {
         if (loading) {
-            // Marcar que ya se vio la animación
             sessionStorage.setItem('hasSeenLoading', 'true');
         }
     }, [loading]);
 
+    const handleAnimationComplete = () => {
+        setLoading(false);
+        // El banner de cookies aparece DESPUÉS de que termina la animación
+        checkAndShow();
+    };
+
     if (loading) {
-        return <LoadingScreen onComplete={() => setLoading(false)} />;
+        return <LoadingScreen onComplete={handleAnimationComplete} />;
     }
 
     return (
         <>
-            <Navbar/>
-            <Index/>
-            <Ecogame/>
-            <Section/>
+            <Navbar />
+            <Index />
+            <Ecogame />
+            <Section />
             <Footer />
         </>
     );

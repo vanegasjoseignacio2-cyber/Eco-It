@@ -10,14 +10,25 @@ export const useToast = () => {
 };
 
 export const ToastProvider = ({ children }) => {
-  const [toast, setToast] = useState({ message: '', type: '' });
+  const [toast, setToast] = useState({
+    message:  '',
+    type:     '',
+    duration: 3000,
+    action:   null, // { label: string, onClick: () => void }
+  });
 
-  const showToast = useCallback((message, type = 'success', duration = 3000) => {
-    setToast({ message, type, duration });
+  /**
+   * showToast(message, type?, duration?, action?)
+   *  - type     : 'success' | 'info' | 'warning' | 'error'
+   *  - duration : ms; 0 = no se cierra automáticamente
+   *  - action   : { label: string, onClick: () => void }
+   */
+  const showToast = useCallback((message, type = 'success', duration = 3000, action = null) => {
+    setToast({ message, type, duration, action });
   }, []);
 
   const closeToast = useCallback(() => {
-    setToast({ message: '', type: '' });
+    setToast({ message: '', type: '', duration: 3000, action: null });
   }, []);
 
   return (
@@ -26,7 +37,8 @@ export const ToastProvider = ({ children }) => {
       <Toast
         message={toast.message}
         type={toast.type}
-        duration={toast.duration || 3000}
+        duration={toast.duration}
+        action={toast.action}
         onClose={closeToast}
       />
     </ToastContext.Provider>

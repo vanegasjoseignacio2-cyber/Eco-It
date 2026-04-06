@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useOfensiveValidator } from "../Contact/ContactForm";
 import {
     UserPlus,
     Mail,
@@ -54,6 +55,7 @@ const calcTimeLeft = () => {
 export default function RegisterForm() {
     const navigate = useNavigate();
     const { login } = useAuth();
+    const { validar } = useOfensiveValidator();
 
     // ── Paso ─────────────────────────────────────────────────────────────────
     const [step, setStep] = useState('form'); // 'form' | 'code'
@@ -92,19 +94,45 @@ export default function RegisterForm() {
     const isEmpty = (v) => !v || v.toString().trim() === "";
 
     const passwordRequirements = [
-        { text: "Al menos 8 caracteres",    met: password.length >= 8 },
-        { text: "Una letra mayúscula",       met: /[A-Z]/.test(password) },
-        { text: "Una letra minúscula",       met: /[a-z]/.test(password) },
-        { text: "Un número",                 met: /[0-9]/.test(password) },
+        { text: "Al menos 8 caracteres", met: password.length >= 8 },
+        { text: "Una letra mayúscula", met: /[A-Z]/.test(password) },
+        { text: "Una letra minúscula", met: /[a-z]/.test(password) },
+        { text: "Un número", met: /[0-9]/.test(password) },
         { text: "Las contraseñas coinciden", met: password === confirmPassword && password.length > 0 },
     ];
 
+    const isValidName = (v) => {
+        const base = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{3,}$/.test(v.trim());
+
+        if (!base) return false;
+
+        const res = validar(v);
+        return res.valido; // 🔥 evita groserías
+    };
+
+    const isValidPhone = (v) =>
+        /^3\d{9}$/.test(v);
+
+    const isValidEmail = (v) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+    const isValidAge = (v) => {
+        const edad = Number(v);
+
+        return (
+            /^\d+$/.test(v) && // 🔥 solo números reales
+            !isNaN(edad) &&
+            edad >= 6 &&
+            edad <= 110
+        );
+    };
+
     const requiredFieldsValid =
-        !isEmpty(name) &&
-        !isEmpty(lastname) &&
-        !isEmpty(age) &&
-        !isEmpty(email) &&
-        !isEmpty(phone) &&
+        isValidName(name) &&
+        isValidName(lastname) &&
+        isValidAge(age) &&
+        isValidEmail(email) &&
+        isValidPhone(phone) &&
         !isEmpty(password) &&
         !isEmpty(confirmPassword);
 
@@ -130,12 +158,12 @@ export default function RegisterForm() {
         setLoading(true);
         try {
             const data = await enviarCodigo({
-                nombre:   name.trim(),
+                nombre: name.trim(),
                 apellido: lastname.trim(),
-                email:    email.trim().toLowerCase(),
+                email: email.trim().toLowerCase(),
                 telefono: phone.trim(),
                 password,
-                edad:     parseInt(age),
+                edad: parseInt(age),
             });
 
             if (data.success) {
@@ -219,503 +247,535 @@ export default function RegisterForm() {
 
                     <AnimatePresence mode="wait">
 
-                    {/* ════════════════════════════════════════════════════════
+                        {/* ════════════════════════════════════════════════════════
                         PASO 1 — FORMULARIO DE REGISTRO (layout original)
                     ════════════════════════════════════════════════════════ */}
-                    {step === 'form' && (
-                    <motion.div
-                        key="form"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.25 }}
-                    >
-                        {/* Header */}
-                        <div className="text-center mb-6 sm:mb-8">
+                        {step === 'form' && (
                             <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: "spring", stiffness: 120, damping: 12, delay: 0.4 }}
-                                className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center mb-4 shadow-lg"
-                            >
-                                <Leaf className="w-8 h-8 text-white" />
-                            </motion.div>
-
-                            <motion.h2
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5, duration: 0.6 }}
-                                className="text-2xl sm:text-3xl font-bold text-green-900 mb-2"
-                            >
-                                Únete a Eco-It
-                            </motion.h2>
-
-                            <motion.p
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.6, duration: 0.6 }}
-                                className="text-sm sm:text-base text-green-600"
-                            >
-                                Crea tu cuenta y comienza a reciclar
-                            </motion.p>
-                        </div>
-
-                        {/* Mensajes de error y éxito */}
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
-                            >
-                                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-red-800">{error}</p>
-                            </motion.div>
-                        )}
-
-                        {successMessage && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3"
-                            >
-                                <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-green-800">{successMessage}</p>
-                            </motion.div>
-                        )}
-
-                        {/* Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-
-                            {/* Nombre y Apellido */}
-                            <motion.div
+                                key="form"
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.7, duration: 0.6 }}
-                                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.25 }}
                             >
-                                <div>
-                                    <label className="block text-sm font-medium text-green-900 mb-2">Nombre</label>
-                                    <div className="relative">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                        <input
-                                            type="text"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
-                                            placeholder="Tu nombre"
-                                            disabled={loading}
-                                            className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.name && isEmpty(name) ? "border-red-400" : "border-green-200"}`}
-                                            required
-                                        />
-                                    </div>
-                                    {touched.name && isEmpty(name) && (
-                                        <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-green-900 mb-2">Apellido</label>
-                                    <div className="relative">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                        <input
-                                            type="text"
-                                            value={lastname}
-                                            onChange={(e) => setLastname(e.target.value)}
-                                            onBlur={() => setTouched((t) => ({ ...t, lastname: true }))}
-                                            placeholder="Tu apellido"
-                                            disabled={loading}
-                                            className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.lastname && isEmpty(lastname) ? "border-red-400" : "border-green-200"}`}
-                                            required
-                                        />
-                                    </div>
-                                    {touched.lastname && isEmpty(lastname) && (
-                                        <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
-                                    )}
-                                </div>
-                            </motion.div>
-
-                            {/* Edad */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.75, duration: 0.6 }}
-                            >
-                                <label className="block text-sm font-medium text-green-900 mb-2">Edad</label>
-                                <div className="relative">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                    <input
-                                        type="number"
-                                        value={age}
-                                        onChange={(e) => setAge(e.target.value)}
-                                        onBlur={() => setTouched((t) => ({ ...t, age: true }))}
-                                        placeholder="Tu edad"
-                                        min="1"
-                                        disabled={loading}
-                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.age && isEmpty(age) ? "border-red-400" : "border-green-200"}`}
-                                        required
-                                    />
-                                </div>
-                                {touched.age && isEmpty(age) && (
-                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
-                                )}
-                            </motion.div>
-
-                            {/* Email */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.8, duration: 0.6 }}
-                            >
-                                <label className="block text-sm font-medium text-green-900 mb-2">Correo Electrónico</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                                        placeholder="tu@email.com"
-                                        disabled={loading}
-                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.email && isEmpty(email) ? "border-red-400" : "border-green-200"}`}
-                                        required
-                                    />
-                                </div>
-                                {touched.email && isEmpty(email) && (
-                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
-                                )}
-                            </motion.div>
-
-                            {/* Teléfono */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.85, duration: 0.6 }}
-                            >
-                                <label className="block text-sm font-medium text-green-900 mb-2">Teléfono</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                    <input
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
-                                        placeholder="+57 300 123 4567"
-                                        disabled={loading}
-                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.phone && isEmpty(phone) ? "border-red-400" : "border-green-200"}`}
-                                        required
-                                    />
-                                </div>
-                                {touched.phone && isEmpty(phone) && (
-                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
-                                )}
-                            </motion.div>
-
-                            {/* Contraseña */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.9, duration: 0.6 }}
-                            >
-                                <label className="block text-sm font-medium text-green-900 mb-2">Contraseña</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                                        placeholder="••••••••"
-                                        disabled={loading}
-                                        className={`w-full pl-12 pr-12 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.password && isEmpty(password) ? "border-red-400" : "border-green-200"}`}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        disabled={loading}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
-                                    >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
-                                </div>
-                                {touched.password && isEmpty(password) && (
-                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
-                                )}
-                            </motion.div>
-
-                            {/* Confirmar Contraseña */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 1.0, duration: 0.6 }}
-                            >
-                                <label className="block text-sm font-medium text-green-900 mb-2">Confirmar Contraseña</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        onBlur={() => setTouched((t) => ({ ...t, confirmPassword: true }))}
-                                        placeholder="••••••••"
-                                        disabled={loading}
-                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.confirmPassword && isEmpty(confirmPassword) ? "border-red-400" : "border-green-200"}`}
-                                        required
-                                    />
-                                </div>
-                                {touched.confirmPassword && isEmpty(confirmPassword) && (
-                                    <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
-                                )}
-                            </motion.div>
-
-                            {/* Requisitos de contraseña — lista vertical (igual que el original) */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 1.1, duration: 0.6 }}
-                                className="space-y-2 pt-2"
-                            >
-                                {passwordRequirements.map((req, i) => (
+                                {/* Header */}
+                                <div className="text-center mb-6 sm:mb-8">
                                     <motion.div
-                                        key={i}
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 1.2 + i * 0.1, duration: 0.4 }}
-                                        className={`flex items-center gap-2 text-xs sm:text-sm transition-colors ${req.met ? "text-green-600" : "text-gray-500"}`}
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 120, damping: 12, delay: 0.4 }}
+                                        className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center mb-4 shadow-lg"
                                     >
-                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${req.met ? "bg-green-500 scale-100" : "bg-gray-300 scale-90"}`}>
-                                            {req.met && <Check className="w-3 h-3 text-white" />}
-                                        </div>
-                                        {req.text}
+                                        <Leaf className="w-8 h-8 text-white" />
                                     </motion.div>
-                                ))}
-                            </motion.div>
 
-                            {/* Términos */}
-                            <motion.label
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 1.6, duration: 0.6 }}
-                                className="flex items-start gap-2 cursor-pointer text-xs sm:text-sm text-green-800"
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={acceptTerms}
-                                    onChange={(e) => setAcceptTerms(e.target.checked)}
-                                    onBlur={() => setTouched((t) => ({ ...t, acceptTerms: true }))}
-                                    disabled={loading}
-                                    className="rounded border-green-300 mt-1 text-green-600 focus:ring-green-500 cursor-pointer disabled:opacity-50"
-                                    required
-                                />
-                                <span>
-                                    Acepto los{" "}
-                                    <a href="#" className="text-green-600 font-semibold hover:underline">términos de servicio</a>
-                                    {" "}y la{" "}
-                                    <a href="#" className="text-green-600 font-semibold hover:underline">política de privacidad</a>
-                                </span>
-                            </motion.label>
-                            {touched.acceptTerms && !acceptTerms && (
-                                <p className="text-xs text-red-600 mt-1">Debe aceptar los términos para continuar</p>
-                            )}
+                                    <motion.h2
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.5, duration: 0.6 }}
+                                        className="text-2xl sm:text-3xl font-bold text-green-900 mb-2"
+                                    >
+                                        Únete a Eco-It
+                                    </motion.h2>
 
-                            {/* Botón submit */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 1.7, duration: 0.6 }}
-                            >
-                                <motion.button
-                                    type="submit"
-                                    whileHover={formValid && !loading ? { scale: 1.02 } : {}}
-                                    whileTap={formValid && !loading ? { scale: 0.98 } : {}}
-                                    disabled={!formValid || loading}
-                                    className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${formValid && !loading
-                                        ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
-                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Enviando código...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UserPlus className="w-5 h-5" />
-                                            Crear Cuenta
-                                            <ArrowRight className="w-5 h-5" />
-                                        </>
+                                    <motion.p
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.6, duration: 0.6 }}
+                                        className="text-sm sm:text-base text-green-600"
+                                    >
+                                        Crea tu cuenta y comienza a reciclar
+                                    </motion.p>
+                                </div>
+
+                                {/* Mensajes de error y éxito */}
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
+                                    >
+                                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-red-800">{error}</p>
+                                    </motion.div>
+                                )}
+
+                                {successMessage && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3"
+                                    >
+                                        <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-green-800">{successMessage}</p>
+                                    </motion.div>
+                                )}
+
+                                {/* Form */}
+                                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+
+                                    {/* Nombre y Apellido */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.7, duration: 0.6 }}
+                                        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                                    >
+                                        <div>
+                                            <label className="block text-sm font-medium text-green-900 mb-2">Nombre</label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                                <input
+                                                    type="text"
+                                                    value={name}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+
+                                                        if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
+                                                            setName(value);
+                                                        }
+                                                    }}
+                                                    onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+                                                    placeholder="Tu nombre"
+                                                    disabled={loading}
+                                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.name && !isValidName(name) ? "border-red-400" : "border-green-200"}`}
+                                                    required
+                                                />
+                                            </div>
+                                            {touched.name && !isValidName(name) && (
+                                                <p className="text-xs text-red-600 mt-1">
+                                                    Ingresa un nombre válido (solo letras, mínimo 3 caracteres) y sin palabras ofensivas
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-green-900 mb-2">Apellido</label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                                <input
+                                                    type="text"
+                                                    value={lastname}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+
+                                                        if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
+                                                            setLastname(value);
+                                                        }
+                                                    }}
+                                                    onBlur={() => setTouched((t) => ({ ...t, lastname: true }))}
+                                                    placeholder="Tu apellido"
+                                                    disabled={loading}
+                                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.lastname && !isValidName(lastname) ? "border-red-400" : "border-green-200"} ?`}
+                                                    required
+                                                />
+                                            </div>
+                                            {touched.lastname && !isValidName(lastname) && (
+                                                <p className="text-xs text-red-600 mt-1">
+                                                    Ingresa un apellido válido (solo letras, mínimo 3 caracteres) y sin palabras ofensivas
+                                                </p>
+                                            )}
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Edad */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.75, duration: 0.6 }}
+                                    >
+                                        <label className="block text-sm font-medium text-green-900 mb-2">Edad</label>
+                                        <div className="relative">
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                            <input
+                                                type="number"
+                                                value={age}
+                                                onChange={(e) => setAge(e.target.value)}
+                                                onBlur={() => setTouched((t) => ({ ...t, age: true }))}
+                                                placeholder="Tu edad"
+                                                min="6"
+                                                max="110"
+                                                disabled={loading}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.age && !isValidAge(age) ? "border-red-400" : "border-green-200"}`}
+                                                required
+                                            />
+                                        </div>
+                                        {touched.age && !isValidAge(age) && (
+                                            <p className="text-xs text-red-600 mt-1">Ingrese una edad entre 6 y 110 años</p>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Email */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.8, duration: 0.6 }}
+                                    >
+                                        <label className="block text-sm font-medium text-green-900 mb-2">Correo Electrónico</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                                                placeholder="tu@email.com"
+                                                disabled={loading}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white 
+    focus:ring-2 focus:ring-green-500 focus:border-transparent 
+    outline-none transition-all text-green-900 placeholder:text-green-400 
+    disabled:opacity-50 disabled:cursor-not-allowed 
+    ${touched.email && !isValidEmail(email)
+                                                        ? "border-red-400"
+                                                        : "border-green-200"
+                                                    }`}
+                                                required
+                                            />
+                                        </div>
+                                        {touched.email && !isValidEmail(email) && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                                Correo inválido (ej: pepito@gmail.com)
+                                            </p>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Teléfono */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.85, duration: 0.6 }}
+                                    >
+                                        <label className="block text-sm font-medium text-green-900 mb-2">Teléfono</label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                            <input
+                                                type="tel"
+                                                value={phone}
+                                                onChange={(e) => {
+                                                    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+                                                    setPhone(value);
+                                                }}
+                                                onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+                                                placeholder="300 123 4567"
+                                                pattern="[0-9]{10}"
+                                                disabled={loading}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.phone && !isValidPhone(phone) ? "border-red-400" : "border-green-200"}`}
+                                                required
+                                            />
+                                        </div>
+                                        {touched.phone && !isValidPhone(phone) && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                                Número inválido 10 dígitos como mínimo (ej: 3201234567)
+                                            </p>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Contraseña */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.9, duration: 0.6 }}
+                                    >
+                                        <label className="block text-sm font-medium text-green-900 mb-2">Contraseña</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                                                placeholder="••••••••"
+                                                disabled={loading}
+                                                className={`w-full pl-12 pr-12 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.password && isEmpty(password) ? "border-red-400" : "border-green-200"}`}
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                disabled={loading}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
+                                        {touched.password && isEmpty(password) && (
+                                            <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Confirmar Contraseña */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 1.0, duration: 0.6 }}
+                                    >
+                                        <label className="block text-sm font-medium text-green-900 mb-2">Confirmar Contraseña</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                onBlur={() => setTouched((t) => ({ ...t, confirmPassword: true }))}
+                                                placeholder="••••••••"
+                                                disabled={loading}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.confirmPassword && isEmpty(confirmPassword) ? "border-red-400" : "border-green-200"}`}
+                                                required
+                                            />
+                                        </div>
+                                        {touched.confirmPassword && isEmpty(confirmPassword) && (
+                                            <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Requisitos de contraseña — lista vertical (igual que el original) */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 1.1, duration: 0.6 }}
+                                        className="space-y-2 pt-2"
+                                    >
+                                        {passwordRequirements.map((req, i) => (
+                                            <motion.div
+                                                key={i}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: 1.2 + i * 0.1, duration: 0.4 }}
+                                                className={`flex items-center gap-2 text-xs sm:text-sm transition-colors ${req.met ? "text-green-600" : "text-gray-500"}`}
+                                            >
+                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${req.met ? "bg-green-500 scale-100" : "bg-gray-300 scale-90"}`}>
+                                                    {req.met && <Check className="w-3 h-3 text-white" />}
+                                                </div>
+                                                {req.text}
+                                            </motion.div>
+                                        ))}
+                                    </motion.div>
+
+                                    {/* Términos */}
+                                    <motion.label
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 1.6, duration: 0.6 }}
+                                        className="flex items-start gap-2 cursor-pointer text-xs sm:text-sm text-green-800"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={acceptTerms}
+                                            onChange={(e) => setAcceptTerms(e.target.checked)}
+                                            onBlur={() => setTouched((t) => ({ ...t, acceptTerms: true }))}
+                                            disabled={loading}
+                                            className="rounded border-green-300 mt-1 text-green-600 focus:ring-green-500 cursor-pointer disabled:opacity-50"
+                                            required
+                                        />
+                                        <span>
+                                            Acepto los{" "}
+                                            <a href="#" className="text-green-600 font-semibold hover:underline">términos de servicio</a>
+                                            {" "}y la{" "}
+                                            <a href="#" className="text-green-600 font-semibold hover:underline">política de privacidad</a>
+                                        </span>
+                                    </motion.label>
+                                    {touched.acceptTerms && !acceptTerms && (
+                                        <p className="text-xs text-red-600 mt-1">Debe aceptar los términos para continuar</p>
                                     )}
-                                </motion.button>
+
+                                    {/* Botón submit */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 1.7, duration: 0.6 }}
+                                    >
+                                        <motion.button
+                                            type="submit"
+                                            whileHover={formValid && !loading ? { scale: 1.02 } : {}}
+                                            whileTap={formValid && !loading ? { scale: 0.98 } : {}}
+                                            disabled={!formValid || loading}
+                                            className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${formValid && !loading
+                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
+                                                : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    Enviando código...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UserPlus className="w-5 h-5" />
+                                                    Crear Cuenta
+                                                    <ArrowRight className="w-5 h-5" />
+                                                </>
+                                            )}
+                                        </motion.button>
+                                    </motion.div>
+                                </form>
+
+                                {/* Login Link */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 1.8, duration: 0.6 }}
+                                    className="mt-6 sm:mt-8 text-center"
+                                >
+                                    <p className="text-sm text-green-700">
+                                        ¿Ya tienes una cuenta?{" "}
+                                        <a href="/login" className="text-green-600 font-semibold hover:underline">Inicia sesión</a>
+                                    </p>
+                                </motion.div>
                             </motion.div>
-                        </form>
+                        )}
 
-                        {/* Login Link */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 1.8, duration: 0.6 }}
-                            className="mt-6 sm:mt-8 text-center"
-                        >
-                            <p className="text-sm text-green-700">
-                                ¿Ya tienes una cuenta?{" "}
-                                <a href="/login" className="text-green-600 font-semibold hover:underline">Inicia sesión</a>
-                            </p>
-                        </motion.div>
-                    </motion.div>
-                    )}
-
-                    {/* ════════════════════════════════════════════════════════
+                        {/* ════════════════════════════════════════════════════════
                         PASO 2 — VERIFICAR CÓDIGO
                     ════════════════════════════════════════════════════════ */}
-                    {step === 'code' && (
-                    <motion.div
-                        key="code"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.25 }}
-                    >
-                        {/* Header */}
-                        <div className="text-center mb-6 sm:mb-8">
+                        {step === 'code' && (
                             <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: "spring", stiffness: 120, damping: 12, delay: 0.1 }}
-                                className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center mb-4 shadow-lg"
-                            >
-                                <ShieldCheck className="w-8 h-8 text-white" />
-                            </motion.div>
-                            <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">
-                                Verifica tu correo
-                            </h2>
-                            <p className="text-sm sm:text-base text-green-600">
-                                Enviamos un código de 6 dígitos a
-                            </p>
-                            <p className="text-sm sm:text-base text-green-800 font-semibold mt-0.5">
-                                {email}
-                            </p>
-                        </div>
-
-                        {/* Error */}
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
-                            >
-                                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-red-800">{error}</p>
-                            </motion.div>
-                        )}
-
-                        {/* Éxito */}
-                        {successMessage && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3"
-                            >
-                                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-green-800">{successMessage}</p>
-                            </motion.div>
-                        )}
-
-                        <form onSubmit={handleCodeSubmit} className="space-y-4 sm:space-y-5">
-
-                            {/* Input código */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
+                                key="code"
+                                initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2, duration: 0.6 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.25 }}
                             >
-                                <label className="block text-sm font-medium text-green-900 mb-2">
-                                    Código de verificación
-                                </label>
-                                <input
-                                    type="text"
-                                    value={codigo}
-                                    onChange={e => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                    maxLength={6}
-                                    inputMode="numeric"
-                                    placeholder="000000"
-                                    disabled={loading}
-                                    className="w-full px-4 py-3 rounded-xl border-2 border-green-200 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-center text-3xl font-bold tracking-[0.4em] text-green-900 placeholder:text-green-200"
-                                />
-                            </motion.div>
+                                {/* Header */}
+                                <div className="text-center mb-6 sm:mb-8">
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 120, damping: 12, delay: 0.1 }}
+                                        className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center mb-4 shadow-lg"
+                                    >
+                                        <ShieldCheck className="w-8 h-8 text-white" />
+                                    </motion.div>
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-green-900 mb-2">
+                                        Verifica tu correo
+                                    </h2>
+                                    <p className="text-sm sm:text-base text-green-600">
+                                        Enviamos un código de 6 dígitos a
+                                    </p>
+                                    <p className="text-sm sm:text-base text-green-800 font-semibold mt-0.5">
+                                        {email}
+                                    </p>
+                                </div>
 
-                            {/* Temporizador y reenviar */}
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="flex items-center justify-between"
-                            >
-                                <span className={`text-sm ${timeLeft > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                    {timeLeft > 0
-                                        ? `⏱️ Expira en ${formatTime(timeLeft)}`
-                                        : '⚠️ Código expirado'}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={handleReenviar}
-                                    disabled={timeLeft > 0 || loading}
-                                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${timeLeft > 0 || loading
-                                        ? 'text-gray-300 cursor-not-allowed'
-                                        : 'text-green-600 hover:text-green-800 hover:underline'}`}
+                                {/* Error */}
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
+                                    >
+                                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-red-800">{error}</p>
+                                    </motion.div>
+                                )}
+
+                                {/* Éxito */}
+                                {successMessage && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3"
+                                    >
+                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm text-green-800">{successMessage}</p>
+                                    </motion.div>
+                                )}
+
+                                <form onSubmit={handleCodeSubmit} className="space-y-4 sm:space-y-5">
+
+                                    {/* Input código */}
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.2, duration: 0.6 }}
+                                    >
+                                        <label className="block text-sm font-medium text-green-900 mb-2">
+                                            Código de verificación
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={codigo}
+                                            onChange={e => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            maxLength={6}
+                                            inputMode="numeric"
+                                            placeholder="000000"
+                                            disabled={loading}
+                                            className="w-full px-4 py-3 rounded-xl border-2 border-green-200 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-center text-3xl font-bold tracking-[0.4em] text-green-900 placeholder:text-green-200"
+                                        />
+                                    </motion.div>
+
+                                    {/* Temporizador y reenviar */}
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="flex items-center justify-between"
+                                    >
+                                        <span className={`text-sm ${timeLeft > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                            {timeLeft > 0
+                                                ? `⏱️ Expira en ${formatTime(timeLeft)}`
+                                                : '⚠️ Código expirado'}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={handleReenviar}
+                                            disabled={timeLeft > 0 || loading}
+                                            className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${timeLeft > 0 || loading
+                                                ? 'text-gray-300 cursor-not-allowed'
+                                                : 'text-green-600 hover:text-green-800 hover:underline'}`}
+                                        >
+                                            <RotateCcw className="w-4 h-4" />
+                                            Reenviar código
+                                        </button>
+                                    </motion.div>
+
+                                    {/* Botón verificar */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.4, duration: 0.6 }}
+                                    >
+                                        <motion.button
+                                            type="submit"
+                                            whileHover={!loading ? { scale: 1.02 } : {}}
+                                            whileTap={!loading ? { scale: 0.98 } : {}}
+                                            disabled={loading || codigo.length !== 6}
+                                            className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${!loading && codigo.length === 6
+                                                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
+                                                : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    Verificando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ShieldCheck className="w-5 h-5" />
+                                                    Verificar y crear cuenta
+                                                    <ArrowRight className="w-5 h-5" />
+                                                </>
+                                            )}
+                                        </motion.button>
+                                    </motion.div>
+                                </form>
+
+                                {/* Volver */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="mt-6 sm:mt-8 text-center"
                                 >
-                                    <RotateCcw className="w-4 h-4" />
-                                    Reenviar código
-                                </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setStep('form'); setError(''); setCodigo(''); setSuccessMessage(''); }}
+                                        className="text-sm text-green-600 font-semibold hover:underline"
+                                    >
+                                        ← Volver y editar mis datos
+                                    </button>
+                                </motion.div>
                             </motion.div>
-
-                            {/* Botón verificar */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.4, duration: 0.6 }}
-                            >
-                                <motion.button
-                                    type="submit"
-                                    whileHover={!loading ? { scale: 1.02 } : {}}
-                                    whileTap={!loading ? { scale: 0.98 } : {}}
-                                    disabled={loading || codigo.length !== 6}
-                                    className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${!loading && codigo.length === 6
-                                        ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
-                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Verificando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ShieldCheck className="w-5 h-5" />
-                                            Verificar y crear cuenta
-                                            <ArrowRight className="w-5 h-5" />
-                                        </>
-                                    )}
-                                </motion.button>
-                            </motion.div>
-                        </form>
-
-                        {/* Volver */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.5 }}
-                            className="mt-6 sm:mt-8 text-center"
-                        >
-                            <button
-                                type="button"
-                                onClick={() => { setStep('form'); setError(''); setCodigo(''); setSuccessMessage(''); }}
-                                className="text-sm text-green-600 font-semibold hover:underline"
-                            >
-                                ← Volver y editar mis datos
-                            </button>
-                        </motion.div>
-                    </motion.div>
-                    )}
+                        )}
 
                     </AnimatePresence>
                 </div>
