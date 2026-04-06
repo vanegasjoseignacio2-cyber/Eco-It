@@ -23,7 +23,7 @@ const PALABRAS_OFENSIVAS = [
     'soplamonda', 'pichaslargas','culear', 'culito', 'mia khalifa','ano', 'polla', 'zunga', 'sunga', 'soplapicha',
     'consolador','mal parido','malparido', 'malparidos','becerro', 'virgen','mrd', 'qulo','kulo','teta','chocho',
     'pendejo', 'pendejos', 'gay','cacorro','veneco', 'veneca','venequito', 'chamo', 'beneco','chocha', 'cachon', 'cachondo',
-    'cachocontento','carepicha',
+    'cachocontento','carepicha', 'monda', 'viril', 'viriles', 'cuca', 'picha', 'cabezaepicha', 'pta', 'catrehijuepta',
 
     // Español - México
     'no mames','no mamar','wey pendejo','guey','putazo','chingar','chingón','chingon',
@@ -48,11 +48,27 @@ const PALABRAS_OFENSIVAS = [
     'p*ta','p*t*','m13rda','m1erda','put4','put0','cul0','cvl0',
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔹 LEET MAP extendido (cubre más variantes de evasión)
+// ─────────────────────────────────────────────────────────────────────────────
 const LEET_MAP = {
-    '4': 'a', '@': 'a', '3': 'e', '1': 'i', '!': 'i',
-    '0': 'o', '$': 's', '5': 's', '7': 't',
+    '4': 'a', '@': 'a',  'á': 'a', 'à': 'a', 'ä': 'a',
+    '3': 'e', '€': 'e',  'é': 'e', 'è': 'e',
+    '1': 'i', '!': 'i',  'í': 'i', 'ì': 'i', 'ï': 'i',
+    '0': 'o', 'ó': 'o',  'ò': 'o', 'ö': 'o',
+    '$': 's', '5': 's',
+    '7': 't',
+    '+': 't',
+    '(': 'c',
+    'ñ': 'n',
+    'ü': 'u', 'ú': 'u', 'ù': 'u',
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔹 Normalización multicapa
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 1. Minúsculas + quitar diacríticos Unicode */
 function normalizarTexto(texto) {
     return texto
         .toLowerCase()
@@ -60,97 +76,175 @@ function normalizarTexto(texto) {
         .replace(/[\u0300-\u036f]/g, '');
 }
 
+/** 2. Sustituir caracteres leet por letras */
 function normalizarLeet(texto) {
-    return texto.split('').map(c => LEET_MAP[c] || c).join('');
+    return texto.split('').map(c => LEET_MAP[c] ?? c).join('');
 }
 
-// 🔥 IMPORTANTE: NO eliminar todo, dejar separadores
+/**
+ * 3. Para correos: limpiar separadores internos típicos usados como evasión.
+ *    pene.77 → pene77 → pene   |   p_e_n_e → pene
+ *    Se eliminan puntos, guiones, guiones bajos y dígitos ENTRE letras.
+ */
+function normalizarUsername(username) {
+    // a) quitar separadores (., -, _, espacios)
+    let u = username.replace(/[.\-_\s]/g, '');
+    // b) quitar dígitos que "separan" bloques de letras
+    //    p.ej.  pene77  → pene  |  p3n3 ya fue manejado por leet
+    u = u.replace(/\d+/g, '');
+    return u;
+}
+
+/** 4. Limpiar el texto libre (mensajes / nombres): conservar letras y espacios */
 function limpiarTexto(texto) {
     return texto.replace(/[^a-z0-9\s.,\-_"'!¡¿?]/g, ' ');
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔹 Construcción del regex
+// ─────────────────────────────────────────────────────────────────────────────
 
 function escaparRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// 🔥 SEPARADORES UNIVERSALES (espacios + símbolos)
-const SEPARADORES = `[\\s.,\\-_"'!¡¿?]*`;
+/** Separadores universales entre letras (para textos libres) */
+const SEP = `[\\s.,\\-_"'!¡¿?]*`;
 
-// 🔥 h i j u e p u t a / h.i.j.u.e...
+/** Expande "puta" → "p[SEP]u[SEP]t[SEP]a" para detectar p.u.t.a */
 function expandirSeparadores(palabra) {
-    return palabra.split('').join(SEPARADORES);
+    return palabra.split('').join(SEP);
 }
 
-// 🔥 plural simple
+/** Plurales simples */
 function pluralizar(p) {
-    return [`${p}`, `${p}s`, `${p}es`];
+    return [p, `${p}s`, `${p}es`];
 }
 
-function crearRegex(lista) {
-    const palabras = lista.map(p => normalizarTexto(p));
+/**
+ * Genera patrones para texto libre (nombres / mensajes):
+ *  - word boundary exacto
+ *  - plurales
+ *  - pegado con sufijo (\w*)
+ *  - con separadores entre letras
+ *
+ * IMPORTANTE: para palabras cortas (≤4 letras) se usa boundary estricto
+ * para evitar falsos positivos ("ano" en "piano", "ass" en "lass", etc.)
+ */
+function crearPatronesTexto(palabraNorm) {
+    const base = escaparRegex(palabraNorm);
+    const corta = palabraNorm.replace(/\s/g, '').length <= 4;
 
-    const patrones = palabras.flatMap(p => {
-        const base = escaparRegex(p);
+    const patrones = [
+        // Exacto con boundary
+        `(?<![a-z])${base}(?![a-z])`,
+        // Plurales
+        ...pluralizar(base).map(pl => `(?<![a-z])${pl}(?![a-z])`),
+    ];
 
-        // 🔹 exacto (seguro)
-        const exacto = `\\b${base}\\b`;
+    if (!corta) {
+        // Pegado con cualquier sufijo alfanumérico
+        patrones.push(`(?<![a-z])${base}[a-z0-9]*(?![a-z])`);
+        // Separado con símbolos entre letras
+        patrones.push(expandirSeparadores(base));
+    }
 
-        // 🔹 plural
-        const plurales = pluralizar(base).map(pl => `\\b${pl}\\b`);
+    return patrones;
+}
 
-        // 🔹 pegadas (solo palabras largas)
-        const pegado = p.length > 4 ? `${base}\\w*` : null;
+/**
+ * Para USERNAME de correo se usa un regex más agresivo:
+ * detecta la palabra ofensiva como SUBCADENA (sin boundary) porque el
+ * username ya fue normalizado (sin dígitos ni separadores).
+ */
+function crearPatronesEmail(palabraNorm) {
+    const base = escaparRegex(palabraNorm);
+    // Subcadena directa — el username limpio no tiene separadores ni dígitos
+    return [base];
+}
 
-        // 🔹 separadas con símbolos
-        const separado = p.length > 4
-            ? expandirSeparadores(base)
-            : null;
-
-        return [
-            exacto,
-            ...plurales,
-            pegado,
-            separado
-        ].filter(Boolean);
-    });
-
+function crearRegexTexto(lista) {
+    const patrones = lista
+        .map(p => normalizarTexto(p))
+        .flatMap(crearPatronesTexto);
     return new RegExp(patrones.join('|'), 'i');
 }
 
+function crearRegexEmail(lista) {
+    const patrones = lista
+        .map(p => normalizarTexto(p).replace(/\s/g, ''))   // sin espacios
+        .filter(p => p.length >= 2)                         // descartar muy cortas
+        .flatMap(crearPatronesEmail);
+    return new RegExp(patrones.join('|'), 'i');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔹 Hook principal
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function useOfensiveValidator() {
 
-    const regex = useMemo(() => crearRegex(PALABRAS_OFENSIVAS), []);
+    // Dos regex distintos: uno para texto libre, otro para usernames de email
+    const regexTexto = useMemo(() => crearRegexTexto(PALABRAS_OFENSIVAS), []);
+    const regexEmail = useMemo(() => crearRegexEmail(PALABRAS_OFENSIVAS), []);
 
-    function procesar(texto) {
-        let limpio = normalizarTexto(texto);
-        limpio = normalizarLeet(limpio);
-        limpio = limpiarTexto(limpio);
-        return limpio;
+    /** Pipeline de normalización para texto libre */
+    function procesarTexto(texto) {
+        let t = normalizarTexto(texto);
+        t = normalizarLeet(t);
+        t = limpiarTexto(t);
+        return t;
+    }
+
+    /** Pipeline de normalización para username de email */
+    function procesarUsername(username) {
+        let u = normalizarTexto(username);
+        u = normalizarLeet(u);
+        u = normalizarUsername(u);   // ← elimina separadores y dígitos
+        return u;
     }
 
     function contieneOfensivas(texto) {
-        return regex.test(procesar(texto));
+        return regexTexto.test(procesarTexto(texto));
+    }
+
+    function contieneOfensivasEmail(username) {
+        return regexEmail.test(procesarUsername(username));
     }
 
     function obtenerOfensivas(texto) {
-        return procesar(texto).match(regex) || [];
+        return procesarTexto(texto).match(regexTexto) || [];
     }
 
+    /** Valida texto libre (nombre / mensaje) — doble pasada para detectar evasión */
     function validar(texto) {
+        // Pasada 1: texto con separadores (detecta p.u.t.a, h i j u e p u t a)
         const ofensivas = obtenerOfensivas(texto);
-
-        if (ofensivas.length === 0) {
-            return { valido: true, palabras: [] };
+        if (ofensivas.length > 0) {
+            return { valido: false, palabras: ofensivas, mensaje: 'Tu mensaje contiene lenguaje ofensivo' };
         }
+        // Pasada 2: texto colapsado (sin dígitos ni separadores) para evasión tipo mierda123
+        const colapsado = procesarTexto(texto).replace(/[\s.,\-_'"!¡¿?0-9]/g, '');
+        const match = colapsado.match(regexEmail) || [];
+        if (match.length > 0) {
+            return { valido: false, palabras: match, mensaje: 'Tu mensaje contiene lenguaje ofensivo' };
+        }
+        return { valido: true, palabras: [] };
+    }
 
+    /** Valida username de correo electrónico */
+    function validarEmail(email) {
+        const username = email.split('@')[0];
+        if (!username) return { valido: true };
+        const encontrado = contieneOfensivasEmail(username);
+        if (!encontrado) return { valido: true };
         return {
             valido: false,
-            palabras: ofensivas,
-            mensaje: 'Tu mensaje contiene lenguaje ofensivo 🚫',
+            mensaje: 'El correo contiene términos no permitidos',
         };
     }
 
-    return { contieneOfensivas, obtenerOfensivas, validar };
+    return { contieneOfensivas, contieneOfensivasEmail, obtenerOfensivas, validar, validarEmail };
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // 🔹 Reglas de validación por campo
@@ -219,7 +313,7 @@ function FieldError({ msg }) {
 
 export default function ContactForm() {
     const { usuario, estaAutenticado } = useAuth();
-    const { validar } = useOfensiveValidator();
+    const { validar, validarEmail } = useOfensiveValidator();
 
     const user = estaAutenticado && usuario ? {
         id:    usuario._id || usuario.id || null,
@@ -256,16 +350,39 @@ export default function ContactForm() {
     const validateField = (name, value) => {
         if (name === 'subject') return value ? '' : 'Selecciona un asunto.';
 
+        // 🔹 Validaciones base primero
+        if (name !== 'message') {
+            const rule = BASE_VALIDATIONS[name];
+            const error = rule ? rule.validate(value) : '';
+            if (error) return error;
+        }
+
+        // 🔹 Validación de mensaje
         if (name === 'message') {
-            if (!value.trim())            return 'El mensaje es obligatorio.';
+            if (!value.trim()) return 'El mensaje es obligatorio.';
             if (value.trim().length < 10) return 'El mensaje debe tener al menos 10 caracteres.';
-            const resultado = validar(value);
-            if (!resultado.valido)        return resultado.mensaje;
+        }
+
+        // 🔥 VALIDACIÓN DE OFENSIVAS
+
+        // 📧 Email → validación de username con pipeline especializado
+        if (name === 'email') {
+            const resultado = validarEmail(value);
+            if (!resultado.valido) {
+                return resultado.mensaje;
+            }
             return '';
         }
 
-        const rule = BASE_VALIDATIONS[name];
-        return rule ? rule.validate(value) : '';
+        // 👤 Nombre y mensaje completos
+        if (name === 'name' || name === 'message') {
+            const resultado = validar(value);
+            if (!resultado.valido) {
+                return 'Tu mensaje contiene lenguaje no permitido.';
+            }
+        }
+
+        return '';
     };
 
     // ── Cambio de valor ───────────────────────────────────────────────────────
@@ -275,6 +392,23 @@ export default function ContactForm() {
         const filtered = applyFilter(name, value);
         setFormData(prev => ({ ...prev, [name]: filtered }));
         setSubmitError('');
+
+        // 🔥 Mensaje: validación en tiempo real solo para lenguaje ofensivo
+        // El error de longitud mínima se muestra solo al hacer blur
+        if (name === 'message') {
+            const resultado = validar(filtered);
+            if (!resultado.valido) {
+                setFieldErrors(prev => ({ ...prev, message: 'Tu mensaje contiene lenguaje no permitido.' }));
+            } else if (touched.message) {
+                // Si ya tocó el campo, mostrar todos los errores normalmente
+                setFieldErrors(prev => ({ ...prev, message: validateField('message', filtered) }));
+            } else {
+                // Mientras escribe sin haber salido del campo, limpiar errores de longitud
+                setFieldErrors(prev => ({ ...prev, message: '' }));
+            }
+            return;
+        }
+
         if (touched[name]) {
             setFieldErrors(prev => ({ ...prev, [name]: validateField(name, filtered) }));
         }
@@ -492,16 +626,21 @@ export default function ContactForm() {
 
                     {/* Mensaje */}
                     <div className="flex flex-col gap-1">
-                        <span className="text-sm font-medium text-green-800 flex justify-between">
+                        <span className="text-sm font-medium text-green-800 flex justify-between items-center">
                             Mensaje
                             <span className={`text-xs font-normal transition-colors ${
-                                formData.message.length === 0
-                                    ? 'text-green-300'
-                                    : formData.message.length < 10
-                                        ? 'text-red-400'
-                                        : 'text-green-500'
+                                fieldErrors.message === 'Tu mensaje contiene lenguaje no permitido.'
+                                    ? 'text-red-500 font-semibold'
+                                    : formData.message.length === 0
+                                        ? 'text-green-300'
+                                        : formData.message.length < 10
+                                            ? 'text-red-400'
+                                            : 'text-green-500'
                             }`}>
-                                {formData.message.length} car.{formData.message.length >= 10 ? ' ✓' : ' (mín. 10)'}
+                                {fieldErrors.message === 'Tu mensaje contiene lenguaje no permitido.'
+                                    ? '⚠ Lenguaje no permitido'
+                                    : `${formData.message.length} car.${formData.message.length >= 10 ? ' ✓' : ' (mín. 10)'}`
+                                }
                             </span>
                         </span>
                         <textarea
@@ -512,9 +651,9 @@ export default function ContactForm() {
                             rows={5}
                             placeholder="¿En qué podemos ayudarte?"
                             required
-                            className={`${inputBase(!!showErr('message'))} resize-none`}
+                            className={`${inputBase(!!fieldErrors.message)} resize-none`}
                         />
-                        <FieldError msg={showErr('message')} />
+                        <FieldError msg={fieldErrors.message} />
                     </div>
 
                     <SendButton isLoading={isLoading} isSuccess={isSuccess} />
