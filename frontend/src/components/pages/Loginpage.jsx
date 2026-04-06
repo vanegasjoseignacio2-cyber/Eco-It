@@ -1,9 +1,33 @@
+import { useEffect } from 'react';
 import Navbar from "../Layout/Navbar";
 import Footer from "../Layout/Footer";
 import LoginHero from "../Auth/LoginHero";
 import LoginForm from "../Auth/LoginForm";
+import { useToast } from '../../context/ToastContext';
+import { useCookieConsent } from '../../context/Cookieconsentcontext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
+    const { showToast } = useToast();
+    const { openBanner, getCookie } = useCookieConsent();
+    const { estaAutenticado } = useAuth();
+
+    useEffect(() => {
+        // No mostrar si ya está autenticado
+        if (estaAutenticado) return;
+
+        const consent = getCookie('cookie_consent');
+
+        if (consent !== 'accepted') {
+            showToast(
+                '⚠️ Debes aceptar las cookies para poder iniciar sesión.',
+                'warning',
+                0,
+                { label: 'Aceptar cookies', onClick: openBanner }
+            );
+        }
+    }, [estaAutenticado, showToast, openBanner, getCookie]);
+
     return (
         <div className="min-h-screen flex flex-col nature-bg">
             <Navbar />
