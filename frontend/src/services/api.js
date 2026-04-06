@@ -17,7 +17,7 @@ const fetchAPI = async (endpoint, options = {}) => {
       fetchOptions.body = options.body;
     }
 
-    const response = await fetch(`${OPENROUTER_API_KEY}${endpoint}`, fetchOptions);
+    const response = await fetch(`${BASE_URL}${endpoint}`, fetchOptions);
 
     const data = await response.json();
 

@@ -145,40 +145,58 @@ export const obtenerStats = async (req, res) => {
 
         // Fecha de hoy (inicio del día)
         const hoy = new Date();
-        hoy.setHours(0,0,0,0);
+        hoy.setHours(0, 0, 0, 0);
+
+        const añoActual = hoy.getFullYear();
 
         let consultasHoy = 0;
         let nuevosHoy = 0;
+            let totalPuntos = 0;
+        let totalConsultas = 0;
 
         // Variables de gráficos y picos
-        const registroPorMes = Array(12).fill(0); // [0,0,0...0] index 0 = Ene
-        const registroPorDia = {}; // { 'YYYY-MM-DD': conteo }
+        const registroPorMes = Array(12).fill(0);   // registros (createdAt)
+        const activosPorMes  = Array(12).fill(0);   // usuarios activos (ultimaConexion)
+        const consultasPorMes = Array(12).fill(0);  // consultas IA (historialConsultas)
+        const registroPorDia = {};
 
         usuarios.forEach(user => {
-            if (!user.createdAt) return;
-            const createdAt = new Date(user.createdAt);
+            // ── Registros ──────────────────────────────────────────────────
+            if (user.createdAt) {
+                const createdAt = new Date(user.createdAt);
+                if (createdAt >= hoy) nuevosHoy++;
+                const mes = createdAt.getMonth();
+                registroPorMes[mes]++;
+                const fechaStr = createdAt.toISOString().split('T')[0];
+                registroPorDia[fechaStr] = (registroPorDia[fechaStr] || 0) + 1;
+            }
 
-            // Contar nuevos de hoy
-            if (createdAt >= hoy) nuevosHoy++;
+            // ── Usuarios activos por mes (ultimaConexion) ──────────────────
+            if (user.ultimaConexion) {
+                const uc = new Date(user.ultimaConexion);
+                // Solo contar el año actual para que el gráfico sea del año en curso
+                if (uc.getFullYear() === añoActual) {
+                    activosPorMes[uc.getMonth()]++;
+                }
+            }
 
-            // Agrupar por mes (ignorar el año exacto para mostrar la data de prueba en la gráfica)
-            const mes = createdAt.getMonth(); 
-            registroPorMes[mes]++;
+            // ── Puntos Reciclaje ──────────────────────────────────────────
+            totalPuntos += (user.puntos || 0);
 
-            // Agrupar por día para pico máximo absoluto
-            const fechaStr = createdAt.toISOString().split('T')[0];
-            registroPorDia[fechaStr] = (registroPorDia[fechaStr] || 0) + 1;
-
-            // Contar Consultas IA (Online y de hoy)
+            // ── Consultas IA de hoy y por mes ──────────────────────────────
             if (user.historialConsultas && user.historialConsultas.length > 0) {
+                totalConsultas += user.historialConsultas.length;
                 user.historialConsultas.forEach(consulta => {
                     const fechaConsulta = new Date(consulta.fecha || consulta.createdAt);
-                    if (fechaConsulta >= hoy) {
-                        const resp = consulta.respuesta || '';
-                        // Identificar si la respuesta NO fue generada por la lógica local (offline)
-                        const isOffline = resp.includes('🌱') || resp.includes('📸') || resp.includes('📋') || resp.includes('Modo Offline') || resp.includes('Eco-IA');
-                        if (!isOffline) {
+                    const resp = consulta.respuesta || '';
+                    const isOffline = resp.includes('🌱') || resp.includes('📸') || resp.includes('📋') || resp.includes('Modo Offline') || resp.includes('Eco-IA');
+                    
+                    if (!isOffline) {
+                        if (fechaConsulta >= hoy) {
                             consultasHoy++;
+                        }
+                        if (fechaConsulta.getFullYear() === añoActual) {
+                            consultasPorMes[fechaConsulta.getMonth()]++;
                         }
                     }
                 });
@@ -190,24 +208,26 @@ export const obtenerStats = async (req, res) => {
         const mesesLabel = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
         let maxMesInt = 0;
         if (Math.max(...registroPorMes) > 0) {
-             maxMesInt = registroPorMes.indexOf(Math.max(...registroPorMes));
+            maxMesInt = registroPorMes.indexOf(Math.max(...registroPorMes));
         }
-
         const mejorMes = totalUsuarios > 0 && Math.max(...registroPorMes) > 0 ? mesesLabel[maxMesInt] : '—';
 
-        // Estructura Chart Data (para el frontend)
+        // Estructura Chart Data
         const chartData = {
-            users: mesesLabel.map((m, index) => ({ label: m, value: registroPorMes[index] })),
+            users: mesesLabel.map((m, i) => ({ label: m, value: activosPorMes[i] })),
+            queries: mesesLabel.map((m, i) => ({ label: m, value: consultasPorMes[i] })),
         };
 
-        res.json({ 
-            success: true, 
-            totalUsuarios, 
+        res.json({
+            success: true,
+            totalUsuarios,
             usuariosOnline: usuariosConectados.size,
             consultasHoy,
             mejorMes,
             picoDiario: maxDiario,
             nuevosHoy,
+            totalPuntos,
+            totalConsultas,
             chartData
         });
     } catch (error) {

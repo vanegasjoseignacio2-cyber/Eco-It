@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     BarChart3,
@@ -17,82 +18,18 @@ import {
     ChevronRight,
 } from "lucide-react";
 
-// ─────────────────────────────────────────────────────────────
-// TODO: GET /api/admin/stats/overview?period=week|month|year
-// Respuesta esperada: { kpis: [...], chartData: {...}, breakdown: [...] }
-// ─────────────────────────────────────────────────────────────
-
-const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-
-// TODO: traer desde BD según período seleccionado
-const DATA = {
-    users:     MONTHS.map((m) => ({ label: m, value: 0 })),
-    queries:   MONTHS.map((m) => ({ label: m, value: 0 })),
-    recycling: MONTHS.map((m) => ({ label: m, value: 0 })),
-};
-
-// TODO: GET /api/admin/stats/kpis → { value, change, up }[]
-const KPI_LIST = [
-    {
-        id: "users",
-        label: "Usuarios Totales",
-        value: "0",      // TODO: res.data.kpis.users.total
-        change: "0%",    // TODO: res.data.kpis.users.change
-        up: true,
-        icon: Users,
-        accent: "#22c55e",
-        pill: "bg-green-100 text-green-700",
-    },
-    {
-        id: "retention",
-        label: "Tasa de Retención",
-        value: "0%",     // TODO: res.data.kpis.retention
-        change: "0%",
-        up: true,
-        icon: Target,
-        accent: "#84cc16",
-        pill: "bg-lime-100 text-lime-700",
-    },
-    {
-        id: "queries",
-        label: "Consultas IA",
-        value: "0",      // TODO: res.data.kpis.queries.total
-        change: "0%",
-        up: false,
-        icon: Sparkles,
-        accent: "#10b981",
-        pill: "bg-emerald-100 text-emerald-700",
-    },
-    {
-        id: "avg_points",
-        label: "Puntos Promedio",
-        value: "0",      // TODO: res.data.kpis.avgPoints
-        change: "0%",
-        up: true,
-        icon: Award,
-        accent: "#14b8a6",
-        pill: "bg-teal-100 text-teal-700",
-    },
-];
-
-// TODO: GET /api/admin/stats/activity-breakdown → { label, pct, color }[]
-const BREAKDOWN = [
-    { label: "Consultas a la IA",             pct: 0, color: "#22c55e" },
-    { label: "Puntos de Reciclaje visitados", pct: 0, color: "#84cc16" },
-    { label: "Misiones del Eco-Juego",        pct: 0, color: "#10b981" },
-    { label: "Nuevos registros",              pct: 0, color: "#14b8a6" },
-];
+const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
 const CHART_TABS = [
-    { id: "users",     label: "Usuarios",   icon: Users,    color: "#22c55e" },
-    { id: "queries",   label: "IA Queries", icon: Sparkles, color: "#84cc16" },
-    { id: "recycling", label: "Reciclaje",  icon: Leaf,     color: "#10b981" },
+    { id: "users", label: "Usuarios", icon: Users, color: "#22c55e" },
+    { id: "queries", label: "IA Queries", icon: Sparkles, color: "#84cc16" },
+    { id: "recycling", label: "Reciclaje", icon: Leaf, color: "#10b981" },
 ];
 
 const PERIODS = [
-    { id: "week",  label: "7 días" },
+    { id: "week", label: "7 días" },
     { id: "month", label: "30 días" },
-    { id: "year",  label: "Este año" },
+    { id: "year", label: "Este año" },
 ];
 
 const stagger = {
@@ -106,32 +43,34 @@ const fadeUp = {
 
 export default function AdminEstadisticas() {
     const { token } = useAuth();
-    const [stats, setStats] = useState({ 
-        totalUsuarios: "0", 
+    const { usuariosOnline } = useSocket();
+    const [stats, setStats] = useState({
+        totalUsuarios: "0",
         usuariosOnline: "0",
         consultasHoy: 0,
         mejorMes: "—",
         picoDiario: 0,
         nuevosHoy: 0,
-        chartData: null
+        chartData: null,
     });
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/admin/stats', {
-                    headers: { Authorization: `Bearer ${token}` }
+                const res = await fetch("http://localhost:3000/api/admin/stats", {
+                    headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();
+                console.log("Respuesta API:", data);
                 if (data.success) {
                     setStats({
-                        totalUsuarios: data.totalUsuarios.toString(),
-                        usuariosOnline: data.usuariosOnline.toString(),
-                        consultasHoy: data.consultasHoy,
-                        mejorMes: data.mejorMes,
-                        picoDiario: data.picoDiario,
-                        nuevosHoy: data.nuevosHoy,
-                        chartData: data.chartData
+                        totalUsuarios: data.totalUsuarios?.toString() || "0",
+                        usuariosOnline: data.usuariosOnline?.toString() || "0",
+                        consultasHoy: data.consultasHoy || 0,
+                        mejorMes: data.mejorMes || "—",
+                        picoDiario: data.picoDiario || 0,
+                        nuevosHoy: data.nuevosHoy || 0,
+                        chartData: data.chartData || null,
                     });
                 }
             } catch (error) {
@@ -145,24 +84,52 @@ export default function AdminEstadisticas() {
     const [period, setPeriod] = useState("year");
 
     const tab = CHART_TABS.find((c) => c.id === activeChart);
-    
-    // Inyectar dinámica o estática si aun no carga
-    const baseChart = { 
+
+    // Base vacía mientras carga
+    const baseChart = {
         users: MONTHS.map((m) => ({ label: m, value: 0 })),
         queries: MONTHS.map((m) => ({ label: m, value: 0 })),
-        recycling: MONTHS.map((m) => ({ label: m, value: 0 }))
+        recycling: MONTHS.map((m) => ({ label: m, value: 0 })),
     };
-    
-    // Si viene la data del servidor usamos esa, sino la base en cero
+
+    // Si viene data del servidor la usamos, si no la base en cero
     const chartSource = stats.chartData ? stats.chartData : baseChart;
-    const bars = chartSource[activeChart] || baseChart.users;
-    
+
+    // Si por alguna razón las queries vinieran con campo "date" en lugar de ya agrupadas,
+    // las agrupamos por mes aquí en el frontend
+    let chartDataForBars = {
+        ...baseChart,
+        ...chartSource,
+    };
+    if (
+        activeChart === "queries" &&
+        chartSource.queries &&
+        chartSource.queries.length > 0 &&
+        chartSource.queries[0].date
+    ) {
+        const monthlyByLabel = {};
+        chartSource.queries.forEach((item) => {
+            const date = new Date(item.date);
+            const monthLabel = MONTHS[date.getMonth()];
+            const value = Number(item.value) || 0;
+            monthlyByLabel[monthLabel] = (monthlyByLabel[monthLabel] || 0) + value;
+        });
+        const aggregatedQueries = MONTHS.map((m) => ({ label: m, value: monthlyByLabel[m] || 0 }));
+        chartDataForBars = { ...chartDataForBars, queries: aggregatedQueries };
+    }
+
+    const bars = chartDataForBars[activeChart] || baseChart.users;
+
     // Máximo valor real para saber si el gráfico está en cero absoluto
-    const actualMax = Math.max(...bars.map(d => d.value));
+    const actualMax = Math.max(...bars.map((d) => d.value));
     const allZero = actualMax === 0;
 
-    // Se mantiene un maxVal fallback de 1 para evitar divisiones matemáticas por cero en el renderizado
-    const maxVal = Math.max(actualMax, 1);
+    // La escala para usuarios se basa en el total en BD; para el resto, en el máximo real
+    const totalUsuariosNum = parseInt(stats.totalUsuarios, 10) || 1;
+    const maxVal =
+        activeChart === "users"
+            ? Math.max(totalUsuariosNum, actualMax, 1)
+            : Math.max(actualMax, 1);
 
     // KPI dinámicos
     const dynamicCards = [
@@ -230,7 +197,6 @@ export default function AdminEstadisticas() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* TODO: onChange → refetch según período desde BD */}
                         <div className="flex items-center gap-1 p-1 bg-white rounded-xl border border-green-100 shadow-sm">
                             {PERIODS.map((p) => (
                                 <button
@@ -320,7 +286,23 @@ export default function AdminEstadisticas() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                             <div>
                                 <p className="text-xs text-green-400 font-semibold uppercase tracking-wider mb-0.5">Tendencia</p>
-                                <h2 className="text-lg font-bold text-green-950">{tab.label}</h2>
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-lg font-bold text-green-950">{tab.label}</h2>
+                                    {activeChart === "users" && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 border border-green-200"
+                                        >
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                                            </span>
+                                            <span className="text-xs font-bold text-green-700">{usuariosOnline}</span>
+                                            <span className="text-xs text-green-500">en línea</span>
+                                        </motion.div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-1 bg-green-50 rounded-xl p-1">
@@ -360,40 +342,47 @@ export default function AdminEstadisticas() {
                                 transition={{ duration: 0.2 }}
                                 className="relative"
                             >
-                                {/* Líneas guía */}
-                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pl-7">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div key={i} className="w-full h-px border-t border-dashed border-green-100" />
+                                {/* Eje Y: etiquetas de porcentaje + líneas guía */}
+                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-2">
+                                    {[100, 75, 50, 25, 0].map((pctLabel) => (
+                                        <div key={pctLabel} className="flex items-center gap-1">
+                                            <span className="w-7 text-right text-[9px] font-semibold text-green-300 shrink-0">
+                                                {pctLabel}%
+                                            </span>
+                                            <div className="flex-1 h-px border-t border-dashed border-green-100" />
+                                        </div>
                                     ))}
                                 </div>
 
                                 {/* Barras */}
-                                <div className="flex items-end gap-1.5 h-56 pb-8 pl-7 pt-2">
+                                <div className="flex items-stretch gap-1.5 h-56 pb-8 pl-7 pt-2">
                                     {bars.map((bar, i) => {
                                         const pct = maxVal > 0 ? (bar.value / maxVal) * 100 : 0;
+                                        const barPct = bar.value > 0 ? Math.max(pct, 4) : 3;
                                         return (
-                                            <div key={bar.label} className="flex-1 flex flex-col items-center gap-1 group">
-                                                <div className="h-5 flex items-end">
-                                                    <span className="text-[10px] font-bold text-green-700 opacity-0 group-hover:opacity-100 transition-all bg-green-50 rounded px-1">
+                                            <div key={bar.label} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                                {/* Tooltip valor */}
+                                                {bar.value > 0 && (
+                                                    <span className="absolute top-0 text-[10px] font-bold text-green-700 opacity-0 group-hover:opacity-100 transition-all bg-green-50 rounded px-1 z-10 whitespace-nowrap">
                                                         {bar.value}
                                                     </span>
-                                                </div>
-                                                <div className="w-full flex-1 flex items-end">
-                                                    <motion.div
-                                                        initial={{ scaleY: 0 }}
-                                                        animate={{ scaleY: 1 }}
-                                                        transition={{ duration: 0.5, delay: i * 0.035, ease: [0.34, 1.1, 0.64, 1] }}
-                                                        className="w-full rounded-t-md overflow-hidden cursor-default"
-                                                        style={{
-                                                            height: `${Math.max(pct, 3)}%`,
-                                                            background: pct < 1 ? "#f0fdf4" : `linear-gradient(to top, ${tab.color}55, ${tab.color})`,
-                                                            transformOrigin: "bottom",
-                                                        }}
-                                                    >
-                                                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
-                                                    </motion.div>
-                                                </div>
-                                                <span className="text-[9px] text-green-300 font-medium mt-1">{bar.label}</span>
+                                                )}
+                                                {/* Barra */}
+                                                <motion.div
+                                                    initial={{ scaleY: 0 }}
+                                                    animate={{ scaleY: 1 }}
+                                                    transition={{ duration: 0.5, delay: i * 0.035, ease: [0.34, 1.1, 0.64, 1] }}
+                                                    className="w-full rounded-t-md cursor-default"
+                                                    style={{
+                                                        height: `${barPct}%`,
+                                                        background: bar.value < 1
+                                                            ? "#f0fdf4"
+                                                            : `linear-gradient(to top, ${tab.color}55, ${tab.color})`,
+                                                        transformOrigin: "bottom",
+                                                    }}
+                                                />
+                                                {/* Label mes */}
+                                                <span className="text-[9px] text-green-300 font-medium absolute -bottom-6">{bar.label}</span>
                                             </div>
                                         );
                                     })}
@@ -412,9 +401,11 @@ export default function AdminEstadisticas() {
                         <div className="mt-4 pt-4 border-t border-green-50 flex items-center justify-between">
                             <div className="flex items-center gap-1.5 text-xs text-green-400">
                                 <div className="w-3 h-3 rounded-sm" style={{ background: tab.color }} />
-                                {tab.label} · {PERIODS.find((p) => p.id === period)?.label}
+                                {activeChart === "users"
+                                    ? `Usuarios activos · ${PERIODS.find((p) => p.id === period)?.label}`
+                                    : `${tab.label} · ${PERIODS.find((p) => p.id === period)?.label}`
+                                }
                             </div>
-                            {/* TODO: res.data.percentChange */}
                             <div className="flex items-center gap-1 text-xs text-green-500 font-semibold">
                                 <TrendingUp className="w-3.5 h-3.5" />
                                 +0% vs período anterior
@@ -434,9 +425,9 @@ export default function AdminEstadisticas() {
                         >
                             <p className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">Métricas clave</p>
                             {[
-                                { label: "Mejor mes",   value: stats.mejorMes, icon: Award,    color: "text-lime-500" },
-                                { label: "Pico diario", value: stats.picoDiario, icon: Zap,      color: "text-green-500" },
-                                { label: "Nuevos hoy",  value: stats.nuevosHoy,  icon: Users,    color: "text-emerald-500" },
+                                { label: "Mejor mes", value: stats.mejorMes, icon: Award, color: "text-lime-500" },
+                                { label: "Pico diario", value: stats.picoDiario, icon: Zap, color: "text-green-500" },
+                                { label: "Nuevos hoy", value: stats.nuevosHoy, icon: Users, color: "text-emerald-500" },
                             ].map(({ label, value, icon: Icon, color }) => (
                                 <div key={label} className="flex items-center justify-between py-2.5 border-b border-green-50 last:border-0">
                                     <div className="flex items-center gap-2">
@@ -462,7 +453,6 @@ export default function AdminEstadisticas() {
                             <Activity className="w-5 h-5 text-green-500" />
                             <h2 className="text-base font-bold text-green-950">Eventos recientes</h2>
                         </div>
-                        {/* TODO: navegar a logs completos */}
                         <button className="flex items-center gap-1 text-xs text-green-400 hover:text-green-600 font-semibold transition-colors">
                             Ver todos <ChevronRight className="w-3.5 h-3.5" />
                         </button>
@@ -475,7 +465,6 @@ export default function AdminEstadisticas() {
                         <div className="col-span-2 text-right">Hace</div>
                     </div>
 
-                    {/* TODO: GET /api/admin/stats/recent-events?limit=8 */}
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
                         <Activity className="w-8 h-8 text-green-100" />
                         <p className="text-sm text-green-300 font-medium">Sin eventos registrados aún</p>

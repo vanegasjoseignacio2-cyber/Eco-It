@@ -79,6 +79,8 @@ export default function AdminHero() {
     const { usuariosOnline } = useSocket();
     const { token } = useAuth();
     const [totalUsuarios, setTotalUsuarios] = useState(0);
+    const [consultasHoy, setConsultasHoy] = useState(0);
+    const [totalPuntos, setTotalPuntos] = useState(0);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -89,12 +91,14 @@ export default function AdminHero() {
                 const data = await res.json();
                 if (data.success) {
                     setTotalUsuarios(data.totalUsuarios);
+                    setConsultasHoy(data.consultasHoy || 0);
+                    setTotalPuntos(data.totalPuntos || 0);
                 }
             } catch (error) {
                 console.error('Error al obtener stats:', error);
             }
         };
-        fetchStats();
+        if (token) fetchStats();
     }, [token]);
 
     const now = new Date().toLocaleDateString("es-CO", {
@@ -127,11 +131,18 @@ export default function AdminHero() {
                         whileHover={{ y: -5, scale: 1.05 }}
                         transition={{ duration: 0.2 }}
                         onClick={() => {
+                            if (!token) return;
                             fetch('http://localhost:3000/api/admin/stats', {
                                 headers: { Authorization: `Bearer ${token}` }
                             })
                                 .then(r => r.json())
-                                .then(data => { if (data.success) setTotalUsuarios(data.totalUsuarios); });
+                                .then(data => { 
+                                    if (data.success) {
+                                        setTotalUsuarios(data.totalUsuarios);
+                                        setConsultasHoy(data.consultasHoy || 0);
+                                        setTotalPuntos(data.totalPuntos || 0);
+                                    }
+                                });
                         }}
                         className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-green-200 text-green-700 text-sm font-medium shadow-sm hover:shadow-md hover:border-green-400 transition-all"
                     >
@@ -153,7 +164,11 @@ export default function AdminHero() {
                             ? usuariosOnline
                             : kpi.id === 'users'
                                 ? totalUsuarios
-                                : kpi.value;
+                                : kpi.id === 'queries'
+                                    ? consultasHoy
+                                    : kpi.id === 'points'
+                                        ? totalPuntos
+                                        : kpi.value;
                         const isLive = kpi.id === 'active';
 
                         return (

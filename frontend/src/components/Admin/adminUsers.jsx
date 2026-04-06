@@ -116,7 +116,9 @@ export default function AdminUsers() {
         }
     };
 
-    useEffect(() => { fetchUsers(); }, [token]);
+    useEffect(() => { 
+        if (token) fetchUsers(); 
+    }, [token]);
 
     useEffect(() => {
         if (!socket) return;

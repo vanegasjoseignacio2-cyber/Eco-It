@@ -12,6 +12,7 @@ import passport from 'passport';
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import User from './models/user.js';
 
 // Importar rutas
 import authRoutes from './routes/authRoutes.js';
@@ -42,7 +43,7 @@ io.on('connection', (socket) => {
     console.log('Socket conectado:', socket.id);
 
     // El cliente envía sus datos al conectarse
-    socket.on('usuario:conectado', (usuario) => {
+    socket.on('usuario:conectado', async (usuario) => {
         const userId = usuario._id;
 
         if (usuariosConectados.has(userId)) {
@@ -56,6 +57,13 @@ io.on('connection', (socket) => {
             });
             // Notificar que se conectó en tiempo real
             io.emit('usuario:estado', { userId, isOnline: true });
+
+            // Guardar la fecha de ultima conexion en la BD
+            try {
+                await User.findByIdAndUpdate(userId, { ultimaConexion: new Date() });
+            } catch (e) {
+                console.error('No se pudo actualizar ultimaConexion:', e.message);
+            }
         }
 
         io.emit('usuarios:online', usuariosConectados.size);
@@ -89,6 +97,7 @@ const PORT = process.env.PORT || 3000;
 setupGoogleAuth();
 
 // Middlewares globales
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

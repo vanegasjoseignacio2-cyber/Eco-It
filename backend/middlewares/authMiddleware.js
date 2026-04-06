@@ -55,7 +55,7 @@ export const soloSuperadmin = (req, res, next) => {
 // Solo usuarios
 export const soloUser = (req, res, next) => {
     if (req.usuario?.rol !== "user") {
-        return res.satus(403).json({ message: "Acesso denegado: se requiere rol user"});
+        return res.status(403).json({ message: "Acesso denegado: se requiere rol user"});
     }
     next();
 }

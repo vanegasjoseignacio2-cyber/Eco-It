@@ -84,7 +84,15 @@ const userSchema = new mongoose.Schema({
         ref: 'PuntoReciclaje'
     }],
     resetPasswordToken: String,
-    resetPasswordExpires: Date
+    resetPasswordExpires: Date,
+    ultimaConexion: {
+        type: Date,
+        default: null
+    },
+    puntos: {
+        type: Number,
+        default: 0
+    }
 
 }, {
     timestamps: true
