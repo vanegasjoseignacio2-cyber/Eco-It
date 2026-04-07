@@ -23,7 +23,7 @@ const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "
 const CHART_TABS = [
     { id: "users", label: "Usuarios", icon: Users, color: "#22c55e" },
     { id: "queries", label: "IA Queries", icon: Sparkles, color: "#84cc16" },
-    { id: "recycling", label: "Reciclaje", icon: Leaf, color: "#10b981" },
+    
 ];
 
 const PERIODS = [
@@ -89,7 +89,6 @@ export default function AdminEstadisticas() {
     const baseChart = {
         users: MONTHS.map((m) => ({ label: m, value: 0 })),
         queries: MONTHS.map((m) => ({ label: m, value: 0 })),
-        recycling: MONTHS.map((m) => ({ label: m, value: 0 })),
     };
 
     // Si viene data del servidor la usamos, si no la base en cero
@@ -441,36 +440,7 @@ export default function AdminEstadisticas() {
                     </div>
                 </div>
 
-                {/* Tabla eventos recientes */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.38 }}
-                    className="bg-white rounded-2xl border border-green-100 shadow-sm overflow-hidden"
-                >
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-green-50">
-                        <div className="flex items-center gap-2">
-                            <Activity className="w-5 h-5 text-green-500" />
-                            <h2 className="text-base font-bold text-green-950">Eventos recientes</h2>
-                        </div>
-                        <button className="flex items-center gap-1 text-xs text-green-400 hover:text-green-600 font-semibold transition-colors">
-                            Ver todos <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-12 gap-2 px-6 py-2.5 bg-green-50/60 text-[10px] font-bold text-green-400 uppercase tracking-wider">
-                        <div className="col-span-4">Evento</div>
-                        <div className="col-span-3">Usuario</div>
-                        <div className="col-span-3">Categoría</div>
-                        <div className="col-span-2 text-right">Hace</div>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                        <Activity className="w-8 h-8 text-green-100" />
-                        <p className="text-sm text-green-300 font-medium">Sin eventos registrados aún</p>
-                        <p className="text-xs text-green-200">Los eventos aparecerán aquí al conectar la BD</p>
-                    </div>
-                </motion.div>
+                
 
             </div>
         </div>
