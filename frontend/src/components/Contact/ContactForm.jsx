@@ -23,7 +23,8 @@ const PALABRAS_OFENSIVAS = [
     'soplamonda', 'pichaslargas','culear', 'culito', 'mia khalifa','ano', 'polla', 'zunga', 'sunga', 'soplapicha',
     'consolador','mal parido','malparido', 'malparidos','becerro', 'virgen','mrd', 'qulo','kulo','teta','chocho',
     'pendejo', 'pendejos', 'gay','cacorro','veneco', 'veneca','venequito', 'chamo', 'beneco','chocha', 'cachon', 'cachondo',
-    'cachocontento','carepicha', 'monda', 'viril', 'viriles', 'cuca', 'picha', 'cabezaepicha', 'pta', 'catrehijuepta',
+    'cachocontento','carepicha', 'monda', 'viril', 'viriles', 'cuca', 'picha', 'cabezaepicha', 'pta', 'catrehijuepta','vrg','vrgs',
+    'semen', 'cervical', 'qlo', 'arrecha','zemen', 'arrecho', 'vergones', 'vergotas', 'verguitas', 'brga', 
 
     // Español - México
     'no mames','no mamar','wey pendejo','guey','putazo','chingar','chingón','chingon',
