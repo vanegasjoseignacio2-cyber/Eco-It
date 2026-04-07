@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../../context/AuthContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -104,10 +105,29 @@ const DEFAULT_ZOOM   = 14;
 let _idCounter = 1;
 const genId = () => `local_${_idCounter++}`;
 
-function buildMarkerIcon(color) {
-    // ⚠️ Este bloque genera marcadores SVG nativos sin dependencias externas.
-    // Si cambias la API del mapa, reemplaza L.divIcon() por el equivalente
-    // del nuevo proveedor (google.maps.Marker, mapboxgl.Marker, etc.)
+function getTypeIconSVG(type, color = "white") {
+    const icons = {
+        recycling: `<path d="M7 11V7l5-5 5 5v4l-5 5-5-5zM12 2v4M7 11h10" stroke="${color}" stroke-width="2" fill="none"/>`,
+        ecobottle: `<path d="M12 2v20M7 7h10M7 17h10" stroke="${color}" stroke-width="2" fill="none"/>`, // Simplificado
+        truck: `<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9M19 18h2a1 1 0 0 0 1-1v-5l-4-4h-3v10" stroke="${color}" stroke-width="2" fill="none"/>`,
+        container: `<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="${color}" stroke-width="2" fill="none"/>`,
+        green_zone: `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 21 2c-2.5 4-3 5.5-4.1 11.2A7 7 0 0 1 11 20zM11 20v-5" stroke="${color}" stroke-width="2" fill="none"/>`
+    };
+    
+    // SVG Paths aproximados para Lucide (simplificados para legibilidad)
+    const svgs = {
+        recycling: `<path d="M7 21v-4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4M3 7l9-4 9 4v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />`,
+        ecobottle: `<path d="M12 2v20M17 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z" />`,
+        truck: `<rect width="16" height="13" x="2" y="4" rx="2" /><path d="M16 21h.01M12 21h.01M8 21h.01M22 21h.01" />`,
+        container: `<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />`,
+        green_zone: `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 21 2c-2.5 4-3 5.5-4.1 11.2A7 7 0 0 1 11 20z" />`
+    };
+
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${svgs[type] || svgs.recycling}</svg>`;
+}
+
+function buildMarkerIcon(color, type) {
+    const iconSVG = getTypeIconSVG(type, "white");
     return L.divIcon({
         className: "eco-admin-marker-wrapper",
         html: `
@@ -120,12 +140,11 @@ function buildMarkerIcon(color) {
                     position:absolute;top:0;left:50%;
                     transform:translateX(-50%) rotate(-45deg);
                     box-shadow:0 4px 14px ${color}55;
+                    display:flex;align-items:center;justify-center;
                 ">
-                    <div style="
-                        position:absolute;width:12px;height:12px;
-                        background:white;border-radius:50%;
-                        top:50%;left:50%;transform:translate(-50%,-50%);
-                    "></div>
+                    <div style="transform: rotate(45deg); display:flex; align-items:center; justify-content:center; width:100%; height:100%;">
+                        ${iconSVG}
+                    </div>
                 </div>
                 <div style="
                     position:absolute;bottom:0;left:50%;
@@ -143,11 +162,50 @@ function buildMarkerIcon(color) {
     });
 }
 
+function buildArrowMarkerIcon(type) {
+    const cfg = POINT_TYPES[type] || POINT_TYPES.recycling;
+    const color = cfg.markerColor;
+    return L.divIcon({
+        className: "eco-admin-draft-marker",
+        html: `
+            <div style="position:relative;width:40px;height:40px;display:flex;items-center;justify-center;">
+                <!-- Círculo de fondo con pulso usando el color del tipo -->
+                <div style="
+                    position:absolute;width:40px;height:40px;
+                    background:${color}33;border-radius:50%;
+                    animation:pulse 2s infinite;
+                "></div>
+                <!-- La flecha/puntero con el color del tipo -->
+                <div style="
+                    position:absolute;
+                    width:30px;height:30px;
+                    background:${color};
+                    border-radius:12px 12px 12px 0;
+                    transform:rotate(-45deg);
+                    display:flex;align-items:center;justify-center;
+                    box-shadow:0 4px 12px ${color}66;
+                    animation:bounce 1s infinite;
+                    z-index:2;
+                    border:2px solid white;
+                ">
+                    <div style="transform:rotate(45deg); display:flex; align-items:center; justify-content:center; width:100%; height:100%;">
+                        ${getTypeIconSVG(type, "white")}
+                    </div>
+                </div>
+            </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20], // Punta de la flecha al centro del contenedor (donde termina el triángulo)
+    });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminMap() {
-    const [points, setPoints]           = useState(INITIAL_POINTS);
+    const { token } = useAuth();
+    const [points, setPoints]           = useState([]);
+    const [loading, setLoading]         = useState(true);
     const [search, setSearch]           = useState("");
     const [filterType, setFilterType]   = useState("all");
     const [filterActive, setFilterActive] = useState("all");
@@ -162,6 +220,41 @@ export default function AdminMap() {
     const [form, setForm] = useState({
         name: "", type: "recycling", description: "", lat: "", lng: "", active: true,
     });
+
+    // ─── Fetch API ──────────────────────────────────────────────────────────
+    const fetchPoints = async () => {
+        if (!token) return;
+        setLoading(true);
+        try {
+            const res = await fetch("http://localhost:3000/api/admin/map/points", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Adaptamos el esquema del backend (español) al frontend (inglés)
+                const mapped = data.puntos.map(p => ({ 
+                    id: p._id,
+                    name: p.nombre,
+                    type: p.tipo,
+                    lat: p.lat,
+                    lng: p.lng,
+                    description: p.descripcion,
+                    active: p.activo,
+                    createdAt: p.createdAt
+                }));
+                setPoints(mapped);
+            }
+        } catch (error) {
+            console.error("Error al cargar puntos:", error);
+            showToast("Error al cargar puntos", "error");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (token) fetchPoints();
+    }, [token]);
 
     // ─── Filtrado ──────────────────────────────────────────────────────────
     const filtered = points.filter((p) => {
@@ -179,41 +272,80 @@ export default function AdminMap() {
     };
 
     // ─── CRUD ──────────────────────────────────────────────────────────────
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (!token) return;
         const lat = parseFloat(form.lat);
         const lng = parseFloat(form.lng);
         if (!form.name.trim()) return showToast("El nombre es requerido", "error");
         if (isNaN(lat) || isNaN(lng)) return showToast("Coordenadas inválidas", "error");
 
-        if (editingPoint) {
-            // TODO: PATCH /api/admin/map/points/:id → { name, type, description, lat, lng, active }
-            setPoints((prev) =>
-                prev.map((p) => p.id === editingPoint.id ? { ...p, ...form, lat, lng } : p)
-            );
-            showToast("Punto actualizado correctamente");
-        } else {
-            // TODO: POST /api/admin/map/points → { name, type, description, lat, lng, active }
-            // El servidor devuelve el punto con id real → setPoints([...points, res.data])
-            const newPoint = { ...form, lat, lng, id: genId(), createdAt: new Date().toISOString() };
-            setPoints((prev) => [...prev, newPoint]);
-            showToast("Punto creado correctamente");
+        const body = { 
+            nombre: form.name, 
+            tipo: form.type, 
+            lat, 
+            lng, 
+            descripcion: form.description, 
+            activo: form.active 
+        };
+        const url = editingPoint 
+            ? `http://localhost:3000/api/admin/map/points/${editingPoint.id}` 
+            : "http://localhost:3000/api/admin/map/points";
+        const method = editingPoint ? "PATCH" : "POST";
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(editingPoint ? "Punto actualizado" : "Punto creado");
+                fetchPoints();
+                resetForm();
+            }
+        } catch (error) {
+            showToast("Error al guardar", "error");
         }
-
-        resetForm();
     };
 
-    const handleDelete = (id) => {
-        // TODO: DELETE /api/admin/map/points/:id con confirmación
-        setPoints((prev) => prev.filter((p) => p.id !== id));
-        if (selectedPoint?.id === id) setSelectedPoint(null);
-        showToast("Punto eliminado");
+    const handleDelete = async (id) => {
+        if (!token || !window.confirm("¿Estás seguro de eliminar este punto?")) return;
+        try {
+            const res = await fetch(`http://localhost:3000/api/admin/map/points/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast("Punto eliminado");
+                fetchPoints();
+                if (selectedPoint?.id === id) setSelectedPoint(null);
+            }
+        } catch (error) {
+            showToast("Error al eliminar", "error");
+        }
     };
 
-    const handleToggleActive = (id) => {
-        // TODO: PATCH /api/admin/map/points/:id/toggle → { active: boolean }
-        setPoints((prev) =>
-            prev.map((p) => p.id === id ? { ...p, active: !p.active } : p)
-        );
+    const handleToggleActive = async (id) => {
+        if (!token) return;
+        try {
+            const res = await fetch(`http://localhost:3000/api/admin/map/points/${id}/toggle`, {
+                method: "PATCH",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                const nuevoEstado = data.punto.activo ? "Activado" : "Desactivado";
+                showToast(`Punto ${nuevoEstado} con éxito`);
+                fetchPoints();
+            }
+        } catch (error) {
+            showToast("Error al cambiar estado", "error");
+        }
     };
 
     const openEdit = (point) => {
@@ -266,11 +398,12 @@ export default function AdminMap() {
                         </div>
                         {/* TODO: onClick → refetch points desde BD */}
                         <motion.button
+                            onClick={fetchPoints}
                             whileHover={{ rotate: 180 }}
                             transition={{ duration: 0.4 }}
                             className="p-2 rounded-xl bg-green-50 text-green-400 hover:text-green-600 hover:bg-green-100 transition-colors"
                         >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </motion.button>
                     </div>
 
@@ -435,6 +568,7 @@ export default function AdminMap() {
                     onMarkerClick={setSelectedPoint}
                     onMapClick={handleMapClick}
                     placingMode={placingMode}
+                    draftMarker={(showForm && form.lat && form.lng) ? { lat: form.lat, lng: form.lng, type: form.type } : null}
                 />
 
                 {/* ── Panel de detalle / formulario ────────────────────────────── */}
@@ -510,13 +644,15 @@ export default function AdminMap() {
 //   - Mapbox GL JS: import mapboxgl from 'mapbox-gl'
 //   - HERE Maps: import H from '@here/maps-api-for-javascript'
 // ─────────────────────────────────────────────────────────────────────────────
-function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placingMode }) {
+function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placingMode, draftMarker }) {
     const mapRef         = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersRef     = useRef([]);
     const placingRef     = useRef(placingMode);
+    const onMapClickRef  = useRef(onMapClick);
 
     useEffect(() => { placingRef.current = placingMode; }, [placingMode]);
+    useEffect(() => { onMapClickRef.current = onMapClick; }, [onMapClick]);
 
     // Inicializar mapa
     useEffect(() => {
@@ -538,7 +674,7 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
         // Clic en mapa para capturar coordenadas
         mapInstanceRef.current.on("click", (e) => {
             if (placingRef.current) {
-                onMapClick?.(e.latlng);
+                onMapClickRef.current?.(e.latlng);
             }
         });
 
@@ -566,7 +702,7 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
             if (isNaN(point.lat) || isNaN(point.lng)) return;
             const cfg    = POINT_TYPES[point.type] || POINT_TYPES.recycling;
             const color  = point.active ? cfg.markerColor : "#9ca3af";
-            const icon   = buildMarkerIcon(color);
+            const icon   = buildMarkerIcon(color, point.type);
 
             // [SWAP_MAP_API] → reemplaza L.marker por el marcador del nuevo proveedor
             const marker = L.marker([point.lat, point.lng], { icon })
@@ -586,9 +722,20 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
                 </div>
             `, { maxWidth: 220 });
 
-            marker.on("click", () => onMarkerClick?.(point));
             markersRef.current.push(marker);
         });
+
+        // Renderizar marcador de borrador (Flechita)
+        if (draftMarker) {
+            const lat = parseFloat(draftMarker.lat);
+            const lng = parseFloat(draftMarker.lng);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const icon = buildArrowMarkerIcon(draftMarker.type);
+                const marker = L.marker([lat, lng], { icon, zIndexOffset: 1000 })
+                    .addTo(mapInstanceRef.current);
+                markersRef.current.push(marker);
+            }
+        }
 
         if (points.length > 0) {
             const valid = points.filter((p) => !isNaN(p.lat) && !isNaN(p.lng));
@@ -623,6 +770,15 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
                     color: #15803d !important;
                 }
                 .leaflet-control-zoom a:hover { background: #f0fdf4 !important; }
+                @keyframes pulse {
+                    0% { transform: scale(0.8); opacity: 0.5; }
+                    50% { transform: scale(1.2); opacity: 0.2; }
+                    100% { transform: scale(0.8); opacity: 0.5; }
+                }
+                @keyframes bounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-5px); }
+                }
             `}</style>
         </>
     );
