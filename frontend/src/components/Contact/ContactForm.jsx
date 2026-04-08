@@ -17,25 +17,113 @@ const PALABRAS_OFENSIVAS = [
     'maricón','maricon','cabrón','cabron','joder','hostia','gilipollas',
     'follar','chinga','chingada','culero','culera','pinche','mamón','mamon','hp',
     'sapa','sapo','gordo','gorda','carechimba','caremondá','caremonda',
-    'chimba','chimbo','pene','vagina','pelado marica','hpta','hijpta',
+    'chimba','chimbo','penes','vagina','pelado marica','hpta','hijpta',
     'mk','mka','marik','marika','mar1ca','mar!ca','hptas','maricones','tetranutras','tetranutra',
-    'sapas','penes', 'porno','pornografía','xvideos','porn hub','pornhub', 'mlp','tragaleche','culean',
-    'soplamonda', 'pichaslargas','culear', 'culito', 'mia khalifa','ano', 'polla', 'zunga', 'sunga', 'soplapicha',
-    'consolador','mal parido','malparido', 'malparidos','becerro', 'virgen','mrd', 'qulo','kulo','teta','chocho',
-    'pendejo', 'pendejos', 'gay','cacorro','veneco', 'veneca','venequito', 'chamo', 'beneco','chocha', 'cachon', 'cachondo',
-    'cachocontento','carepicha', 'monda', 'viril', 'viriles', 'cuca', 'picha', 'cabezaepicha', 'pta', 'catrehijuepta','vrg','vrgs',
-    'semen', 'cervical', 'qlo', 'arrecha','zemen', 'arrecho', 'vergones', 'vergotas', 'verguitas', 'brga', 
-
+    'sapas','porno','pornografía','xvideos','porn hub','pornhub','mlp','tragaleche','culean',
+    'soplamonda','pichaslargas','culear','culito','mia khalifa','polla','zunga','sunga','soplapicha',
+    'consolador','mal parido','malparido','malparidos','becerro','mrd','qulo','kulo','teta','chocho',
+    'pendejos','cacorro','veneco','veneca','venequito','beneco','chocha','cachon','cachondo',
+    'cachocontento','carepicha','monda','cuca','picha','cabezaepicha','pta','catrehijuepta','vrg','vrgs',
+    'semen','cervical','qlo','arrecha','zemen','arrecho','vergones','vergotas','verguitas','brga',
+    'qk','pipi','polno','polnito','escroto','mierdoso','cmen','smen','gnorrea','gnrrea','conchesumadre',
+    'sidoso','leproso','marico','mariko','cacorra','kakorra','vergon','kcorro','pichurria','pichurrioso','mamabicho',
+    'culion','pirobo','masturbarse','masturbar','pne','gnrriento','estupida','tontin','webon',
+    'weon','aguevado','paraco','guerrillero','onlyfans','brazzers','xxx','mamaburra','mamapolla','homosexual',
+    'mariquita','stupida','stupido','culito','hentai','hentay','gore','mtar',
+    'despellejar','prepucio','clitoris','glande','squirt','degollar','cabezón','violar','dildo','pto','eyacular','bizcocho',
+    'testiculos','culiando','hdp','pichon',
+    // Español - Colombia (ampliado)
+    'jueputa','jueputas','juepuerca','juepuercas',
+    'catrehijueputa','catrehijueputas','catrehijuepuerca',
+    'hijuelagranputa','hijueputazo',
+    'malparicion','malpario',
+    'hp','hpta','hptas','hptas',
+    'cagada','cagado','cagon','cagona',
+    'gonorreas','gonorreoso','gonorreosa',
+    'culiparado','culiparada',
+    'culiflojo','culifloja',
+    'culicagado','culicagada',
+    'culigorrion','culigorriona',
+    'casposo','casposa',
+    'guaricha','guarichas',
+    'guisa','guisas','guisaso','guisasa',
+    'culipronta','culiprontas',
+    'lacra','lacras',
+    'sapo hijueputa','sapa hijueputa',
+    'pirobo hijueputa','piroba hijueputa',
+    'cacorro hijueputa',
+    'malparido hijueputa',
+    'gonorrea hijueputa',
+    'desgraciado','desgraciada','desgraciados','desgraciadas',
+    'lambón','lambon','lambona','lambones',
+    'chupamedias','chupamedia',
+    'perrazas','perraza',
+    'putazo','putazos',
+    'hijuepuercas','hijuepuerco','hijuepuerca',
+    'perra malparida','perro malparido',
+    'perra hijueputa','perro hijueputa',
+    'zorra malparida',
+    'come mierda','comemierda','comemierdas',
+    'come verga','comeverga','comevergas',
+    'come culo','comeculo',
+    'nacido por el chiquito','nacida por el chiquito',
+    'parido por el chiquito','parida por el chiquito',
+    'salido por el chiquito','salida por el chiquito',
+    'enfermo','enferma',  // solo en boundary
+    // insultos a discapacidad / condición
+    'mongoloide','mongolo','mongola',
+    'mogólico','mogolico','mogolica',
+    'retrasado mental','retrasada mental',
+    'down','sindrome de down',
+    'encefalograma plano',
+    'cerebro de mosquito',
+    // Colombia costeño / regional
+    'guevon','guevona','guevas',
+    'costeño gonorrea',
+    'paisa hijueputa',
+    'rolo hijueputa',
+    'caquero','caquera',
+    'tierrero','tierrera',
+    'ñero','ñera','ñeros','ñeras',
+    'ñeroñero',
+    'gamín','gamin','gamines',
+    // Compuestos y frases ofensivas colombianas
+    'sapo malparido','sapo hijueputa',
+    'perra cuentera','perro cuentero',
+    'vieja perra','viejo perro',
+    'vieja puta','viejo puto',
+    'vieja gonorrea','viejo gonorrea',
+    'hp malparido','hp hijueputa',
+    'cara de culo','cara de pinga','cara de verga',
+    'cara de malparido','cara de malparida',
+    'hijo de puta','hija de puta',
+    'hijo de la gran puta','hija de la gran puta',
+    'hijodeputa','hijadelagranputa','hijodelagranputa',
+    'se la mamo','se la mama','mamela',
+    'mamela bien','mamelo bien',
+    'vayase a la mierda','vete a la mierda','váyase a la verga',
+    'metasela','metesela',
+    'que se meta','metelo',
+    'pirobaso','pirobaza',
+    'gonorreazo','gonorreaza',
+    'pircuche','pircucho',
+    // Variantes leetspeak / evasión adicionales
+    'p3rra','p3rro','put4','put0','m4lp4rid0','m4lp4rid4',
+    'hjp','hjpt','cul0','cul00',
+    'p3nd3jo','p3ndejo',
+    'v3rga','v3rg4',
+    'g0norrea','g0norre4',
+    'h1jueputa','h1jueputa',
     // Español - México
     'no mames','no mamar','wey pendejo','guey','putazo','chingar','chingón','chingon',
-    'chingadera','chingao','verguiza','culiada','culiad0','culiar',
+    'chingadera','chingao','verguiza','culiada','culiad0','culiar','mms','cabron',
     // Español - Argentina / Uruguay
     'boludo','boluda','pelotudo','pelotuda','forro','concha','conchudo',
     'la puta madre','ortiva','mogólico','mogolico',
     // Español - España
-    'subnormal','capullo','cojones','me cago en','me cago','zorra','pringado',
+    'subnormal','capullo','cojones','me cago en','me cago','zorra','pringado','gilipollas',
     // Otros español LATAM
-    'huevón','huevon','weon','weona','aweonao','aweonado',
+    'huevón','huevon','weona','aweonao','aweonado',
     'ctm','conchatumadre','concha tu madre',
     'pajero','pajera','maraco','culiao','culiada',
     // Inglés (frecuentes)
@@ -49,14 +137,25 @@ const PALABRAS_OFENSIVAS = [
     'p*ta','p*t*','m13rda','m1erda','put4','put0','cul0','cvl0',
 ];
 
+/**
+ * Palabras que SOLO se detectan con word boundary estricto.
+ */
+const PALABRAS_BOUNDARY_ESTRICTO = [
+    'ano','gay','cp','sida','bobo','boba','tonto','tonta',
+    'pene','matar','suicidar','suicidio','viril','virgen',
+    'chamo','pito','mrd','porn','mrk','mk',
+    'enfermo','enferma','down','gamín','gamin',
+    'ñero','ñera',
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
-// 🔹 LEET MAP extendido (cubre más variantes de evasión)
+// 🔹 LEET MAP extendido
 // ─────────────────────────────────────────────────────────────────────────────
 const LEET_MAP = {
-    '4': 'a', '@': 'a',  'á': 'a', 'à': 'a', 'ä': 'a',
-    '3': 'e', '€': 'e',  'é': 'e', 'è': 'e',
-    '1': 'i', '!': 'i',  'í': 'i', 'ì': 'i', 'ï': 'i',
-    '0': 'o', 'ó': 'o',  'ò': 'o', 'ö': 'o',
+    '4': 'a', '@': 'a', 'á': 'a', 'à': 'a', 'ä': 'a',
+    '3': 'e', '€': 'e', 'é': 'e', 'è': 'e',
+    '1': 'i', '!': 'i', 'í': 'i', 'ì': 'i', 'ï': 'i',
+    '0': 'o', 'ó': 'o', 'ò': 'o', 'ö': 'o',
     '$': 's', '5': 's',
     '7': 't',
     '+': 't',
@@ -68,35 +167,30 @@ const LEET_MAP = {
 // ─────────────────────────────────────────────────────────────────────────────
 // 🔹 Normalización multicapa
 // ─────────────────────────────────────────────────────────────────────────────
-
-/** 1. Minúsculas + quitar diacríticos Unicode */
 function normalizarTexto(texto) {
     return texto
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
 }
-
-/** 2. Sustituir caracteres leet por letras */
 function normalizarLeet(texto) {
     return texto.split('').map(c => LEET_MAP[c] ?? c).join('');
 }
-
 /**
- * 3. Para correos: limpiar separadores internos típicos usados como evasión.
- *    pene.77 → pene77 → pene   |   p_e_n_e → pene
- *    Se eliminan puntos, guiones, guiones bajos y dígitos ENTRE letras.
+ * Colapsa letras repetidas: "perrraaa" → "perra", "puuuta" → "puta"
+ * Conserva dobles legítimas (LL, RR, CC) reduciéndolas a máximo 2.
+ * Después el regex igualará "perra" tanto si viene de "perrra" como de "perra".
  */
+function colapsarRepetidas(texto) {
+    // Reduce cualquier secuencia de 3+ caracteres iguales a 2
+    // (para no romper palabras como "carro" → "carro" sigue igual)
+    return texto.replace(/(.)\1{2,}/g, '$1$1');
+}
 function normalizarUsername(username) {
-    // a) quitar separadores (., -, _, espacios)
     let u = username.replace(/[.\-_\s]/g, '');
-    // b) quitar dígitos que "separan" bloques de letras
-    //    p.ej.  pene77  → pene  |  p3n3 ya fue manejado por leet
     u = u.replace(/\d+/g, '');
     return u;
 }
-
-/** 4. Limpiar el texto libre (mensajes / nombres): conservar letras y espacios */
 function limpiarTexto(texto) {
     return texto.replace(/[^a-z0-9\s.,\-_"'!¡¿?]/g, ' ');
 }
@@ -104,127 +198,99 @@ function limpiarTexto(texto) {
 // ─────────────────────────────────────────────────────────────────────────────
 // 🔹 Construcción del regex
 // ─────────────────────────────────────────────────────────────────────────────
-
 function escaparRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-
-/** Separadores universales entre letras (para textos libres) */
 const SEP = `[\\s.,\\-_"'!¡¿?]*`;
-
-/** Expande "puta" → "p[SEP]u[SEP]t[SEP]a" para detectar p.u.t.a */
 function expandirSeparadores(palabra) {
     return palabra.split('').join(SEP);
 }
-
-/** Plurales simples */
 function pluralizar(p) {
     return [p, `${p}s`, `${p}es`];
 }
-
-/**
- * Genera patrones para texto libre (nombres / mensajes):
- *  - word boundary exacto
- *  - plurales
- *  - pegado con sufijo (\w*)
- *  - con separadores entre letras
- *
- * IMPORTANTE: para palabras cortas (≤4 letras) se usa boundary estricto
- * para evitar falsos positivos ("ano" en "piano", "ass" en "lass", etc.)
- */
-function crearPatronesTexto(palabraNorm) {
+function crearPatronesTexto(palabraNorm, soloExacto = false) {
     const base = escaparRegex(palabraNorm);
     const corta = palabraNorm.replace(/\s/g, '').length <= 4;
-
     const patrones = [
-        // Exacto con boundary
         `(?<![a-z])${base}(?![a-z])`,
-        // Plurales
         ...pluralizar(base).map(pl => `(?<![a-z])${pl}(?![a-z])`),
     ];
-
-    if (!corta) {
-        // Pegado con cualquier sufijo alfanumérico
+    if (!corta && !soloExacto) {
         patrones.push(`(?<![a-z])${base}[a-z0-9]*(?![a-z])`);
-        // Separado con símbolos entre letras
         patrones.push(expandirSeparadores(base));
     }
-
     return patrones;
 }
-
-/**
- * Para USERNAME de correo se usa un regex más agresivo:
- * detecta la palabra ofensiva como SUBCADENA (sin boundary) porque el
- * username ya fue normalizado (sin dígitos ni separadores).
- */
 function crearPatronesEmail(palabraNorm) {
     const base = escaparRegex(palabraNorm);
-    // Subcadena directa — el username limpio no tiene separadores ni dígitos
     return [base];
 }
-
-function crearRegexTexto(lista) {
-    const patrones = lista
+function crearRegexTexto(lista, listaBoundary) {
+    const patronesNormales = lista
         .map(p => normalizarTexto(p))
-        .flatMap(crearPatronesTexto);
-    return new RegExp(patrones.join('|'), 'i');
+        .flatMap(p => crearPatronesTexto(p, false));
+    const patronesBoundary = listaBoundary
+        .map(p => normalizarTexto(p))
+        .flatMap(p => crearPatronesTexto(p, true));
+    return new RegExp([...patronesNormales, ...patronesBoundary].join('|'), 'i');
 }
-
-function crearRegexEmail(lista) {
-    const patrones = lista
-        .map(p => normalizarTexto(p).replace(/\s/g, ''))   // sin espacios
-        .filter(p => p.length >= 2)                         // descartar muy cortas
+function crearRegexEmail(lista, listaBoundary) {
+    const patronesNormales = lista
+        .map(p => normalizarTexto(p).replace(/\s/g, ''))
+        .filter(p => p.length >= 2)
         .flatMap(crearPatronesEmail);
-    return new RegExp(patrones.join('|'), 'i');
+    const patronesBoundary = listaBoundary
+        .map(p => normalizarTexto(p).replace(/\s/g, ''))
+        .filter(p => p.length >= 2)
+        .flatMap(p => [`(?<![a-z])${escaparRegex(p)}(?![a-z])`]);
+    return new RegExp([...patronesNormales, ...patronesBoundary].join('|'), 'i');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🔹 Hook principal
 // ─────────────────────────────────────────────────────────────────────────────
-
 export function useOfensiveValidator() {
+    const regexTexto = useMemo(
+        () => crearRegexTexto(PALABRAS_OFENSIVAS, PALABRAS_BOUNDARY_ESTRICTO),
+        []
+    );
+    const regexEmail = useMemo(
+        () => crearRegexEmail(PALABRAS_OFENSIVAS, PALABRAS_BOUNDARY_ESTRICTO),
+        []
+    );
 
-    // Dos regex distintos: uno para texto libre, otro para usernames de email
-    const regexTexto = useMemo(() => crearRegexTexto(PALABRAS_OFENSIVAS), []);
-    const regexEmail = useMemo(() => crearRegexEmail(PALABRAS_OFENSIVAS), []);
-
-    /** Pipeline de normalización para texto libre */
+    /** Pipeline completo para texto libre — ahora incluye colapso de repetidas */
     function procesarTexto(texto) {
         let t = normalizarTexto(texto);
         t = normalizarLeet(t);
+        t = colapsarRepetidas(t);   // ← nuevo: "perrraaa" → "perra"
         t = limpiarTexto(t);
         return t;
     }
-
-    /** Pipeline de normalización para username de email */
+    /** Pipeline para username de correo */
     function procesarUsername(username) {
         let u = normalizarTexto(username);
         u = normalizarLeet(u);
-        u = normalizarUsername(u);   // ← elimina separadores y dígitos
+        u = colapsarRepetidas(u);   // ← también aquí
+        u = normalizarUsername(u);
         return u;
     }
 
     function contieneOfensivas(texto) {
         return regexTexto.test(procesarTexto(texto));
     }
-
     function contieneOfensivasEmail(username) {
         return regexEmail.test(procesarUsername(username));
     }
-
     function obtenerOfensivas(texto) {
         return procesarTexto(texto).match(regexTexto) || [];
     }
 
-    /** Valida texto libre (nombre / mensaje) — doble pasada para detectar evasión */
     function validar(texto) {
-        // Pasada 1: texto con separadores (detecta p.u.t.a, h i j u e p u t a)
         const ofensivas = obtenerOfensivas(texto);
         if (ofensivas.length > 0) {
             return { valido: false, palabras: ofensivas, mensaje: 'Tu mensaje contiene lenguaje ofensivo' };
         }
-        // Pasada 2: texto colapsado (sin dígitos ni separadores) para evasión tipo mierda123
         const colapsado = procesarTexto(texto).replace(/[\s.,\-_'"!¡¿?0-9]/g, '');
         const match = colapsado.match(regexEmail) || [];
         if (match.length > 0) {
@@ -233,7 +299,6 @@ export function useOfensiveValidator() {
         return { valido: true, palabras: [] };
     }
 
-    /** Valida username de correo electrónico */
     function validarEmail(email) {
         const username = email.split('@')[0];
         if (!username) return { valido: true };
@@ -347,40 +412,37 @@ export default function ContactForm() {
         }
     }, [estaAutenticado]);
 
-    // ── Validar campo — incluye hook de ofensivas para mensaje ────────────────
+    // ── Validar campo — ahora es una función pura que devuelve el error ────────
     const validateField = (name, value) => {
         if (name === 'subject') return value ? '' : 'Selecciona un asunto.';
 
-        // 🔹 Validaciones base primero
-        if (name !== 'message') {
+        // 🔹 Validaciones base (formato/requerido)
+        if (name !== 'message' && name !== 'subject') {
             const rule = BASE_VALIDATIONS[name];
             const error = rule ? rule.validate(value) : '';
             if (error) return error;
         }
 
-        // 🔹 Validación de mensaje
-        if (name === 'message') {
-            if (!value.trim()) return 'El mensaje es obligatorio.';
-            if (value.trim().length < 10) return 'El mensaje debe tener al menos 10 caracteres.';
-        }
-
-        // 🔥 VALIDACIÓN DE OFENSIVAS
-
-        // 📧 Email → validación de username con pipeline especializado
-        if (name === 'email') {
-            const resultado = validarEmail(value);
-            if (!resultado.valido) {
-                return resultado.mensaje;
-            }
-            return '';
-        }
-
-        // 👤 Nombre y mensaje completos
+        // 🔥 Validación de ofensivas para Nombre y Mensaje
         if (name === 'name' || name === 'message') {
             const resultado = validar(value);
             if (!resultado.valido) {
                 return 'Tu mensaje contiene lenguaje no permitido.';
             }
+        }
+
+        // 🔥 Validación de ofensivas para Email
+        if (name === 'email') {
+            const resultado = validarEmail(value);
+            if (!resultado.valido) {
+                return resultado.mensaje;
+            }
+        }
+
+        // 🔹 Validación de longitud para Mensaje
+        if (name === 'message') {
+            if (!value.trim()) return 'El mensaje es obligatorio.';
+            if (value.trim().length < 10) return 'El mensaje debe tener al menos 10 caracteres.';
         }
 
         return '';
@@ -390,27 +452,37 @@ export default function ContactForm() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (user && (name === 'name' || name === 'email')) return;
-        const filtered = applyFilter(name, value);
+
+        let filtered = applyFilter(name, value);
+
+        // 🔥 Email: filtrar emojis
+        if (name === 'email') {
+            filtered = filtered.replace(/[^\x20-\x7E]/g, '');
+        }
+
         setFormData(prev => ({ ...prev, [name]: filtered }));
         setSubmitError('');
 
-        // 🔥 Mensaje: validación en tiempo real solo para lenguaje ofensivo
-        // El error de longitud mínima se muestra solo al hacer blur
-        if (name === 'message') {
-            const resultado = validar(filtered);
-            if (!resultado.valido) {
-                setFieldErrors(prev => ({ ...prev, message: 'Tu mensaje contiene lenguaje no permitido.' }));
-            } else if (touched.message) {
-                // Si ya tocó el campo, mostrar todos los errores normalmente
-                setFieldErrors(prev => ({ ...prev, message: validateField('message', filtered) }));
+        // 🔥 Validación en tiempo real
+        if (name === 'name' || name === 'email') {
+            const err = validateField(name, filtered);
+            // Si el error es por lenguaje ofensivo, mostrarlo siempre.
+            // Si es por formato (ej: email incompleto), mostrarlo solo si ya fue tocado.
+            const isOfensive = err.includes('no permitido') || err.includes('términos no permitidos');
+            if (isOfensive || touched[name]) {
+                setFieldErrors(prev => ({ ...prev, [name]: err }));
             } else {
-                // Mientras escribe sin haber salido del campo, limpiar errores de longitud
+                setFieldErrors(prev => ({ ...prev, [name]: '' }));
+            }
+        } else if (name === 'message') {
+            const err = validateField('message', filtered);
+            const isOfensive = err.includes('no permitido');
+            if (isOfensive || touched.message) {
+                setFieldErrors(prev => ({ ...prev, message: err }));
+            } else {
                 setFieldErrors(prev => ({ ...prev, message: '' }));
             }
-            return;
-        }
-
-        if (touched[name]) {
+        } else if (touched[name]) {
             setFieldErrors(prev => ({ ...prev, [name]: validateField(name, filtered) }));
         }
     };
@@ -566,9 +638,14 @@ export default function ContactForm() {
 
                         {/* Nombre */}
                         <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-green-800 flex items-center gap-1">
-                                Nombre
-                                {user && <Lock className="w-3 h-3 text-green-400" title="Autocompletado con tu cuenta" />}
+                            <span className="text-sm font-medium text-green-800 flex items-center justify-between gap-1">
+                                <span className="flex items-center gap-1">
+                                    Nombre
+                                    {user && <Lock className="w-3 h-3 text-green-400" title="Autocompletado con tu cuenta" />}
+                                </span>
+                                {!user && fieldErrors.name === 'Tu nombre contiene lenguaje no permitido.' && (
+                                    <span className="text-xs font-semibold text-red-500">⚠ Lenguaje no permitido</span>
+                                )}
                             </span>
                             <input
                                 name="name"
@@ -585,9 +662,14 @@ export default function ContactForm() {
 
                         {/* Correo */}
                         <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-green-800 flex items-center gap-1">
-                                Correo
-                                {user && <Lock className="w-3 h-3 text-green-400" title="Autocompletado con tu cuenta" />}
+                            <span className="text-sm font-medium text-green-800 flex items-center justify-between gap-1">
+                                <span className="flex items-center gap-1">
+                                    Correo
+                                    {user && <Lock className="w-3 h-3 text-green-400" title="Autocompletado con tu cuenta" />}
+                                </span>
+                                {!user && fieldErrors.email === 'El correo contiene términos no permitidos' && (
+                                    <span className="text-xs font-semibold text-red-500">⚠ Correo no permitido</span>
+                                )}
                             </span>
                             <input
                                 type="email"

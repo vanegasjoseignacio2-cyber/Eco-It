@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext"; // ajusta la ruta si es distinta
+import { useAuth } from "../../context/AuthContext";
 import {
     LayoutDashboard,
     Users,
@@ -11,6 +11,7 @@ import {
     ChevronRight,
     LogOut,
     Map,
+    ImagePlus,
 } from "lucide-react";
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
     { id: "estadisticas",label: "Estadísticas", icon: BarChart3,       badge: null },
     { id: "ecojuego",    label: "Eco-Juego",    icon: Gamepad2,        badge: null },
     { id: "maps",        label: "Mapas",        icon: Map,             badge: null },
+    { id: "images",        label: "Imágenes",   icon: ImagePlus,       badge: null },
 ];
 
 export default function AdminSidebar({ activeSection, setActiveSection }) {
@@ -155,27 +157,49 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
             </nav>
 
             {/* Bottom — Cerrar Sesión */}
-            <div className="relative px-2 pb-4 border-t border-white/10 pt-3">
+            <div className="relative px-2 pb-4 border-t border-white/30 pt-3">
                 <motion.button
-                    onClick={handleLogout}
-                    whileHover={{ x: collapsed ? 0 : 4 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-600/80 transition-colors group"
-                >
-                    <LogOut className="w-4 h-4 text-white/70 group-hover:text-white flex-shrink-0" />
-                    <AnimatePresence>
-                        {!collapsed && (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="text-sm text-white/70 group-hover:text-white whitespace-nowrap overflow-hidden"
-                            >
-                                Cerrar Sesión
-                            </motion.span>
-                        )}
-                    </AnimatePresence>
-                </motion.button>
+    onClick={handleLogout}
+    whileHover={{ x: collapsed ? 0 : 4, scale: 1.02 }}
+    whileTap={{ scale: 0.96 }}
+    className="
+        w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+        border-2 border-white hover:border-red-600/90
+        bg-white/10
+        hover:bg-red-600/90
+        backdrop-blur-md
+        transition-all duration-300
+        shadow-sm hover:shadow-red-500/40
+        group relative overflow-hidden
+    "
+>
+    {/* Glow animado */}
+    <span className="
+        absolute inset-0 opacity-0 group-hover:opacity-100
+        bg-gradient-to-r from-transparent via-white/20 to-transparent
+        translate-x-[-100%] group-hover:translate-x-[100%]
+        transition-all duration-700
+    " />
+
+    <LogOut className="w-4 h-4 text-white group-hover:text-white transition-colors flex-shrink-0" />
+
+    <AnimatePresence>
+        {!collapsed && (
+            <motion.span
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -5 }}
+                className="
+                    text-sm font-medium
+                    text-white group-hover:text-white
+                    whitespace-nowrap overflow-hidden
+                "
+            >
+                Cerrar Sesión
+            </motion.span>
+        )}
+    </AnimatePresence>
+</motion.button>
             </div>
         </motion.aside>
     );

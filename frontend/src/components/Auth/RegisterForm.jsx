@@ -55,7 +55,7 @@ const calcTimeLeft = () => {
 export default function RegisterForm() {
     const navigate = useNavigate();
     const { login } = useAuth();
-    const { validar } = useOfensiveValidator();
+    const { validar, validarEmail } = useOfensiveValidator();
 
     // ── Paso ─────────────────────────────────────────────────────────────────
     const [step, setStep] = useState('form'); // 'form' | 'code'
@@ -80,6 +80,8 @@ export default function RegisterForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
+    const [emailOfensivo, setEmailOfensivo] = useState(false);
+    const [toast, setToast] = useState(false);
 
     // ── Temporizador ─────────────────────────────────────────────────────────
     useEffect(() => {
@@ -116,6 +118,15 @@ export default function RegisterForm() {
     const isValidEmail = (v) =>
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
+    // Validación de email completa: formato + sin groserías en username
+    const isValidEmailFull = (v) =>
+        isValidEmail(v) && !validarEmail(v).valido === false;
+
+    const showToast = () => {
+        setToast(true);
+        setTimeout(() => setToast(false), 3000);
+    };
+
     const isValidAge = (v) => {
         const edad = Number(v);
 
@@ -131,7 +142,7 @@ export default function RegisterForm() {
         isValidName(name) &&
         isValidName(lastname) &&
         isValidAge(age) &&
-        isValidEmail(email) &&
+        isValidEmailFull(email) &&
         isValidPhone(phone) &&
         !isEmpty(password) &&
         !isEmpty(confirmPassword);
@@ -237,6 +248,23 @@ export default function RegisterForm() {
 
     return (
         <div className="w-full max-w-xl px-4 lg:px-0 flex-shrink-0">
+
+            {/* ── Toast: formulario bloqueado ──────────────────────────────── */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        key="toast"
+                        initial={{ opacity: 0, y: -16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -16 }}
+                        transition={{ duration: 0.22 }}
+                        className="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-600 text-white shadow-xl text-sm font-semibold pointer-events-none"
+                    >
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        Corrige los errores del formulario antes de continuar
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -330,7 +358,6 @@ export default function RegisterForm() {
                                                     value={name}
                                                     onChange={(e) => {
                                                         const value = e.target.value;
-
                                                         if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
                                                             setName(value);
                                                         }
@@ -338,13 +365,15 @@ export default function RegisterForm() {
                                                     onBlur={() => setTouched((t) => ({ ...t, name: true }))}
                                                     placeholder="Tu nombre"
                                                     disabled={loading}
-                                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.name && !isValidName(name) ? "border-red-400" : "border-green-200"}`}
+                                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${name.length > 0 && !isValidName(name) ? "border-red-400" : "border-green-200"}`}
                                                     required
                                                 />
                                             </div>
-                                            {touched.name && !isValidName(name) && (
+                                            {name.length > 0 && !isValidName(name) && (
                                                 <p className="text-xs text-red-600 mt-1">
-                                                    Ingresa un nombre válido (solo letras, mínimo 3 caracteres) y sin palabras ofensivas
+                                                    {validar(name).valido === false && name.trim().length >= 3
+                                                        ? "El nombre contiene palabras no permitidas"
+                                                        : "Solo letras, mínimo 3 caracteres"}
                                                 </p>
                                             )}
                                         </div>
@@ -358,7 +387,6 @@ export default function RegisterForm() {
                                                     value={lastname}
                                                     onChange={(e) => {
                                                         const value = e.target.value;
-
                                                         if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
                                                             setLastname(value);
                                                         }
@@ -366,13 +394,15 @@ export default function RegisterForm() {
                                                     onBlur={() => setTouched((t) => ({ ...t, lastname: true }))}
                                                     placeholder="Tu apellido"
                                                     disabled={loading}
-                                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.lastname && !isValidName(lastname) ? "border-red-400" : "border-green-200"} ?`}
+                                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${lastname.length > 0 && !isValidName(lastname) ? "border-red-400" : "border-green-200"}`}
                                                     required
                                                 />
                                             </div>
-                                            {touched.lastname && !isValidName(lastname) && (
+                                            {lastname.length > 0 && !isValidName(lastname) && (
                                                 <p className="text-xs text-red-600 mt-1">
-                                                    Ingresa un apellido válido (solo letras, mínimo 3 caracteres) y sin palabras ofensivas
+                                                    {validar(lastname).valido === false && lastname.trim().length >= 3
+                                                        ? "El apellido contiene palabras no permitidas"
+                                                        : "Solo letras, mínimo 3 caracteres"}
                                                 </p>
                                             )}
                                         </div>
@@ -388,20 +418,28 @@ export default function RegisterForm() {
                                         <div className="relative">
                                             <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
                                             <input
-                                                type="number"
+                                                type="text"
+                                                inputMode="numeric"
                                                 value={age}
-                                                onChange={(e) => setAge(e.target.value)}
+                                                onChange={(e) => {
+                                                    // Bloquea e, +, -, ., , y cualquier no-dígito
+                                                    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
+                                                    setAge(val);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
                                                 onBlur={() => setTouched((t) => ({ ...t, age: true }))}
                                                 placeholder="Tu edad"
-                                                min="6"
-                                                max="110"
                                                 disabled={loading}
-                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.age && !isValidAge(age) ? "border-red-400" : "border-green-200"}`}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${age.length > 0 && !isValidAge(age) ? "border-red-400" : "border-green-200"}`}
                                                 required
                                             />
                                         </div>
-                                        {touched.age && !isValidAge(age) && (
-                                            <p className="text-xs text-red-600 mt-1">Ingrese una edad entre 6 y 110 años</p>
+                                        {age.length > 0 && !isValidAge(age) && (
+                                            <p className="text-xs text-red-600 mt-1">Ingresa una edad entre 6 y 110 años</p>
                                         )}
                                     </motion.div>
 
@@ -417,24 +455,26 @@ export default function RegisterForm() {
                                             <input
                                                 type="email"
                                                 value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/[^\x20-\x7E]/g, '');
+                                                    setEmail(val);
+                                                    setEmailOfensivo(!validarEmail(val).valido);
+                                                }}
                                                 onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                                                 placeholder="tu@email.com"
                                                 disabled={loading}
-                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white 
-    focus:ring-2 focus:ring-green-500 focus:border-transparent 
-    outline-none transition-all text-green-900 placeholder:text-green-400 
-    disabled:opacity-50 disabled:cursor-not-allowed 
-    ${touched.email && !isValidEmail(email)
-                                                        ? "border-red-400"
-                                                        : "border-green-200"
-                                                    }`}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${email.length > 0 && (!isValidEmail(email) || emailOfensivo) ? "border-red-400" : "border-green-200"}`}
                                                 required
                                             />
                                         </div>
-                                        {touched.email && !isValidEmail(email) && (
+                                        {email.length > 0 && !isValidEmail(email) && (
                                             <p className="text-xs text-red-600 mt-1">
                                                 Correo inválido (ej: pepito@gmail.com)
+                                            </p>
+                                        )}
+                                        {emailOfensivo && isValidEmail(email) && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                                El correo contiene términos no permitidos
                                             </p>
                                         )}
                                     </motion.div>
@@ -459,13 +499,13 @@ export default function RegisterForm() {
                                                 placeholder="300 123 4567"
                                                 pattern="[0-9]{10}"
                                                 disabled={loading}
-                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.phone && !isValidPhone(phone) ? "border-red-400" : "border-green-200"}`}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${phone.length > 0 && !isValidPhone(phone) ? "border-red-400" : "border-green-200"}`}
                                                 required
                                             />
                                         </div>
-                                        {touched.phone && !isValidPhone(phone) && (
+                                        {phone.length > 0 && !isValidPhone(phone) && (
                                             <p className="text-xs text-red-600 mt-1">
-                                                Número inválido 10 dígitos como mínimo (ej: 3201234567)
+                                                Número inválido — debe tener 10 dígitos y empezar por 3 (ej: 3201234567)
                                             </p>
                                         )}
                                     </motion.div>
@@ -519,12 +559,12 @@ export default function RegisterForm() {
                                                 onBlur={() => setTouched((t) => ({ ...t, confirmPassword: true }))}
                                                 placeholder="••••••••"
                                                 disabled={loading}
-                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.confirmPassword && isEmpty(confirmPassword) ? "border-red-400" : "border-green-200"}`}
+                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${confirmPassword.length > 0 && confirmPassword !== password ? "border-red-400" : "border-green-200"}`}
                                                 required
                                             />
                                         </div>
-                                        {touched.confirmPassword && isEmpty(confirmPassword) && (
-                                            <p className="text-xs text-red-600 mt-1">Este campo es obligatorio</p>
+                                        {confirmPassword.length > 0 && confirmPassword !== password && (
+                                            <p className="text-xs text-red-600 mt-1">Las contraseñas no coinciden</p>
                                         )}
                                     </motion.div>
 
@@ -583,6 +623,7 @@ export default function RegisterForm() {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 1.7, duration: 0.6 }}
+                                        onClick={() => { if (!formValid && !loading) showToast(); }}
                                     >
                                         <motion.button
                                             type="submit"

@@ -178,3 +178,57 @@ export const obtenerSugerencias = async (token) => {
     },
   });
 };
+
+// ============= CARRUSEL =============
+
+export const obtenerSlidesPublicos = async () => {
+  return fetchAPI('/carousel');
+};
+
+export const obtenerSlidesAdmin = async (token) => {
+  return fetchAPI('/carousel/admin', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
+export const crearSlide = async (token, datosSlide) => {
+  return fetchAPI('/carousel', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(datosSlide),
+  });
+};
+
+export const actualizarSlide = async (token, id, datosActualizados) => {
+  return fetchAPI(`/carousel/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(datosActualizados),
+  });
+};
+
+export const eliminarSlide = async (token, id) => {
+  return fetchAPI(`/carousel/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
+export const reordenarSlides = async (token, ids) => {
+  return fetchAPI('/carousel/reorder', {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ slides: ids }),
+  });
+};
