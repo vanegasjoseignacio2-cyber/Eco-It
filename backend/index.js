@@ -20,6 +20,8 @@ import userRoutes from './routes/userRoutes.js';
 import { aiRouter } from './routes/aiRoutes.js';
 import admin from './routes/admin.js';
 import contactRoutes from './routes/contactRoutes.js';
+import carouselRoutes from './routes/carouselRoutes.js';
+import './utils/cloudinary.js';
 
 // Importar configuración de passport
 import { setupGoogleAuth } from './controllers/AutheticationGoogle.js';
@@ -122,6 +124,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/ai', aiRouter );
 app.use('/api/admin', admin);
 app.use('/api/contact', contactRoutes);
+app.use('/api/carousel', carouselRoutes);
 
 
 // Ruta raíz

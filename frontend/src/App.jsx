@@ -19,6 +19,7 @@ import AdminLayout     from "./components/pages/AdminLayout";
 import PrivateRoute  from "./context/PrivateRoute";
 import PublicRoute   from "./context/PublicRoute";
 import RecoveryRoute from "./Routes/RecoveryRoutes";
+import AdminRestrictionGuard from "./context/AdminRestrictionGuard";
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 import ScrollToTop from "./components/animations/Scrolltotop";
@@ -32,9 +33,9 @@ function App() {
       <Routes>
 
         {/* ── Abiertas (cualquiera, con o sin sesión) ──────────────────────── */}
-        <Route path="/"        element={<Home />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/maps"    element={<Mapapage />} />
+        <Route path="/"        element={<AdminRestrictionGuard><Home /></AdminRestrictionGuard>} />
+        <Route path="/contact" element={<AdminRestrictionGuard><Contact /></AdminRestrictionGuard>} />
+        <Route path="/maps"    element={<AdminRestrictionGuard><Mapapage /></AdminRestrictionGuard>} />
 
         {/* ── Solo sin sesión activa ───────────────────────────────────────── */}
         <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
@@ -55,10 +56,10 @@ function App() {
         } />
 
         {/* ── Privadas (requieren sesión + perfil completo) ────────────────── */}
-        <Route path="/ai"           element={<PrivateRoute><AIPage /></PrivateRoute>} />
-        <Route path="/perfil"       element={<PrivateRoute><ProfileEcoIt /></PrivateRoute>} />
-        <Route path="/editarperfil" element={<PrivateRoute><EditProfile /></PrivateRoute>} />
-        <Route path="/game"         element={<PrivateRoute><GamePage /></PrivateRoute>} />
+        <Route path="/ai"           element={<AdminRestrictionGuard><PrivateRoute><AIPage /></PrivateRoute></AdminRestrictionGuard>} />
+        <Route path="/perfil"       element={<AdminRestrictionGuard><PrivateRoute><ProfileEcoIt /></PrivateRoute></AdminRestrictionGuard>} />
+        <Route path="/editarperfil" element={<AdminRestrictionGuard><PrivateRoute><EditProfile /></PrivateRoute></AdminRestrictionGuard>} />
+        <Route path="/game"         element={<AdminRestrictionGuard><PrivateRoute><GamePage /></PrivateRoute></AdminRestrictionGuard>} />
 
         {/* ── Privadas con rol admin ───────────────────────────────────────── */}
         <Route path="/admin" element={

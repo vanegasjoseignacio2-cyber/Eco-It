@@ -35,8 +35,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const cargarUsuario = () => {
-    const tokenGuardado = localStorage.getItem('token');
-    const usuarioGuardado = localStorage.getItem('usuario');
+    // Intentar cargar de localStorage primero (usuarios normales)
+    let tokenGuardado = localStorage.getItem('token');
+    let usuarioGuardado = localStorage.getItem('usuario');
+
+    // Si no está en localStorage, buscar en sessionStorage (admins)
+    if (!tokenGuardado) {
+      tokenGuardado = sessionStorage.getItem('token');
+      usuarioGuardado = sessionStorage.getItem('usuario');
+    }
 
     if (tokenGuardado && usuarioGuardado) {
       try {
@@ -47,6 +54,8 @@ export const AuthProvider = ({ children }) => {
         console.error('Error al cargar usuario:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('usuario');
         setToken(null);
         setUsuario(null);
       }
@@ -69,9 +78,22 @@ export const AuthProvider = ({ children }) => {
    *   login(token, usuario, '/completar-perfil')
    */
   const login = (tokenNuevo, usuarioNuevo, redirectOverride = null) => {
+    const isAdmin = usuarioNuevo.rol === "admin" || usuarioNuevo.rol === "superadmin";
+    const storage = isAdmin ? sessionStorage : localStorage;
+
     localStorage.setItem("sesionActiva", "true");
-    localStorage.setItem('token', tokenNuevo);
-    localStorage.setItem('usuario', JSON.stringify(usuarioNuevo));
+    storage.setItem('token', tokenNuevo);
+    storage.setItem('usuario', JSON.stringify(usuarioNuevo));
+
+    // Si es admin, nos aseguramos de que no haya restos en localStorage
+    if (isAdmin) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('usuario');
+    } else {
+      // Si es usuario normal, limpiamos sessionStorage por si acaso
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('usuario');
+    }
 
     // actualizar estado primero
     setToken(tokenNuevo);
@@ -81,7 +103,7 @@ export const AuthProvider = ({ children }) => {
     setTimeout(() => {
       if (redirectOverride) {
         navigate(redirectOverride, { replace: true });
-      } else if (usuarioNuevo.rol === "admin" || usuarioNuevo.rol === "superadmin") {
+      } else if (isAdmin) {
         navigate("/admin", { replace: true });
       } else {
         navigate("/", { replace: true });
@@ -102,6 +124,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('usuario');
     localStorage.removeItem('rememberMe');
     localStorage.removeItem('sesionActiva');
+
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('usuario');
 
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
   };
