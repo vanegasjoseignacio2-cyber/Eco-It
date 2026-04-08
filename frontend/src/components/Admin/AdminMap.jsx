@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { AdvancedImage } from "@cloudinary/react";
+import { Cloudinary } from "@cloudinary/url-gen";
 import {
     MapPin,
     Plus,
@@ -35,7 +37,31 @@ import {
     ChevronDown,
     Save,
     LocateFixed,
+    Image as ImageIcon,
+    UploadCloud,
 } from "lucide-react";
+
+// ─── Configuración de Cloudinary ────────────────────────────────────────────────
+const cld = new Cloudinary({ cloud: { cloudName: 'dwx3v7vex' } });
+
+function getCloudinaryPublicId(url) {
+    if (!url) return null;
+    try {
+        const parts = url.split('/upload/');
+        if (parts.length > 1) {
+            let path = parts[1];
+            if (path.match(/^v\d+\//)) {
+                path = path.substring(path.indexOf('/') + 1);
+            }
+            const lastDot = path.lastIndexOf('.');
+            if (lastDot !== -1) {
+                path = path.substring(0, lastDot);
+            }
+            return path;
+        }
+    } catch(e) { /* ignore */ }
+    return null;
+}
 
 // ─── Tipos de puntos ──────────────────────────────────────────────────────────
 // TODO: estos tipos pueden venir de BD → GET /api/admin/map/point-types
@@ -99,7 +125,7 @@ const INITIAL_POINTS = [];
 // ─── Centro por defecto del mapa ──────────────────────────────────────────────
 // TODO: puede venir de configuración → GET /api/admin/config/map-center
 const DEFAULT_CENTER = { lat: 2.195, lng: -75.627 };
-const DEFAULT_ZOOM   = 14;
+const DEFAULT_ZOOM = 14;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 let _idCounter = 1;
@@ -113,7 +139,7 @@ function getTypeIconSVG(type, color = "white") {
         container: `<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="${color}" stroke-width="2" fill="none"/>`,
         green_zone: `<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 21 2c-2.5 4-3 5.5-4.1 11.2A7 7 0 0 1 11 20zM11 20v-5" stroke="${color}" stroke-width="2" fill="none"/>`
     };
-    
+
     // SVG Paths aproximados para Lucide (simplificados para legibilidad)
     const svgs = {
         recycling: `<path d="M7 21v-4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4M3 7l9-4 9 4v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />`,
@@ -204,21 +230,22 @@ function buildArrowMarkerIcon(type) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminMap() {
     const { token } = useAuth();
-    const [points, setPoints]           = useState([]);
-    const [loading, setLoading]         = useState(true);
-    const [search, setSearch]           = useState("");
-    const [filterType, setFilterType]   = useState("all");
+    const [points, setPoints] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [filterType, setFilterType] = useState("all");
     const [filterActive, setFilterActive] = useState("all");
     const [selectedPoint, setSelectedPoint] = useState(null);
-    const [showForm, setShowForm]       = useState(false);
+    const [showForm, setShowForm] = useState(false);
     const [editingPoint, setEditingPoint] = useState(null);
     const [placingMode, setPlacingMode] = useState(false); // click en mapa para colocar pin
-    const [toast, setToast]             = useState(null);
+    const [toast, setToast] = useState(null);
     const [collapsedTypes, setCollapsedTypes] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Form state
     const [form, setForm] = useState({
-        name: "", type: "recycling", description: "", lat: "", lng: "", active: true,
+        name: "", type: "recycling", description: "", lat: "", lng: "", active: true, imagen: ""
     });
 
     // ─── Fetch API ──────────────────────────────────────────────────────────
@@ -232,17 +259,24 @@ export default function AdminMap() {
             const data = await res.json();
             if (data.success) {
                 // Adaptamos el esquema del backend (español) al frontend (inglés)
-                const mapped = data.puntos.map(p => ({ 
+                const mapped = data.puntos.map(p => ({
                     id: p._id,
                     name: p.nombre,
                     type: p.tipo,
                     lat: p.lat,
                     lng: p.lng,
                     description: p.descripcion,
+                    imagen: p.imagen,
                     active: p.activo,
                     createdAt: p.createdAt
                 }));
                 setPoints(mapped);
+                
+                setSelectedPoint(prev => {
+                    if (!prev) return prev;
+                    const updatedPoint = mapped.find(p => p.id === prev.id);
+                    return updatedPoint ? updatedPoint : prev;
+                });
             }
         } catch (error) {
             console.error("Error al cargar puntos:", error);
@@ -260,7 +294,7 @@ export default function AdminMap() {
     const filtered = points.filter((p) => {
         const q = search.toLowerCase();
         const matchSearch = p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q);
-        const matchType   = filterType   === "all" || p.type   === filterType;
+        const matchType = filterType === "all" || p.type === filterType;
         const matchActive = filterActive === "all" || String(p.active) === filterActive;
         return matchSearch && matchType && matchActive;
     });
@@ -273,29 +307,31 @@ export default function AdminMap() {
 
     // ─── CRUD ──────────────────────────────────────────────────────────────
     const handleSave = async () => {
-        if (!token) return;
+        if (!token || isSaving) return;
         const lat = parseFloat(form.lat);
         const lng = parseFloat(form.lng);
         if (!form.name.trim()) return showToast("El nombre es requerido", "error");
         if (isNaN(lat) || isNaN(lng)) return showToast("Coordenadas inválidas", "error");
 
-        const body = { 
-            nombre: form.name, 
-            tipo: form.type, 
-            lat, 
-            lng, 
-            descripcion: form.description, 
-            activo: form.active 
+        setIsSaving(true);
+        const body = {
+            nombre: form.name,
+            tipo: form.type,
+            lat,
+            lng,
+            descripcion: form.description,
+            activo: form.active,
+            imagen: form.imagen
         };
-        const url = editingPoint 
-            ? `http://localhost:3000/api/admin/map/points/${editingPoint.id}` 
+        const url = editingPoint
+            ? `http://localhost:3000/api/admin/map/points/${editingPoint.id}`
             : "http://localhost:3000/api/admin/map/points";
         const method = editingPoint ? "PATCH" : "POST";
 
         try {
             const res = await fetch(url, {
                 method,
-                headers: { 
+                headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
                 },
@@ -309,6 +345,8 @@ export default function AdminMap() {
             }
         } catch (error) {
             showToast("Error al guardar", "error");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -332,6 +370,7 @@ export default function AdminMap() {
 
     const handleToggleActive = async (id) => {
         if (!token) return;
+
         try {
             const res = await fetch(`http://localhost:3000/api/admin/map/points/${id}/toggle`, {
                 method: "PATCH",
@@ -341,7 +380,9 @@ export default function AdminMap() {
             if (data.success) {
                 const nuevoEstado = data.punto.activo ? "Activado" : "Desactivado";
                 showToast(`Punto ${nuevoEstado} con éxito`);
-                fetchPoints();
+                fetchPoints(); // This updates `points` and `selectedPoint`
+            } else {
+                showToast("Error al cambiar estado", "error");
             }
         } catch (error) {
             showToast("Error al cambiar estado", "error");
@@ -353,6 +394,7 @@ export default function AdminMap() {
         setForm({
             name: point.name, type: point.type,
             description: point.description || "",
+            imagen: point.imagen || "",
             lat: String(point.lat), lng: String(point.lng),
             active: point.active,
         });
@@ -361,7 +403,7 @@ export default function AdminMap() {
     };
 
     const resetForm = () => {
-        setForm({ name: "", type: "recycling", description: "", lat: "", lng: "", active: true });
+        setForm({ name: "", type: "recycling", description: "", lat: "", lng: "", active: true, imagen: "" });
         setEditingPoint(null);
         setShowForm(false);
         setPlacingMode(false);
@@ -590,6 +632,7 @@ export default function AdminMap() {
                                     onCancel={resetForm}
                                     onStartPlacing={() => setPlacingMode(true)}
                                     placingMode={placingMode}
+                                    isSaving={isSaving}
                                 />
                             ) : selectedPoint ? (
                                 <DetailPanel
@@ -645,11 +688,11 @@ export default function AdminMap() {
 //   - HERE Maps: import H from '@here/maps-api-for-javascript'
 // ─────────────────────────────────────────────────────────────────────────────
 function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placingMode, draftMarker }) {
-    const mapRef         = useRef(null);
+    const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
-    const markersRef     = useRef([]);
-    const placingRef     = useRef(placingMode);
-    const onMapClickRef  = useRef(onMapClick);
+    const markersRef = useRef([]);
+    const placingRef = useRef(placingMode);
+    const onMapClickRef = useRef(onMapClick);
 
     useEffect(() => { placingRef.current = placingMode; }, [placingMode]);
     useEffect(() => { onMapClickRef.current = onMapClick; }, [onMapClick]);
@@ -658,14 +701,24 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
     useEffect(() => {
         if (mapInstanceRef.current) return;
 
+        // Crear un límite geográfico exacto para bloquear la vista de Garzón
+        const bounds = L.latLngBounds(
+            [2.140, -75.690], // Esquina Sur-Oeste
+            [2.240, -75.560]  // Esquina Nor-Este
+        );
+
         mapInstanceRef.current = L.map(mapRef.current, {
             zoomControl: false,
-        }).setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], DEFAULT_ZOOM);
+            minZoom: 13, // Bloquea el zoom (alejar) más allá de este nivel
+            maxBounds: bounds, // Bloquea el movimiento/paneo fuera de la caja
+            maxBoundsViscosity: 1.0, // Rebote sólido al chocar con los bordes
+        }).setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], 13); // Centrado inicial forzado un poco más cerca
 
         // [SWAP_MAP_API] → Reemplaza esta URL por la del nuevo proveedor
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors",
             maxZoom: 19,
+            minZoom: 13,
         }).addTo(mapInstanceRef.current);
 
         // Controles de zoom personalizados (posición)
@@ -700,27 +753,30 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
 
         points.forEach((point) => {
             if (isNaN(point.lat) || isNaN(point.lng)) return;
-            const cfg    = POINT_TYPES[point.type] || POINT_TYPES.recycling;
-            const color  = point.active ? cfg.markerColor : "#9ca3af";
-            const icon   = buildMarkerIcon(color, point.type);
+            const cfg = POINT_TYPES[point.type] || POINT_TYPES.recycling;
+            const color = point.active ? cfg.markerColor : "#9ca3af";
+            const icon = buildMarkerIcon(color, point.type);
 
             // [SWAP_MAP_API] → reemplaza L.marker por el marcador del nuevo proveedor
             const marker = L.marker([point.lat, point.lng], { icon })
                 .addTo(mapInstanceRef.current);
 
             marker.bindPopup(`
-                <div style="font-family:sans-serif;min-width:160px">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-                        <div style="width:10px;height:10px;border-radius:50%;background:${color}"></div>
-                        <strong style="font-size:13px;color:#14532d">${point.name}</strong>
+                <div style="font-family:sans-serif;min-width:160px;display:flex;flex-direction:row;gap:12px;align-items:flex-start;">
+                    <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                            <div style="width:10px;height:10px;border-radius:50%;background:${color}"></div>
+                            <strong style="font-size:13px;color:#14532d">${point.name}</strong>
+                        </div>
+                        <p style="font-size:11px;color:#6b7280;margin:0 0 4px">${cfg.label}</p>
+                        ${point.description ? `<p style="font-size:11px;color:#374151;word-break:break-word;">${point.description}</p>` : ""}
+                        <p style="font-size:10px;color:${point.active ? '#22c55e' : '#9ca3af'};margin-top:4px;font-weight:600">
+                            ${point.active ? "● Activo" : "● Inactivo"}
+                        </p>
                     </div>
-                    <p style="font-size:11px;color:#6b7280;margin:0 0 4px">${cfg.label}</p>
-                    ${point.description ? `<p style="font-size:11px;color:#374151">${point.description}</p>` : ""}
-                    <p style="font-size:10px;color:${point.active ? '#22c55e' : '#9ca3af'};margin-top:4px;font-weight:600">
-                        ${point.active ? "● Activo" : "● Inactivo"}
-                    </p>
+                    ${point.imagen ? `<div style="flex-shrink:0;"><img src="${getCloudinaryPublicId(point.imagen) ? cld.image(getCloudinaryPublicId(point.imagen)).format('auto').quality('auto').toURL() : point.imagen}" alt="Punto" style="width:80px;height:80px;object-fit:cover;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);" /></div>` : ""}
                 </div>
-            `, { maxWidth: 220 });
+            `, { maxWidth: 300 });
 
             markersRef.current.push(marker);
         });
@@ -788,7 +844,7 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
 // SUB-COMPONENTE: Tarjeta de punto en lista
 // ─────────────────────────────────────────────────────────────────────────────
 function PointCard({ point, isSelected, onSelect, onEdit, onDelete, onToggle }) {
-    const cfg  = POINT_TYPES[point.type] || POINT_TYPES.recycling;
+    const cfg = POINT_TYPES[point.type] || POINT_TYPES.recycling;
     const Icon = cfg.icon;
 
     return (
@@ -825,6 +881,9 @@ function PointCard({ point, isSelected, onSelect, onEdit, onDelete, onToggle }) 
                 <p className="text-[10px] text-green-400 mt-0.5">{cfg.label}</p>
                 {point.description && (
                     <p className="text-[10px] text-green-400 truncate mt-0.5">{point.description}</p>
+                )}
+                {point.imagen && (
+                    <p className="text-[9px] text-green-500 font-medium mt-0.5 flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Con imagen</p>
                 )}
                 <p className="text-[9px] text-green-300 mt-1">
                     {parseFloat(point.lat).toFixed(4)}, {parseFloat(point.lng).toFixed(4)}
@@ -863,7 +922,7 @@ function PointCard({ point, isSelected, onSelect, onEdit, onDelete, onToggle }) 
 // SUB-COMPONENTE: Panel de detalle de punto
 // ─────────────────────────────────────────────────────────────────────────────
 function DetailPanel({ point, onClose, onEdit, onDelete, onToggle }) {
-    const cfg  = POINT_TYPES[point.type] || POINT_TYPES.recycling;
+    const cfg = POINT_TYPES[point.type] || POINT_TYPES.recycling;
     const Icon = cfg.icon;
 
     return (
@@ -896,9 +955,23 @@ function DetailPanel({ point, onClose, onEdit, onDelete, onToggle }) {
                         {point.active ? "Activo" : "Inactivo"}
                     </span>
                 } />
-                <InfoRow label="Latitud"    value={point.lat} />
-                <InfoRow label="Longitud"   value={point.lng} />
+                <InfoRow label="Latitud" value={point.lat} />
+                <InfoRow label="Longitud" value={point.lng} />
                 {point.description && <InfoRow label="Descripción" value={point.description} />}
+                {point.imagen && (
+                    <div>
+                        <p className="text-[10px] font-bold text-green-300 uppercase tracking-wider mb-1.5">Imagen</p>
+                        {getCloudinaryPublicId(point.imagen) ? (
+                            <AdvancedImage 
+                                cldImg={cld.image(getCloudinaryPublicId(point.imagen)).format('auto').quality('auto')} 
+                                alt="Punto" 
+                                className="w-full h-32 object-cover rounded-xl" 
+                            />
+                        ) : (
+                            <img src={point.imagen} alt="Punto" className="w-full h-32 object-cover rounded-xl" />
+                        )}
+                    </div>
+                )}
                 {/* TODO: createdAt → mostrar res.data.createdAt formateado */}
                 {point.createdAt && (
                     <InfoRow label="Creado el" value={new Date(point.createdAt).toLocaleDateString("es-CO", {
@@ -950,7 +1023,7 @@ function InfoRow({ label, value }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENTE: Formulario crear/editar punto
 // ─────────────────────────────────────────────────────────────────────────────
-function FormPanel({ form, setForm, editingPoint, onSave, onCancel, onStartPlacing, placingMode }) {
+function FormPanel({ form, setForm, editingPoint, onSave, onCancel, onStartPlacing, placingMode, isSaving }) {
     const upd = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
     return (
@@ -1026,6 +1099,41 @@ function FormPanel({ form, setForm, editingPoint, onSave, onCancel, onStartPlaci
                     />
                 </Field>
 
+                {/* Imagen */}
+                <Field label="Imagen publicitaria/foto">
+                    <div className="flex flex-col gap-2">
+                        {form.imagen && (
+                            <div className="relative w-full h-32 rounded-xl border border-green-100 overflow-hidden group">
+                                <img src={form.imagen} alt="Vista previa" className="w-full h-full object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={() => upd("imagen", "")}
+                                    className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+                        <label className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl border-2 border-dashed border-green-200 bg-green-50/30 text-green-600 text-sm font-medium hover:bg-green-50 transition-colors cursor-pointer">
+                            <UploadCloud className="w-4 h-4" />
+                            {form.imagen ? 'Cambiar imagen' : 'Subir imagen'}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => upd("imagen", reader.result);
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                            />
+                        </label>
+                    </div>
+                </Field>
+
                 {/* Coordenadas */}
                 <Field label="Coordenadas *">
                     <div className="grid grid-cols-2 gap-2 mb-2">
@@ -1099,10 +1207,21 @@ function FormPanel({ form, setForm, editingPoint, onSave, onCancel, onStartPlaci
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onSave}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-lime-500 to-green-600 text-white text-sm font-semibold shadow hover:shadow-lg transition-all"
+                    disabled={isSaving}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-semibold shadow hover:shadow-lg transition-all
+                        ${isSaving ? "bg-gray-400 cursor-not-allowed" : "bg-gradient-to-r from-lime-500 to-green-600"}`}
                 >
-                    <Save className="w-4 h-4" />
-                    {editingPoint ? "Guardar cambios" : "Crear punto"}
+                    {isSaving ? (
+                        <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            Guardando...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="w-4 h-4" />
+                            {editingPoint ? "Guardar cambios" : "Crear punto"}
+                        </>
+                    )}
                 </motion.button>
             </div>
         </div>

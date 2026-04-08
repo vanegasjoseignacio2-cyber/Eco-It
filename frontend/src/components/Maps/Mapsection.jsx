@@ -6,10 +6,12 @@ import SearchBar from "./Barra";
 import MapView from "./MapView";
 import ResultsList from "./ResultsList";
 import RutasEco from "./Rutas";
-
 export default function MapSection() {
     const [places, setPlaces] = useState([]);
     const [selectedPlace, setSelectedPlace] = useState(null);
+
+
+
 
     return (
         <section className="relative overflow-hidden bg-[linear-gradient(20deg,_#bbf7d0,_#d1fae5,_#f0fdfa)]">

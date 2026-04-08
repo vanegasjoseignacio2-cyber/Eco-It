@@ -176,3 +176,22 @@ export const eliminarUsuario = async (req, res) => {
     });
   }
 };
+
+export const obtenerPuntosPublic = async (req, res) => {
+  try {
+    const puntos = await PuntoReciclaje.find({
+      activo: true,
+      visibleToUser: true
+    }).populate('imagen').sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      puntos: puntos
+    });
+  } catch (error) {
+    console.error("Error al obtener puntos públicos:", error);
+    res.status(500).json({
+      success: false,
+      mensaje: error.message
+    });
+  }
+};
