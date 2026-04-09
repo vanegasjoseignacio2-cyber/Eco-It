@@ -24,7 +24,15 @@ const puntoReciclajeSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    imagen: {
+        type: String,
+        default: ""
+    },
     activo: {
+        type: Boolean,
+        default: true
+    },
+    visibleToUser: {
         type: Boolean,
         default: true
     }

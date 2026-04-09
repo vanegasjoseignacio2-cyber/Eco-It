@@ -5,6 +5,9 @@ import {
   cambiarPassword,
   eliminarUsuario
 } from '../controllers/userController.js';
+import {
+  obtenerPuntosPublic
+} from '../controllers/puntosController.js';
 import { enviarCodigoRecuperacion, verificarCodigo, restablecerPassword, reenviarCodigo } from '../controllers/recoveryController.js';
 import { verificarToken } from '../middlewares/authMiddleware.js';
 
@@ -21,5 +24,6 @@ router.get('/perfil', verificarToken, obtenerPerfil);
 router.put('/perfil', verificarToken, actualizarPerfil);
 router.put('/cambiar-password', verificarToken, cambiarPassword);
 router.delete('/perfil', verificarToken, eliminarUsuario);
+router.get('/map-points', obtenerPuntosPublic); // Ruta pública para obtener puntos del mapa
 
 export default router;
