@@ -15,6 +15,8 @@ import {
     Phone,
     AlertCircle,
     ShieldCheck,
+    ShieldAlert,
+    X,
     RotateCcw,
     CheckCircle2,
 } from "lucide-react";
@@ -81,6 +83,7 @@ export default function RegisterForm() {
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [emailOfensivo, setEmailOfensivo] = useState(false);
+    const [showEmailOfensivoModal, setShowEmailOfensivoModal] = useState(false);
     const [toast, setToast] = useState(false);
 
     // ── Temporizador ─────────────────────────────────────────────────────────
@@ -458,7 +461,13 @@ export default function RegisterForm() {
                                                 onChange={(e) => {
                                                     const val = e.target.value.replace(/[^\x20-\x7E]/g, '');
                                                     setEmail(val);
-                                                    setEmailOfensivo(!validarEmail(val).valido);
+                                                    const esOfensivo = !validarEmail(val).valido;
+                                                    setEmailOfensivo(esOfensivo);
+                                                    if (esOfensivo && isValidEmail(val)) {
+                                                        setShowEmailOfensivoModal(true);
+                                                    } else {
+                                                        setShowEmailOfensivoModal(false);
+                                                    }
                                                 }}
                                                 onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                                                 placeholder="tu@email.com"
@@ -820,6 +829,78 @@ export default function RegisterForm() {
 
                     </AnimatePresence>
                 </div>
+
+                {/* ── Modal: correo con palabras ofensivas ──────────────────────── */}
+                <AnimatePresence>
+                    {showEmailOfensivoModal && (
+                        <motion.div
+                            key="email-ofensivo-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                            style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}
+                            onClick={() => setShowEmailOfensivoModal(false)}
+                        >
+                            <motion.div
+                                key="email-ofensivo-modal"
+                                initial={{ opacity: 0, scale: 0.85, y: 30 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.85, y: 30 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                                className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-red-200 overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Gradient header */}
+                                <div className="bg-gradient-to-br from-red-500 to-rose-600 p-6 text-center">
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+                                        className="w-16 h-16 mx-auto rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 shadow-lg"
+                                    >
+                                        <ShieldAlert className="w-8 h-8 text-white" />
+                                    </motion.div>
+                                    <h3 className="text-xl font-bold text-white">Correo no permitido</h3>
+                                    <p className="text-sm text-red-100 mt-1">Se detectó contenido inapropiado</p>
+                                </div>
+
+                                {/* Body */}
+                                <div className="p-6">
+                                    <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-100 mb-5">
+                                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-red-800">Lenguaje ofensivo detectado</p>
+                                            <p className="text-xs text-red-600 mt-1">
+                                                El correo electrónico que ingresaste contiene términos que no están permitidos
+                                                en nuestra plataforma. Por favor, usa un correo electrónico válido y apropiado.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEmailOfensivoModal(false)}
+                                        className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg hover:shadow-red-500/25 transition-all active:scale-[0.98] cursor-pointer"
+                                    >
+                                        Entendido, corregir correo
+                                    </button>
+                                </div>
+
+                                {/* Close button */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEmailOfensivoModal(false)}
+                                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors cursor-pointer"
+                                >
+                                    <X className="w-4 h-4 text-white" />
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
             </motion.div>
         </div>
     );

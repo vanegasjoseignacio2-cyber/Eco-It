@@ -1,18 +1,17 @@
 /**
- * EcoCarousel.jsx  — v3 "Floating Card"
- * ─────────────────────────────────────────────────────────────────────────────
- * Misma lógica que v2 (localStorage/API + FALLBACK_SLIDES, auto-play, drag,
- * teclado, progress bar, aspect-ratio adaptativo).
- * Rediseño visual: tarjeta flotante centrada con estética futurista coherente
- * con el resto de la app (lime/green/emerald, blur, bordes glowing).
- * ─────────────────────────────────────────────────────────────────────────────
+ * AdamaCarousel.jsx — Imagen completa, sin recortes, responsive
+ * ─────────────────────────────────────────────────────────────
+ * La imagen define la altura del contenedor (width:100% height:auto).
+ * No hay height fijo ni position:absolute en la imagen.
+ * mode="wait" garantiza que nunca hay dos slides visibles al mismo tiempo,
+ * por lo que NO necesitamos overflow:hidden para la transición.
+ * Navegación: dots + swipe/drag + teclado + autoplay.
  */
 
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { ChevronLeft, ChevronRight, Leaf } from "lucide-react";
 import { obtenerSlidesPublicos } from "../../services/api";
 
 // ─── SLIDES DE RESPALDO ───────────────────────────────────────────────────────
@@ -69,70 +68,75 @@ function useDynamicSlides() {
 }
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
-const AUTO_PLAY_INTERVAL = 5000;
+const AUTO_PLAY_INTERVAL = 5500;
 const DRAG_THRESHOLD     = 60;
 
-// ─── VARIANTES FRAMER MOTION ──────────────────────────────────────────────────
+// ─── VARIANTES FRAMER MOTION — cross-fade puro (sin translateX) ─────────────
+// Sin translate no necesitamos overflow:hidden en el padre.
+// El contenedor crece libremente con la imagen → nunca hay recorte.
 const slideVariants = {
-    enter:  (dir) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0, scale: 1.04 }),
-    center: { x: 0, opacity: 1, scale: 1,
-        transition: { duration: 0.75, ease: [0.25, 0.46, 0.45, 0.94] } },
-    exit: (dir) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0, scale: 0.97,
-        transition: { duration: 0.55, ease: [0.55, 0, 1, 0.45] } }),
+    enter:  { opacity: 0 },
+    center: { opacity: 1, transition: { duration: 0.45, ease: "easeOut" } },
+    exit:   { opacity: 0, transition: { duration: 0.3,  ease: "easeIn"  } },
 };
+
 
 const textContainerVariants = {
     hidden: {},
-    visible: { transition: { staggerChildren: 0.1, delayChildren: 0.35 } },
+    visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
 };
 const textItemVariants = {
-    hidden:  { y: 28, opacity: 0, filter: "blur(8px)" },
+    hidden:  { y: 24, opacity: 0, filter: "blur(6px)" },
     visible: { y: 0,  opacity: 1, filter: "blur(0px)",
         transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] } },
 };
 const sectionVariants = {
-    hidden:  { opacity: 0, y: 60, scale: 0.97 },
-    visible: { opacity: 1, y: 0,  scale: 1,
+    hidden:  { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0,
         transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
 };
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
-export default function EcoCarousel() {
+export default function AdamaCarousel() {
     const slides = useDynamicSlides();
 
     const [[current, direction], setCurrent] = useState([0, 1]);
-    const [isPaused,   setIsPaused]   = useState(false);
-    const [progress,   setProgress]   = useState(0);
-    const [imgNatural, setImgNatural] = useState({ w: 0, h: 0 });
-    const [aspectHeight, setAspectHeight] = useState("520px");
+    const [isPaused, setIsPaused] = useState(false);
 
     const wrapperRef = useRef(null);
     const isInView   = useInView(wrapperRef, { once: false, margin: "-10%" });
     const dragStart  = useRef(null);
 
+    const displaySlides = slides.length > 0 ? slides : FALLBACK_SLIDES;
+    const slide         = displaySlides[current] || displaySlides[0];
+
     useEffect(() => {
         setCurrent(([c]) => [Math.min(c, Math.max(slides.length - 1, 0)), 1]);
-        setProgress(0);
     }, [slides.length]);
 
     const goTo = useCallback((index) => {
         const len = slides.length || 1;
-        setCurrent([(index + len) % len, index > current ? 1 : -1]);
-        setProgress(0);
-    }, [current, slides.length]);
+        setCurrent(([c]) => [(index + len) % len, index > c ? 1 : -1]);
+    }, [slides.length]);
 
-    const next = useCallback(() => goTo(current + 1), [current, goTo]);
-    const prev = useCallback(() => goTo(current - 1), [current, goTo]);
+    const next = useCallback(() => {
+        setCurrent(([c]) => {
+            const len = slides.length || 1;
+            return [(c + 1) % len, 1];
+        });
+    }, [slides.length]);
+
+    const prev = useCallback(() => {
+        setCurrent(([c]) => {
+            const len = slides.length || 1;
+            return [(c - 1 + len) % len, -1];
+        });
+    }, [slides.length]);
 
     // Auto-play
     useEffect(() => {
         if (isPaused || !isInView || slides.length <= 1) return;
-        const startTime = Date.now();
-        const id = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            setProgress(Math.min((elapsed / AUTO_PLAY_INTERVAL) * 100, 100));
-            if (elapsed >= AUTO_PLAY_INTERVAL) next();
-        }, 50);
+        const id = setInterval(() => { next(); }, AUTO_PLAY_INTERVAL);
         return () => clearInterval(id);
     }, [isPaused, isInView, next, current, slides.length]);
 
@@ -158,431 +162,352 @@ export default function EcoCarousel() {
         dragStart.current = null;
     };
 
-    // Altura adaptativa según aspect ratio de la imagen
-    useEffect(() => {
-        if (imgNatural.w > 0 && imgNatural.h > 0) {
-            const cardW   = Math.min(window.innerWidth * 0.88, 1100);
-            const calcH   = cardW * (imgNatural.h / imgNatural.w);
-            const clampH  = Math.min(Math.max(calcH, 380), 620);
-            setAspectHeight(`${clampH}px`);
-        }
-    }, [imgNatural]);
-
-    const slide         = slides.length > 0 ? (slides[current] || slides[0]) : FALLBACK_SLIDES[0];
-    const displaySlides = slides.length > 0 ? slides : FALLBACK_SLIDES;
-
     return (
-        /* ── SECCIÓN CONTENEDORA (fondo suave del sitio) ── */
         <motion.section
             ref={wrapperRef}
-            className="eco-outer"
+            className="ada-outer"
             variants={sectionVariants}
             initial="hidden"
             animate={isInView ? "visible" : "hidden"}
-            aria-label="Carrusel de proyectos Eco-It"
+            aria-label="Carrusel de eventos Adama"
         >
             <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-        /* ── Sección exterior ──────────────────────────────────────────── */
-        .eco-outer {
+        /* ── Layout exterior ───────────────────────────────────────────── */
+        .ada-outer {
           width: 100%;
-          padding: 5rem 1.25rem;
-          background: linear-gradient(to bottom, #f0fdf4, #ecfdf5, #f0fdf4);
+          padding: 5rem 2rem 6rem;
+          background: #f5f4f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        .ada-inner {
+          display: grid;
+          grid-template-columns: 1fr 1.8fr;
+          gap: 3.5rem;
+          align-items: start;
+          width: 100%;
+          max-width: 1280px;
+        }
+
+        /* ── Panel de texto (izquierda) ────────────────────────────────── */
+        .ada-text-panel {
           display: flex;
           flex-direction: column;
-          align-items: center;
           gap: 1.5rem;
-          font-family: 'Syne', sans-serif;
+          padding-left: 1rem;
+          position: sticky;
+          top: 2rem;
         }
 
-        /* ── Encabezado de sección ─────────────────────────────────────── */
-        .eco-heading {
-          text-align: center;
-          max-width: 600px;
-        }
-        .eco-heading-badge {
+        .ada-eyebrow {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 6px 16px;
-          border-radius: 9999px;
-          background: rgba(101,163,13,0.1);
-          color: #4d7c0f;
-          font-size: 0.78rem;
-          font-family: 'Space Mono', monospace;
-          letter-spacing: 0.15em;
+          gap: 8px;
+          font-size: 0.72rem;
+          letter-spacing: 0.2em;
           text-transform: uppercase;
-          margin-bottom: 0.75rem;
+          font-weight: 500;
+          color: #8b8680;
+          font-family: 'DM Sans', sans-serif;
         }
-        .eco-heading h2 {
-          font-size: clamp(1.6rem, 3.5vw, 2.4rem);
-          font-weight: 800;
-          color: #14532d;
-          line-height: 1.15;
+
+        .ada-eyebrow-line {
+          display: inline-block;
+          width: 28px;
+          height: 1px;
+          background: #c5c0b8;
+        }
+
+        .ada-main-title {
+          font-family: 'DM Serif Display', serif;
+          font-size: clamp(2.4rem, 4vw, 4rem);
+          line-height: 1.05;
+          color: #1a1816;
           margin: 0;
-        }
-        .eco-heading h2 span {
-          background: linear-gradient(135deg, #65a30d, #059669);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          font-weight: 400;
+          letter-spacing: -0.01em;
         }
 
-        /* ── Tarjeta del carrusel ──────────────────────────────────────── */
-        .eco-card {
-          position: relative;
-          width: min(100%, 1100px);
-          border-radius: 20px;
-          overflow: hidden;
-          cursor: grab;
-          box-shadow:
-            0 0 0 1px rgba(101,163,13,0.2),
-            0 4px 30px rgba(5,150,105,0.12),
-            0 20px 60px rgba(0,0,0,0.12);
-          background: #0a0f0d;
-        }
-        .eco-card:active { cursor: grabbing; }
-
-        /* ── Efectos de fondo ──────────────────────────────────────────── */
-        .eco-grid {
-          position: absolute; inset: 0; z-index: 2; pointer-events: none;
-          background-image:
-            linear-gradient(rgba(29,255,143,0.035) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(29,255,143,0.035) 1px, transparent 1px);
-          background-size: 55px 55px;
-        }
-        .eco-noise {
-          position: absolute; inset: 0; z-index: 2; opacity: 0.03;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          background-size: 200px; pointer-events: none;
-        }
-        .eco-glow {
-          position: absolute; top: -30%; left: -10%; width: 55%; height: 90%;
-          background: radial-gradient(ellipse, rgba(29,255,143,0.10) 0%, transparent 70%);
-          z-index: 2; pointer-events: none; filter: blur(50px);
-        }
-        /* Glow decorativo en esquina derecha */
-        .eco-glow-right {
-          position: absolute; bottom: -20%; right: -5%; width: 40%; height: 60%;
-          background: radial-gradient(ellipse, rgba(0,201,167,0.08) 0%, transparent 70%);
-          z-index: 2; pointer-events: none; filter: blur(40px);
-        }
-        /* Borde luminoso superior */
-        .eco-top-line {
-          position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 20;
-          background: linear-gradient(90deg, transparent 0%, #1dff8f 40%, #00c9a7 60%, transparent 100%);
-          opacity: 0.6;
+        .ada-main-title em {
+          font-style: italic;
+          color: #5c6e50;
         }
 
-        /* ── Imagen ────────────────────────────────────────────────────── */
-        .eco-img-wrapper {
-          position: absolute; inset: 0;
-          display: flex; align-items: center; justify-content: center; overflow: hidden;
-        }
-        .eco-img-contain {
-          max-width: 100%; max-height: 100%;
-          width: auto; height: auto;
-          object-fit: contain; pointer-events: none;
-          will-change: transform, opacity;
+        .ada-description {
+          font-size: clamp(0.88rem, 1.2vw, 1rem);
+          line-height: 1.8;
+          color: #6b6560;
+          max-width: 38ch;
+          font-weight: 300;
         }
 
-        /* ── Overlay degradado ─────────────────────────────────────────── */
-        .eco-overlay {
-          position: absolute; inset: 0; z-index: 1; pointer-events: none;
-          background: linear-gradient(
-            120deg,
-            rgba(10,15,13,0.90) 0%,
-            rgba(13,31,24,0.55) 50%,
-            rgba(10,15,13,0.70) 100%
-          );
-        }
-
-        /* ── Contenido textual ─────────────────────────────────────────── */
-        .eco-content {
-          position: absolute; inset: 0; z-index: 10;
-          display: flex; flex-direction: column; justify-content: flex-end;
-          padding: clamp(1.75rem, 5vw, 3.5rem);
-          max-width: 640px;
-        }
-        .eco-tag {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-family: 'Space Mono', monospace;
-          font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase;
-          color: #1dff8f;
-          border: 1px solid rgba(29,255,143,0.3);
-          padding: 5px 14px; border-radius: 4px;
-          backdrop-filter: blur(6px);
-          background: rgba(29,255,143,0.06);
-          width: fit-content; margin-bottom: 1.1rem;
-        }
-        .eco-title {
-          font-size: clamp(1.8rem, 5vw, 4rem);
-          font-weight: 800; line-height: 1.05;
-          color: #e8fff4; margin-bottom: 1rem;
-          white-space: pre-line;
-          background: linear-gradient(135deg, #e8fff4 60%, #00c9a7);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .eco-subtitle {
-          font-family: 'Space Mono', monospace;
-          font-size: clamp(0.72rem, 1.2vw, 0.88rem);
-          color: rgba(232,255,244,0.6);
-          max-width: 36ch; line-height: 1.75;
-        }
-
-        /* ── Barra de progreso ─────────────────────────────────────────── */
-        .eco-progress-track {
-          position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
-          background: rgba(29,255,143,0.1); z-index: 20;
-        }
-        .eco-progress-bar {
-          height: 100%;
-          background: linear-gradient(90deg, #1dff8f, #00c9a7);
-          box-shadow: 0 0 10px rgba(29,255,143,0.5);
-          transition: width 50ms linear;
-        }
-
-        /* ── Controles ─────────────────────────────────────────────────── */
-        .eco-controls {
-          position: absolute;
-          bottom: clamp(1.25rem, 3vw, 2rem);
-          right: clamp(1.25rem, 3vw, 2.5rem);
-          z-index: 20; display: flex; align-items: center; gap: 0.6rem;
-        }
-        .eco-btn {
-          width: 44px; height: 44px; border-radius: 10px;
-          border: 1px solid rgba(29,255,143,0.2);
-          background: rgba(13,31,24,0.7); backdrop-filter: blur(12px);
-          color: #1dff8f;
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer;
-          transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        .eco-btn:hover {
-          background: rgba(29,255,143,0.1);
-          border-color: rgba(29,255,143,0.6);
-          box-shadow: 0 0 18px rgba(29,255,143,0.2);
-        }
-        .eco-btn:focus-visible { outline: 2px solid #1dff8f; outline-offset: 3px; }
-
-        /* ── Dots ──────────────────────────────────────────────────────── */
-        .eco-dots {
-          position: absolute;
-          bottom: clamp(1.25rem, 3vw, 2rem);
-          left: clamp(1.25rem, 3vw, 2.5rem);
-          z-index: 20; display: flex; gap: 8px; align-items: center;
-        }
-        .eco-dot {
-          height: 3px; border-radius: 2px;
-          background: rgba(29,255,143,0.25); cursor: pointer;
-          transition: width 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
-        }
-        .eco-dot.active {
-          background: #1dff8f;
-          box-shadow: 0 0 8px rgba(29,255,143,0.6);
-        }
-
-        /* ── Contador ──────────────────────────────────────────────────── */
-        .eco-counter {
-          position: absolute;
-          top: clamp(1.25rem, 3vw, 2rem);
-          right: clamp(1.25rem, 3vw, 2.5rem);
-          z-index: 20;
-          font-family: 'Space Mono', monospace;
-          font-size: 0.7rem; letter-spacing: 0.15em;
-          color: rgba(232,255,244,0.35);
-        }
-        .eco-counter strong { color: #1dff8f; font-size: 0.9rem; }
-
-        /* ── Indicador de slide activo (esquina superior izquierda) ────── */
-        .eco-badge-corner {
-          position: absolute;
-          top: clamp(1.25rem, 3vw, 2rem);
-          left: clamp(1.25rem, 3vw, 2.5rem);
-          z-index: 20;
-          display: flex; align-items: center; gap: 6px;
-          font-family: 'Space Mono', monospace;
-          font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase;
-          color: rgba(232,255,244,0.4);
-        }
-        .eco-badge-dot {
-          width: 6px; height: 6px; border-radius: 50%;
-          background: #1dff8f;
-          box-shadow: 0 0 8px #1dff8f;
-          animation: blink 2s ease-in-out infinite;
-        }
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0.3; }
-        }
-
-        /* ── Hint de swipe en mobile ───────────────────────────────────── */
-        .eco-swipe-hint {
-          display: none;
-          font-family: 'Space Mono', monospace;
-          font-size: 0.68rem;
-          color: rgba(101,163,13,0.6);
-          letter-spacing: 0.1em;
+        /* Slide info dinámico */
+        .ada-slide-info {
+          border-left: 2px solid #d8d4ce;
+          padding-left: 1rem;
           margin-top: 0.5rem;
         }
 
+        .ada-slide-tag {
+          font-size: 0.7rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          font-weight: 500;
+          color: #5c6e50;
+          margin-bottom: 0.5rem;
+        }
+
+        .ada-slide-title {
+          font-family: 'DM Serif Display', serif;
+          font-size: clamp(1.2rem, 1.8vw, 1.6rem);
+          color: #1a1816;
+          line-height: 1.15;
+          margin: 0 0 0.5rem;
+          font-weight: 400;
+          white-space: pre-line;
+        }
+
+        .ada-slide-subtitle {
+          font-size: 0.85rem;
+          color: #8b8680;
+          line-height: 1.7;
+          max-width: 30ch;
+          font-weight: 300;
+        }
+
+        /* ── Panel carrusel (derecha) ──────────────────────────────────── */
+        /*
+         * SIN overflow:hidden aquí — la imagen define la altura.
+         * SIN height fijo — el contenedor crece con la imagen.
+         * border-radius + box-shadow solo en el wrapper exterior.
+         */
+        .ada-screen-wrapper {
+          border-radius: 20px;
+          box-shadow:
+            0 2px 0px rgba(0,0,0,0.15),
+            0 32px 64px rgba(0,0,0,0.12),
+            0 8px 24px rgba(0,0,0,0.08);
+          background: #f5f4f0;
+          overflow: hidden;   /* solo para que border-radius funcione en las esquinas */
+        }
+
+        /* Área deslizable — SIN overflow:hidden, el contenedor crece con la imagen */
+        .ada-screen {
+          position: relative;
+          width: 100%;
+          cursor: grab;
+        }
+
+        .ada-screen:active { cursor: grabbing; }
+
+        /*
+         * IMAGEN: flow normal, sin position:absolute.
+         * width:100% → ocupa todo el ancho del carrusel.
+         * height:auto → la altura se calcula automáticamente según el aspect-ratio.
+         * Resultado: el contenedor SIEMPRE se adapta a la imagen, sea portrait,
+         * landscape, cuadrada o panorámica. CERO recortes.
+         */
+        .ada-img {
+          display: block;
+          width: 100%;
+          height: auto;
+          pointer-events: none;
+          user-select: none;
+        }
+
+        /* ── Dots ──────────────────────────────────────────────────────── */
+        .ada-dots {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          justify-content: center;
+          padding: 12px 0 14px;
+          background: #f0efe9;
+        }
+
+        .ada-dot {
+          height: 4px;
+          border-radius: 3px;
+          background: rgba(0,0,0,0.18);
+          cursor: pointer;
+          transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          border: none;
+          padding: 0;
+        }
+
+        .ada-dot.active {
+          background: #1a1816;
+          width: 22px !important;
+        }
+
         /* ── Responsividad ─────────────────────────────────────────────── */
+        @media (max-width: 1024px) {
+          .ada-inner {
+            grid-template-columns: 1fr 1.6fr;
+            gap: 2.5rem;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .ada-outer { padding: 3rem 1.5rem 4rem; }
+          .ada-inner {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+          }
+          .ada-text-panel {
+            padding-left: 0;
+            align-items: center;
+            text-align: center;
+            position: static;
+          }
+          .ada-slide-info {
+            border-left: none;
+            border-top: 2px solid #d8d4ce;
+            padding-left: 0;
+            padding-top: 1rem;
+          }
+          .ada-slide-subtitle { max-width: 100%; }
+          .ada-description { max-width: 100%; }
+          /* Carrusel centrado en tablet */
+          .ada-screen-wrapper {
+            max-width: 560px;
+            margin: 0 auto;
+          }
+        }
+
         @media (max-width: 640px) {
-          .eco-outer { padding: 3rem 1rem; }
-          .eco-content { padding: 1.25rem 1.25rem 4rem; }
-          .eco-swipe-hint { display: block; }
+          .ada-outer { padding: 2rem 1rem 3rem; }
+          .ada-main-title { font-size: 2.1rem; }
+          .ada-screen-wrapper {
+            max-width: 100%;
+            border-radius: 14px;
+          }
+          .ada-screen { border-radius: 0; }
+        }
+
+        @media (max-width: 480px) {
+          .ada-outer { padding: 1.5rem 0.75rem 2.5rem; }
         }
       `}</style>
 
-            {/* ── ENCABEZADO ── */}
-            <motion.div
-                className="eco-heading"
-                initial={{ opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-            >
-                <div className="eco-heading-badge">
-                    <Leaf size={11} />
-                    Destacados
-                </div>
-                <h2>Lo mejor de <span>Eco-It</span></h2>
-            </motion.div>
+            <div className="ada-inner">
 
-            {/* ── TARJETA ── */}
-            <div
-                className="eco-card"
-                style={{ height: aspectHeight, minHeight: "380px" }}
-            >
-                {/* Efectos de fondo */}
-                <div className="eco-top-line"  aria-hidden="true" />
-                <div className="eco-grid"      aria-hidden="true" />
-                <div className="eco-noise"     aria-hidden="true" />
-                <div className="eco-glow"      aria-hidden="true" />
-                <div className="eco-glow-right" aria-hidden="true" />
+                {/* ── PANEL DE TEXTO ── */}
+                <motion.div
+                    className="ada-text-panel"
+                    variants={textContainerVariants}
+                    initial="hidden"
+                    animate={isInView ? "visible" : "hidden"}
+                >
+                    <motion.span className="ada-eyebrow" variants={textItemVariants}>
+                        <span className="ada-eyebrow-line" />
+                        Eventos Adama
+                    </motion.span>
 
-                {/* Slides */}
-                <AnimatePresence initial={true} mode="wait">
-                    <motion.div
-                        key={slide._id || slide.id || current}
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        style={{ position: "absolute", inset: 0, zIndex: 5 }}
-                        onMouseDown={onDragStart}
-                        onMouseUp={onDragEnd}
-                        onTouchStart={onDragStart}
-                        onTouchEnd={onDragEnd}
-                        onMouseEnter={() => setIsPaused(true)}
-                        onMouseLeave={() => setIsPaused(false)}
-                        aria-roledescription="slide"
-                        aria-label={`Slide ${current + 1} de ${displaySlides.length}: ${(slide.title || "").replace("\n", " ")}`}
-                    >
-                        <div className="eco-img-wrapper">
-                            <img
-                                src={slide.src}
-                                alt={slide.alt || ""}
-                                className="eco-img-contain"
-                                draggable={false}
-                                loading={current === 0 ? "eager" : "lazy"}
-                                onLoad={(e) => setImgNatural({
-                                    w: e.currentTarget.naturalWidth,
-                                    h: e.currentTarget.naturalHeight,
-                                })}
-                            />
-                        </div>
+                    <motion.h2 className="ada-main-title" variants={textItemVariants}>
+                        Momentos<br />
+                        que <em>inspiran</em>
+                    </motion.h2>
 
-                        <div className="eco-overlay" aria-hidden="true" />
+                    <motion.p className="ada-description" variants={textItemVariants}>
+                        Descubre los eventos y actividades que dan vida a nuestra comunidad.
+                        Cada encuentro es una oportunidad de crecer juntos.
+                    </motion.p>
 
+                    {/* Info del slide activo */}
+                    <AnimatePresence mode="wait">
                         <motion.div
-                            className="eco-content"
-                            variants={textContainerVariants}
-                            initial="hidden"
-                            animate="visible"
+                            key={slide?._id || slide?.id || current}
+                            className="ada-slide-info"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                         >
-                            {slide.tag && (
-                                <motion.div className="eco-tag" variants={textItemVariants}>
-                                    <Leaf size={10} />
-                                    {slide.tag}
-                                </motion.div>
+                            {slide?.tag && (
+                                <div className="ada-slide-tag">{slide.tag}</div>
                             )}
-                            {slide.title && (
-                                <motion.h2 className="eco-title" variants={textItemVariants}>
-                                    {slide.title}
-                                </motion.h2>
+                            {slide?.title && (
+                                <h3 className="ada-slide-title">{slide.title}</h3>
                             )}
-                            {slide.subtitle && (
-                                <motion.p className="eco-subtitle" variants={textItemVariants}>
-                                    {slide.subtitle}
-                                </motion.p>
+                            {slide?.subtitle && (
+                                <p className="ada-slide-subtitle">{slide.subtitle}</p>
                             )}
                         </motion.div>
-                    </motion.div>
-                </AnimatePresence>
+                    </AnimatePresence>
+                </motion.div>
 
-                {/* Badge en vivo (esquina sup. izq.) */}
-                <div className="eco-badge-corner" aria-hidden="true">
-                    <span className="eco-badge-dot" />
-                    En vivo
-                </div>
-
-                {/* Contador */}
-                <div className="eco-counter" aria-live="polite">
-                    <strong>{String(current + 1).padStart(2, "0")}</strong>
-                    {" / "}
-                    {String(displaySlides.length).padStart(2, "0")}
-                </div>
-
-                {/* Dots */}
-                {displaySlides.length > 1 && (
-                    <div className="eco-dots" role="tablist" aria-label="Slides">
-                        {displaySlides.map((s, i) => (
-                            <button
-                                key={s._id || s.id || i}
-                                role="tab"
-                                aria-selected={i === current}
-                                aria-label={`Ir al slide ${i + 1}`}
-                                className={`eco-dot ${i === current ? "active" : ""}`}
-                                style={{ width: i === current ? 28 : 14 }}
-                                onClick={() => goTo(i)}
-                            />
-                        ))}
-                    </div>
-                )}
-
-                {/* Prev / Next */}
-                {displaySlides.length > 1 && (
-                    <div className="eco-controls">
-                        <motion.button
-                            className="eco-btn"
-                            onClick={prev}
-                            whileTap={{ scale: 0.88 }}
-                            aria-label="Slide anterior"
+                {/* ── PANEL CARRUSEL ── */}
+                <div>
+                    <div className="ada-screen-wrapper">
+                        {/* Área deslizable */}
+                        <div
+                            className="ada-screen"
+                            onMouseEnter={() => setIsPaused(true)}
+                            onMouseLeave={() => setIsPaused(false)}
+                            onMouseDown={onDragStart}
+                            onMouseUp={onDragEnd}
+                            onTouchStart={onDragStart}
+                            onTouchEnd={onDragEnd}
                         >
-                            <ChevronLeft size={18} />
-                        </motion.button>
-                        <motion.button
-                            className="eco-btn"
-                            onClick={next}
-                            whileTap={{ scale: 0.88 }}
-                            aria-label="Siguiente slide"
-                        >
-                            <ChevronRight size={18} />
-                        </motion.button>
-                    </div>
-                )}
+                            {/*
+                             * mode="wait": el slide saliente termina su animación ANTES
+                             * de que el entrante comience → solo 1 slide en pantalla.
+                             * El overflow:hidden del padre clipea el translate X,
+                             * pero el contenido (imagen) dicta la altura → sin recorte vertical.
+                             */}
+                            <AnimatePresence initial={false} mode="wait">
+                                <motion.div
+                                    key={slide?._id || slide?.id || current}
+                                    custom={direction}
+                                    variants={slideVariants}
+                                    initial="enter"
+                                    animate="center"
+                                    exit="exit"
+                                    style={{ width: "100%" }}
+                                    aria-roledescription="slide"
+                                    aria-label={`Slide ${current + 1} de ${displaySlides.length}: ${(slide?.title || "").replace("\n", " ")}`}
+                                >
+                                    {/*
+                                     * La imagen está en flow normal (no absolute).
+                                     * El contenedor se estira para contenerla completamente.
+                                     */}
+                                    <img
+                                        src={slide?.src}
+                                        alt={slide?.alt || ""}
+                                        className="ada-img"
+                                        draggable={false}
+                                        loading={current === 0 ? "eager" : "lazy"}
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
 
-                {/* Barra de progreso */}
-                <div className="eco-progress-track" aria-hidden="true">
-                    <div className="eco-progress-bar" style={{ width: `${progress}%` }} />
+                        {/* Dots */}
+                        {displaySlides.length > 1 && (
+                            <div className="ada-dots" role="tablist" aria-label="Navegación de slides">
+                                {displaySlides.map((s, i) => (
+                                    <button
+                                        key={s._id || s.id || i}
+                                        role="tab"
+                                        aria-selected={i === current}
+                                        aria-label={`Ir al slide ${i + 1}`}
+                                        className={`ada-dot ${i === current ? "active" : ""}`}
+                                        style={{ width: i === current ? 22 : 8 }}
+                                        onClick={() => goTo(i)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
+
             </div>
-
-            {/* Hint swipe en mobile */}
-            <p className="eco-swipe-hint" aria-hidden="true">← desliza para navegar →</p>
         </motion.section>
     );
 }
