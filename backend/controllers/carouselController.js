@@ -38,7 +38,7 @@ export const getAllSlides = async (req, res) => {
 // Crear un nuevo slide (Admin)
 export const createSlide = async (req, res) => {
     try {
-        const { tag, title, subtitle, src, publicId, alt, active } = req.body;
+        const { tag, title, subtitle, src, publicId, alt, active, width, height } = req.body;
         
         // Determinar el orden (al final)
         const count = await CarouselSlide.countDocuments();
@@ -51,7 +51,9 @@ export const createSlide = async (req, res) => {
             publicId,
             alt: alt || title,
             active: active ?? true,
-            order: count
+            order: count,
+            width:  width  || null,
+            height: height || null,
         });
 
         await newSlide.save();

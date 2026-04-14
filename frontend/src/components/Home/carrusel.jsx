@@ -71,14 +71,16 @@ function useDynamicSlides() {
 const AUTO_PLAY_INTERVAL = 5500;
 const DRAG_THRESHOLD     = 60;
 
-// ─── VARIANTES FRAMER MOTION — cross-fade puro (sin translateX) ─────────────
-// Sin translate no necesitamos overflow:hidden en el padre.
-// El contenedor crece libremente con la imagen → nunca hay recorte.
-const slideVariants = {
-    enter:  { opacity: 0 },
-    center: { opacity: 1, transition: { duration: 0.45, ease: "easeOut" } },
-    exit:   { opacity: 0, transition: { duration: 0.3,  ease: "easeIn"  } },
-};
+// Helper para asegurar que las imágenes de Cloudinary no se recorten (sin recortes)
+function sanitizeCloudinaryUrl(url) {
+    if (!url || !url.includes("res.cloudinary.com")) return url;
+    // Si la URL ya tiene transformaciones de recorte (c_fill), las cambiamos por c_limit
+    // c_limit mantiene la proporción original y el tamaño completo sin recortes.
+    if (url.includes("/upload/")) {
+        return url.replace(/\/upload\/[^/]+\//, "/upload/c_limit,w_1920,q_auto,f_auto/");
+    }
+    return url;
+}
 
 
 const textContainerVariants = {
@@ -175,15 +177,15 @@ export default function AdamaCarousel() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
         /* ── Layout exterior ───────────────────────────────────────────── */
-        .ada-outer {
-          width: 100%;
-          padding: 5rem 2rem 6rem;
-          background: #f5f4f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'DM Sans', sans-serif;
-        }
+.ada-outer {
+  width: 100%;
+  padding: 5rem 2rem 6rem;
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5, #f0fdfa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+}
 
         .ada-inner {
           display: grid;
@@ -234,9 +236,11 @@ export default function AdamaCarousel() {
         }
 
         .ada-main-title em {
-          font-style: italic;
-          color: #5c6e50;
-        }
+  font-style: italic;
+  background: linear-gradient(90deg, #16a34a, #059669);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
         .ada-description {
           font-size: clamp(0.88rem, 1.2vw, 1rem);
@@ -289,11 +293,38 @@ export default function AdamaCarousel() {
         .ada-screen-wrapper {
           border-radius: 20px;
           box-shadow:
-            0 2px 0px rgba(0,0,0,0.15),
-            0 32px 64px rgba(0,0,0,0.12),
-            0 8px 24px rgba(0,0,0,0.08);
-          background: #f5f4f0;
-          overflow: hidden;   /* solo para que border-radius funcione en las esquinas */
+            0 2px 0px rgba(0,0,0,0.05),
+            0 20px 48px rgba(0,0,0,0.1),
+            0 8px 16px rgba(0,0,0,0.06);
+          background: #ffffff; /* Fondo blanco para que combine mejor con flyers */
+          overflow: hidden;
+          max-height: 85vh; /* Un poco más de aire vertical */
+          width: fit-content;
+          max-width: 100%;
+          margin: 0 auto;
+        }
+                    .ada-carousel-col {
+            width: 100%;
+            min-width: 0; /* previene overflow en grid */
+            }
+
+        /* El radio se aplica directamente a la imagen y a los dots */
+        .ada-screen-wrapper .ada-screen {
+          border-radius: 20px 20px 0 0;
+        }
+
+        .ada-screen-wrapper .ada-img {
+          border-radius: 20px 20px 0 0;
+        }
+
+        /* Cuando no hay dots, radio completo en las 4 esquinas */
+        .ada-screen-wrapper .ada-screen--no-dots,
+        .ada-screen-wrapper .ada-screen--no-dots .ada-img {
+          border-radius: 20px;
+        }
+
+        .ada-screen-wrapper .ada-dots {
+          border-radius: 0 0 20px 20px;
         }
 
         /* Área deslizable — SIN overflow:hidden, el contenedor crece con la imagen */
@@ -316,34 +347,65 @@ export default function AdamaCarousel() {
           display: block;
           width: 100%;
           height: auto;
+          max-height: 80vh;
+          object-fit: contain; 
           pointer-events: none;
           user-select: none;
         }
 
+        /* Fade-in al cambiar de slide: animación CSS pura, sin motion.div */
+        @keyframes adaFadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+
+        .ada-img--fade {
+          animation: adaFadeIn 0.45s ease-out both;
+        }
+
         /* ── Dots ──────────────────────────────────────────────────────── */
-        .ada-dots {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-          justify-content: center;
-          padding: 12px 0 14px;
-          background: #f0efe9;
-        }
+.ada-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 14px;
 
-        .ada-dot {
-          height: 4px;
-          border-radius: 3px;
-          background: rgba(0,0,0,0.18);
-          cursor: pointer;
-          transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-          border: none;
-          padding: 0;
-        }
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 
-        .ada-dot.active {
-          background: #1a1816;
-          width: 22px !important;
-        }
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+  .ada-dots::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid rgba(255,255,255,0.6);
+  pointer-events: none;
+}
+
+.ada-dot {
+  height: 4px;
+  width: 10px;
+  border-radius: 3px;
+  background: rgba(15, 23, 42, 0.25); /* slate oscuro suave */
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: none;
+  padding: 0;
+}
+
+.ada-dot:hover {
+  background: rgba(5, 150, 105, 0.6); /* emerald-600 */
+}
+
+.ada-dot.active {
+  background: linear-gradient(90deg, #16a34a, #059669, #0d9488);
+  width: 20px;
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.35);
+}
 
         /* ── Responsividad ─────────────────────────────────────────────── */
         @media (max-width: 1024px) {
@@ -387,7 +449,17 @@ export default function AdamaCarousel() {
             max-width: 100%;
             border-radius: 14px;
           }
-          .ada-screen { border-radius: 0; }
+          .ada-screen-wrapper .ada-screen,
+          .ada-screen-wrapper .ada-img {
+            border-radius: 14px 14px 0 0;
+          }
+          .ada-screen-wrapper .ada-screen--no-dots,
+          .ada-screen-wrapper .ada-screen--no-dots .ada-img {
+            border-radius: 14px;
+          }
+          .ada-screen-wrapper .ada-dots {
+            border-radius: 0 0 14px 14px;
+          }
         }
 
         @media (max-width: 480px) {
@@ -406,12 +478,11 @@ export default function AdamaCarousel() {
                 >
                     <motion.span className="ada-eyebrow" variants={textItemVariants}>
                         <span className="ada-eyebrow-line" />
-                        Eventos Adama
                     </motion.span>
 
                     <motion.h2 className="ada-main-title" variants={textItemVariants}>
-                        Momentos<br />
-                        que <em>inspiran</em>
+                        Actividades<br />
+                        que <em>motivan</em>
                     </motion.h2>
 
                     <motion.p className="ada-description" variants={textItemVariants}>
@@ -443,49 +514,34 @@ export default function AdamaCarousel() {
                 </motion.div>
 
                 {/* ── PANEL CARRUSEL ── */}
-                <div>
+                <div className="ada-carousel-col">
                     <div className="ada-screen-wrapper">
                         {/* Área deslizable */}
                         <div
-                            className="ada-screen"
+                            className={`ada-screen${displaySlides.length <= 1 ? " ada-screen--no-dots" : ""}`}
                             onMouseEnter={() => setIsPaused(true)}
                             onMouseLeave={() => setIsPaused(false)}
                             onMouseDown={onDragStart}
                             onMouseUp={onDragEnd}
                             onTouchStart={onDragStart}
                             onTouchEnd={onDragEnd}
+                            aria-roledescription="region"
+                            aria-label={`Slide ${current + 1} de ${displaySlides.length}: ${(slide?.title || "").replace("\n", " ")}`}
                         >
                             {/*
-                             * mode="wait": el slide saliente termina su animación ANTES
-                             * de que el entrante comience → solo 1 slide en pantalla.
-                             * El overflow:hidden del padre clipea el translate X,
-                             * pero el contenido (imagen) dicta la altura → sin recorte vertical.
+                             * Un solo <img> en flujo normal — NUNCA position:absolute.
+                             * La src cambia al nuevo slide; la transición es CSS opacity.
+                             * El contenedor siempre tiene la altura natural de la imagen.
+                             * CERO recortes, CERO colapso de altura.
                              */}
-                            <AnimatePresence initial={false} mode="wait">
-                                <motion.div
-                                    key={slide?._id || slide?.id || current}
-                                    custom={direction}
-                                    variants={slideVariants}
-                                    initial="enter"
-                                    animate="center"
-                                    exit="exit"
-                                    style={{ width: "100%" }}
-                                    aria-roledescription="slide"
-                                    aria-label={`Slide ${current + 1} de ${displaySlides.length}: ${(slide?.title || "").replace("\n", " ")}`}
-                                >
-                                    {/*
-                                     * La imagen está en flow normal (no absolute).
-                                     * El contenedor se estira para contenerla completamente.
-                                     */}
-                                    <img
-                                        src={slide?.src}
-                                        alt={slide?.alt || ""}
-                                        className="ada-img"
-                                        draggable={false}
-                                        loading={current === 0 ? "eager" : "lazy"}
-                                    />
-                                </motion.div>
-                            </AnimatePresence>
+                            <img
+                                key={slide?._id || slide?.id || current}
+                                src={sanitizeCloudinaryUrl(slide?.src)}
+                                alt={slide?.alt || ""}
+                                className="ada-img ada-img--fade"
+                                draggable={false}
+                                loading={current === 0 ? "eager" : "lazy"}
+                            />
                         </div>
 
                         {/* Dots */}
