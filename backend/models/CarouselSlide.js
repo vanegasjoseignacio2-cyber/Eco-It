@@ -33,6 +33,14 @@ const carouselSchema = new mongoose.Schema({
     order: {
         type: Number,
         default: 0
+    },
+    width: {
+        type: Number,
+        default: null
+    },
+    height: {
+        type: Number,
+        default: null
     }
 }, {
     timestamps: true

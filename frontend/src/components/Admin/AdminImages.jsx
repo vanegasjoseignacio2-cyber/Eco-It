@@ -68,12 +68,20 @@ const CLOUDINARY_FOLDER = "ecoit/carousel";
 const LS_KEY = "ecoit_carousel_slides";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
-function cloudUrl(publicId, w = 1920, h = 1080) {
-    return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_fill,w_${w},h_${h},q_auto,f_auto/${publicId}`;
+// Helper para manipular transformaciones de Cloudinary
+function getCloudinaryVariation(url, transformation) {
+    if (!url || !url.includes("res.cloudinary.com")) return url;
+    // Busca el segmento de transformaciones (después de /upload/)
+    return url.replace(/\/upload\/[^/]+\//, `/upload/${transformation}/`);
+}
+
+function cloudUrl(publicId, w = 1920) {
+    // c_limit asegura que la imagen no se recorte y mantenga su proporción original
+    return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/c_limit,w_${w},q_auto,f_auto/${publicId}`;
 }
 
 // ─── SLIDE VACÍO ─────────────────────────────────────────────────────────────
-const EMPTY_SLIDE = { tag: "", title: "", subtitle: "", src: "", publicId: "", alt: "", active: true };
+const EMPTY_SLIDE = { tag: "", title: "", subtitle: "", src: "", publicId: "", alt: "", active: true, width: null, height: null };
 
 // ─── ANIMACIONES ──────────────────────────────────────────────────────────────
 const fadeUp = {
@@ -188,6 +196,9 @@ export default function AdminImages() {
                 src:      cloudUrl(data.public_id),
                 publicId: data.public_id,
                 alt:      f.alt || file.name.replace(/\.[^.]+$/, ""),
+                // Dimensiones originales de Cloudinary → evitan colapso de layout al renderizar
+                width:    data.width  || null,
+                height:   data.height || null,
             }));
             showToast("Imagen subida correctamente a Cloudinary ✓");
         } catch (err) {
@@ -203,7 +214,9 @@ export default function AdminImages() {
         setEditing(slide);
         setForm({ tag: slide.tag || "", title: slide.title || "", subtitle: slide.subtitle || "",
                   src: slide.src || "", publicId: slide.publicId || "", alt: slide.alt || "",
-                  active: slide.active ?? true });
+                  active: slide.active ?? true,
+                  width:  slide.width  || null,
+                  height: slide.height || null });
         setShowForm(true);
     };
     const closeForm  = () => { setShowForm(false); setEditing(null); setForm(EMPTY_SLIDE); };
@@ -508,7 +521,7 @@ function SlideRow({ slide, index, total, isEditing, onEdit, onDelete, onToggleAc
             <div className="w-20 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-green-50 border border-green-100">
                 {slide.src ? (
                     <img
-                        src={slide.src.replace("w_1920,h_1080", "w_160,h_112")}
+                        src={getCloudinaryVariation(slide.src, "c_fill,w_160,h_112")}
                         alt={slide.alt || slide.title}
                         className="w-full h-full object-cover"
                     />
@@ -615,7 +628,7 @@ function SlideForm({ form, setForm, editing, uploading, uploadPct, fileInputRef,
                         {form.src ? (
                             <>
                                 <img
-                                    src={form.src.replace("w_1920,h_1080", "w_600,h_300")}
+                                    src={getCloudinaryVariation(form.src, "c_fill,w_600,h_300")}
                                     alt="Preview"
                                     className="w-full h-full object-contain bg-green-50"
                                 />
