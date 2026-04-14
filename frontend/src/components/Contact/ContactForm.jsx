@@ -32,7 +32,7 @@ const PALABRAS_OFENSIVAS = [
     'mariquita','stupida','stupido','culito','hentai','hentay','gore','mtar',
     'despellejar','prepucio','clitoris','glande','squirt','degollar','cabezón','violar','dildo','pto','eyacular','bizcocho',
     'testiculos','culiando','hdp','pichon', 'penetracion', 'penetrar', 'penetrante', 'penetro', 'penetra', 'repenetrable', 'vajina',
-    'cuquita', 'qkita', 'cucota', 'qkta', 
+    'cuquita', 'qkita', 'cucota', 'qkta', 'nepe', 'japa', 'prostituta', 'xunga', "seno", 
     // Español - Colombia (ampliado)
     'jueputa','jueputas','juepuerca','juepuercas',
     'catrehijueputa','catrehijueputas','catrehijuepuerca',
@@ -169,7 +169,7 @@ const SAFE_WORDS = [
     'desempene', 'desempenes', 'desempenen', 'desempenar', 'desempeno',
     'penelope',
     'piano', 'soberano', 'hermano', 'mano', 'verano', 'temprano', 'pantano', 'fulano', 'enano',
-    'apnea', 'repentino', 
+    'apnea', 'repentino', 'coseno', 
 ];
 
 
@@ -476,7 +476,9 @@ const BASE_VALIDATIONS = {
         },
     },
     message: {
-        filter: /[<>{}\[\]\\`]/g,
+        // Bloqueo total de emojis (modernos y clásicos), símbolos pictográficos, 
+        // flechas, estrellas y formas geométricas.
+        filter: /[<>{}[\]\\`\p{Extended_Pictographic}\u{2190}-\u{21FF}\u{2600}-\u{2BFF}\u{1F1E6}-\u{1F1FF}]/gu,
         // validate se completa dentro del componente usando el hook
     },
 };
@@ -578,10 +580,14 @@ export default function ContactForm() {
             }
         }
 
-        // 🔹 Validación de longitud para Mensaje
+        // 🔹 Validación de longitud y contenido para Mensaje
         if (name === 'message') {
             if (!value.trim()) return 'El mensaje es obligatorio.';
             if (value.trim().length < 10) return 'El mensaje debe tener al menos 10 caracteres.';
+            
+            // Backup: Detectar restos de emojis o símbolos no permitidos
+            const hasEmojis = /[\p{Extended_Pictographic}\u{2190}-\u{21FF}\u{2600}-\u{2BFF}]/u.test(value);
+            if (hasEmojis) return 'No se permiten emojis ni símbolos especiales.';
         }
 
         return '';
@@ -856,7 +862,13 @@ export default function ContactForm() {
                     {/* Mensaje */}
                     <div className="flex flex-col gap-1">
                         <span className="text-sm font-medium text-green-800 flex justify-between items-center">
-                            Mensaje
+                            <span className="flex items-center gap-2">
+                                Mensaje
+                                <span className="text-[10px] text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 flex items-center gap-1 select-none">
+                                    <ShieldAlert className="w-2.5 h-2.5" />
+                                    Sin emojis
+                                </span>
+                            </span>
                             <span className={`text-xs font-normal transition-colors ${
                                 fieldErrors.message === 'Tu mensaje contiene lenguaje no permitido.'
                                     ? 'text-red-500 font-semibold'
