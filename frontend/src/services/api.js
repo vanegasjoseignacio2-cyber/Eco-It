@@ -122,14 +122,14 @@ export const restablecerPassword = async (email, codigo, password) => {
 
 // ============= IA =============
 
-export const consultarIA = async (token, pregunta, onChunk) => {
+export const consultarIA = async (token, pregunta, chatId, onChunk) => {
   const response = await fetch(`${BASE_URL}/ai/consultar`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ pregunta }),
+    body: JSON.stringify({ pregunta, chatId }),
   });
 
   if (!response.ok) {
@@ -154,19 +154,47 @@ export const consultarIA = async (token, pregunta, onChunk) => {
 
       try {
         const parsed = JSON.parse(data);
-        if (parsed.content) onChunk(parsed.content); // ✅ dispara el callback con cada trozo
+        if (parsed.content) onChunk(parsed.content, null); 
+        if (parsed.chatId) onChunk(null, parsed.chatId);
       } catch { }
     }
   }
 };
 
-export const analizarImagen = async (token, imagen, contexto = '') => {
+export const analizarImagen = async (token, imagen, contexto = '', chatId = null) => {
   return fetchAPI('/ai/analizar-imagen', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify({ imagen, contexto }),
+    body: JSON.stringify({ imagen, contexto, chatId }),
+  });
+};
+
+export const obtenerChats = async (token) => {
+  return fetchAPI('/ai/chats', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
+export const obtenerChat = async (token, id) => {
+  return fetchAPI(`/ai/chats/${id}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
+export const eliminarChat = async (token, id) => {
+  return fetchAPI(`/ai/chats/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
   });
 };
 

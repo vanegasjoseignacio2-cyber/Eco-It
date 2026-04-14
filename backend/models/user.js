@@ -70,15 +70,7 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    historialConsultas: [{
-        pregunta: String,
-        respuesta: String,
-        imagen: String,
-        fecha: {
-            type: Date,
-            default: Date.now
-        }
-    }],
+
     puntosFavoritos: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'PuntoReciclaje'
