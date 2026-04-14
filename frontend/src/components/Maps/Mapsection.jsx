@@ -1,14 +1,70 @@
-// Mapsection.jsx
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Map, Trash2, MapPin } from "lucide-react";
+import { io } from "socket.io-client";
 import SearchBar from "./Barra";
 import MapView from "./MapView";
 import ResultsList from "./ResultsList";
 import RutasEco from "./Rutas";
+
 export default function MapSection() {
-    const [places, setPlaces] = useState([]);
+    const [allPoints, setAllPoints] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("all");
     const [selectedPlace, setSelectedPlace] = useState(null);
+
+    // ─── Carga inicial + Tiempo real ──────────────────────────────────────────
+    useEffect(() => {
+        // Fetch inicial
+        fetch("http://localhost:3000/api/map/points")
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.success) setAllPoints(data.puntos);
+            })
+            .catch(console.error);
+
+        // Socket.io
+        const socket = io("http://localhost:3000");
+        socket.on("map:updated", ({ puntos }) => {
+            setAllPoints(puntos);
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, []);
+
+    // ─── Filtrado lógico ──────────────────────────────────────────────────────
+    const filteredPoints = useMemo(() => {
+        let filtered = allPoints;
+
+        // Filtro por categoría
+        if (selectedCategory !== "all") {
+            filtered = filtered.filter(p => p.tipo === selectedCategory);
+        }
+
+        // Filtro por texto
+        if (searchTerm) {
+            const lowSearch = searchTerm.toLowerCase();
+            filtered = filtered.filter(p => 
+                p.nombre.toLowerCase().includes(lowSearch) ||
+                (p.descripcion && p.descripcion.toLowerCase().includes(lowSearch))
+            );
+        }
+
+        return filtered;
+    }, [allPoints, searchTerm, selectedCategory]);
+
+    // Mapeo para ResultsList (compatibilidad)
+    const placesForList = useMemo(() => {
+        return filteredPoints.map(p => ({
+            place_id: p._id,
+            name: p.nombre,
+            vicinity: p.descripcion || p.tipo,
+            lat: p.lat,
+            lng: p.lng
+        }));
+    }, [filteredPoints]);
 
 
 
@@ -76,7 +132,11 @@ export default function MapSection() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
                 >
-                    <SearchBar setPlaces={setPlaces} setSelectedPlace={setSelectedPlace} />
+                    <SearchBar 
+                        setSearchTerm={setSearchTerm} 
+                        setSelectedCategory={setSelectedCategory}
+                        setSelectedPlace={setSelectedPlace} 
+                    />
                 </motion.div>
 
                 {/* sección donde está el mapa y los resultados de las búsquedas */}
@@ -96,7 +156,7 @@ export default function MapSection() {
                             }}
                         >
                             <MapView
-                                places={places}
+                                points={filteredPoints}
                                 selectedPlace={selectedPlace}
                                 onMarkerClick={setSelectedPlace}
                             />
@@ -113,7 +173,7 @@ export default function MapSection() {
                                 stiffness: 100
                             }}
                         >
-                            <ResultsList places={places} onSelect={setSelectedPlace} />
+                            <ResultsList places={placesForList} onSelect={setSelectedPlace} />
                         </motion.div>
 
                     </div>

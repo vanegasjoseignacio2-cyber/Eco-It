@@ -66,6 +66,12 @@ export const crearPunto = async (req, res) => {
 
         const nuevoPunto = new PuntoReciclaje({ nombre, tipo, lat, lng, descripcion, activo, imagen: imageUrl, visibleToUser });
         await nuevoPunto.save();
+
+        // Emitir actualización en tiempo real
+        const puntosActualizados = await PuntoReciclaje.find({ activo: true, visibleToUser: true })
+            .select("nombre tipo lat lng descripcion imagen createdAt");
+        req.app.get("io").emit("map:updated", { puntos: puntosActualizados });
+
         res.status(201).json({ success: true, punto: nuevoPunto });
     } catch (error) {
         console.error("Error al crear punto:", error);
@@ -90,6 +96,12 @@ export const actualizarPunto = async (req, res) => {
         if (!puntoActualizado) {
             return res.status(404).json({ success: false, mensaje: "Punto no encontrado" });
         }
+
+        // Emitir actualización en tiempo real
+        const puntosActualizados = await PuntoReciclaje.find({ activo: true, visibleToUser: true })
+            .select("nombre tipo lat lng descripcion imagen createdAt");
+        req.app.get("io").emit("map:updated", { puntos: puntosActualizados });
+
         res.json({ success: true, punto: puntoActualizado });
     } catch (error) {
         console.error("Error al actualizar punto:", error);
@@ -105,6 +117,12 @@ export const eliminarPunto = async (req, res) => {
         if (!puntoEliminado) {
             return res.status(404).json({ success: false, mensaje: "Punto no encontrado" });
         }
+
+        // Emitir actualización en tiempo real
+        const puntosActualizados = await PuntoReciclaje.find({ activo: true, visibleToUser: true })
+            .select("nombre tipo lat lng descripcion imagen createdAt");
+        req.app.get("io").emit("map:updated", { puntos: puntosActualizados });
+
         res.json({ success: true, mensaje: "Punto eliminado correctamente" });
     } catch (error) {
         console.error("Error al eliminar punto:", error);
@@ -122,6 +140,12 @@ export const toggleActivoPunto = async (req, res) => {
         }
         punto.activo = !punto.activo;
         await punto.save();
+
+        // Emitir actualización en tiempo real
+        const puntosActualizados = await PuntoReciclaje.find({ activo: true, visibleToUser: true })
+            .select("nombre tipo lat lng descripcion imagen createdAt");
+        req.app.get("io").emit("map:updated", { puntos: puntosActualizados });
+
         res.json({ success: true, punto });
     } catch (error) {
         console.error("Error al alternar estado del punto:", error);

@@ -7,12 +7,26 @@ dotenv.config({ path: join(__dirname, '.env') });
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import mongoose from 'mongoose';
 import passport from 'passport';
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import User from './models/user.js';
+
+// Configuración de Rate Limiting (Antispam y Anti-DDoS)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 300, // límite de 300 peticiones por IP
+    standardHeaders: true, 
+    legacyHeaders: false,
+    message: {
+        success: false,
+        mensaje: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo en 15 minutos.'
+    }
+});
 
 // Importar rutas
 import authRoutes from './routes/authRoutes.js';
@@ -21,6 +35,7 @@ import { aiRouter } from './routes/aiRoutes.js';
 import admin from './routes/admin.js';
 import contactRoutes from './routes/contactRoutes.js';
 import carouselRoutes from './routes/carouselRoutes.js';
+import mapPublicRoutes from './routes/map.js';
 import './utils/cloudinary.js';
 
 // Importar configuración de passport
@@ -100,9 +115,46 @@ setupGoogleAuth();
 
 // Middlewares globales
 app.set('trust proxy', 1);
-app.use(cors());
+
+// Seguridad HTTP con Helmet
+app.use(helmet({
+    contentSecurityPolicy: false, // Desactivar si causa problemas con Leaflet/Cloudinary en desarrollo
+    crossOriginEmbedderPolicy: false
+}));
+
+// Restricción de CORS
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Saneamiento contra inyección NoSQL (Manual para compatibilidad con Express 5)
+app.use((req, res, next) => {
+    const sanitize = (obj) => {
+        if (obj && typeof obj === 'object') {
+            Object.keys(obj).forEach(key => {
+                if (key.startsWith('$') || key.includes('.')) {
+                    delete obj[key];
+                } else {
+                    sanitize(obj[key]);
+                }
+            });
+        }
+    };
+    sanitize(req.body);
+    sanitize(req.params);
+    sanitize(req.query);
+    next();
+});
+
+// Aplicar Rate Limiting global
+app.use(limiter);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.set("io", io); // Hacer Socket.io disponible en las rutas
 
 // Sesión y Passport
 app.use(session({
@@ -125,6 +177,7 @@ app.use('/api/ai', aiRouter );
 app.use('/api/admin', admin);
 app.use('/api/contact', contactRoutes);
 app.use('/api/carousel', carouselRoutes);
+app.use('/api/map', mapPublicRoutes);
 
 
 // Ruta raíz

@@ -40,6 +40,7 @@ import {
     Image as ImageIcon,
     UploadCloud,
 } from "lucide-react";
+import ConfirmationModal from "../ui/ConfirmationModal";
 
 // ─── Configuración de Cloudinary ────────────────────────────────────────────────
 const cld = new Cloudinary({ cloud: { cloudName: 'dwx3v7vex' } });
@@ -242,6 +243,7 @@ export default function AdminMap() {
     const [toast, setToast] = useState(null);
     const [collapsedTypes, setCollapsedTypes] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
 
     // Form state
     const [form, setForm] = useState({
@@ -350,8 +352,14 @@ export default function AdminMap() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!token || !window.confirm("¿Estás seguro de eliminar este punto?")) return;
+    const handleDelete = (id) => {
+        if (!token) return;
+        setDeleteConfirm({ open: true, id });
+    };
+
+    const confirmDeletePoint = async () => {
+        const id = deleteConfirm.id;
+        setDeleteConfirm({ open: false, id: null });
         try {
             const res = await fetch(`http://localhost:3000/api/admin/map/points/${id}`, {
                 method: "DELETE",
@@ -668,6 +676,18 @@ export default function AdminMap() {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Modal de confirmación para eliminar */}
+            <ConfirmationModal
+                isOpen={deleteConfirm.open}
+                onClose={() => setDeleteConfirm({ open: false, id: null })}
+                onConfirm={confirmDeletePoint}
+                title="¿Eliminar este punto?"
+                message="Esta acción eliminará el punto del mapa de forma permanente. No se puede deshacer."
+                confirmText="Sí, eliminar"
+                cancelText="Cancelar"
+                type="danger"
+            />
         </div>
     );
 }
@@ -776,7 +796,10 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
                     </div>
                     ${point.imagen ? `<div style="flex-shrink:0;"><img src="${getCloudinaryPublicId(point.imagen) ? cld.image(getCloudinaryPublicId(point.imagen)).format('auto').quality('auto').toURL() : point.imagen}" alt="Punto" style="width:80px;height:80px;object-fit:cover;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);" /></div>` : ""}
                 </div>
-            `, { maxWidth: 300 });
+            `, { 
+                maxWidth: 300,
+                autoPanPadding: [50, 50]
+            });
 
             markersRef.current.push(marker);
         });
@@ -798,7 +821,7 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
             if (valid.length > 0) {
                 mapInstanceRef.current.fitBounds(
                     L.latLngBounds(valid.map((p) => [p.lat, p.lng])),
-                    { padding: [60, 60], maxZoom: 16 }
+                    { padding: [80, 80], maxZoom: 16 }
                 );
             }
         }
@@ -812,7 +835,7 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
     }, [selectedPoint]);
 
     return (
-        <>
+        <div style={{ position: "relative", width: "100%", height: "100%", zIndex: 1 }}>
             <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
             <style>{`
                 .leaflet-popup-content-wrapper {
@@ -836,7 +859,7 @@ function AdminMapView({ points, selectedPoint, onMarkerClick, onMapClick, placin
                     50% { transform: translateY(-5px); }
                 }
             `}</style>
-        </>
+        </div>
     );
 }
 
