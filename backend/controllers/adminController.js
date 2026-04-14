@@ -1,4 +1,5 @@
 import User from "../models/user.js";
+import Chat from "../models/chat.js";
 import { usuariosConectados } from "../index.js";
 
 export const cambiarRolUsuario = async (req, res) => {
@@ -183,20 +184,26 @@ export const obtenerStats = async (req, res) => {
             // ── Puntos Reciclaje ──────────────────────────────────────────
             totalPuntos += (user.puntos || 0);
 
-            // ── Consultas IA de hoy y por mes ──────────────────────────────
-            if (user.historialConsultas && user.historialConsultas.length > 0) {
-                totalConsultas += user.historialConsultas.length;
-                user.historialConsultas.forEach(consulta => {
-                    const fechaConsulta = new Date(consulta.fecha || consulta.createdAt);
-                    const resp = consulta.respuesta || '';
-                    const isOffline = resp.includes('🌱') || resp.includes('📸') || resp.includes('📋') || resp.includes('Modo Offline') || resp.includes('Eco-IA');
-                    
-                    if (!isOffline) {
-                        if (fechaConsulta >= hoy) {
-                            consultasHoy++;
-                        }
-                        if (fechaConsulta.getFullYear() === añoActual) {
-                            consultasPorMes[fechaConsulta.getMonth()]++;
+            // Ya no tenemos user.historialConsultas, lo sumaremos luego.
+        });
+
+        // ── Consultas IA desde la colección Chat ───────────────────────
+        const todosLosChats = await Chat.find().lean();
+        todosLosChats.forEach(chat => {
+            if (chat.mensajes && chat.mensajes.length > 0) {
+                chat.mensajes.forEach(msg => {
+                    if (msg.role === 'user') {
+                        // Omitir mensajes de metadatos o creación sin contenido explícito
+                        if(msg.content && !msg.content.includes("Imagen enviada para análisis de datos")) {
+                            totalConsultas++;
+                            const fechaConsulta = new Date(msg.fecha || chat.updatedAt || chat.createdAt);
+                            
+                            if (fechaConsulta >= hoy) {
+                                consultasHoy++;
+                            }
+                            if (fechaConsulta.getFullYear() === añoActual) {
+                                consultasPorMes[fechaConsulta.getMonth()]++;
+                            }
                         }
                     }
                 });
