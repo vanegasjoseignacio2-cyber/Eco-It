@@ -18,6 +18,13 @@ export const loginUsuario = async (req, res) => {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
 
+        // Verificar si el usuario tiene contraseña (para evitar errores con usuarios de Google)
+        if (!usuario.password) {
+            return res.status(401).json({ 
+                message: "Este usuario se registró con Google. Por favor, inicia sesión con Google." 
+            });
+        }
+
         // Comparar contraseñas
         const passwordValida = await bcrypt.compare(password, usuario.password);
         if (!passwordValida) {
@@ -53,6 +60,7 @@ export const loginUsuario = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("❌ Error en loginUsuario:", error);
         res.status(500).json({
             message: "Error al iniciar sesión",
             error: error.message,
