@@ -34,6 +34,7 @@ export default function Ecogame() {
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ amount: 0.3 }}
                         transition={{ duration: 0.8 }}
+                        className="text-center lg:text-left flex flex-col items-center lg:items-start"
                     >
                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-lime-100 text-lime-700 text-sm font-medium mb-5">
                             <Gamepad2 className="w-4 h-4" />
@@ -47,12 +48,12 @@ export default function Ecogame() {
                             </span>
                         </h2>
 
-                        <p className="text-xl text-green-700 mb-8 leading-relaxed">
+                        <p className="text-xl text-green-700 mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
                             Aprende sobre reciclaje, conservación y sostenibilidad con
                             desafíos interactivos, misiones ecológicas y recompensas.
                         </p>
 
-                        <ul className="space-y-4 mb-10">
+                        <ul className="space-y-4 mb-10 w-full flex flex-col items-center lg:items-start">
                             {[
                                 "Desafíos de reciclaje interactivos",
                                 "Puntos y recompensas ecológicas",

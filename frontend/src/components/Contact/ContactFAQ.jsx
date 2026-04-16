@@ -31,8 +31,8 @@ export default function ContactFAQ() {
 
     return (
         <ViewportMotion direction="right">
-            <div className="space-y-6 w-[80vh] max-w-4xl mx-auto lg:ml-0">
-                <h2 className="text-2xl font-bold text-green-700 flex items-center gap-2">
+            <div className="space-y-6 w-full max-w-4xl mx-auto lg:ml-0">
+                <h2 className="text-2xl font-bold text-green-700 flex items-center justify-center lg:justify-start gap-2">
                     <Leaf className="w-6 h-6 text-green-700" />
                     Preguntas Frecuentes
                 </h2>

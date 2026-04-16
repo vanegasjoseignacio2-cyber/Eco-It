@@ -9,7 +9,19 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('rememberMe') === 'true';
+  });
+
+  const handleRememberMeChange = (e) => {
+    const isChecked = e.target.checked;
+    setRememberMe(isChecked);
+    if (isChecked) {
+      localStorage.setItem('rememberMe', 'true');
+    } else {
+      localStorage.removeItem('rememberMe');
+    }
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
@@ -58,10 +70,6 @@ export default function LoginForm() {
       });
 
       console.log('Login exitoso:', response);
-
-      if (rememberMe) {
-        localStorage.setItem('rememberMe', 'true');
-      }
 
       setSuccessMessage("¡Bienvenido de vuelta! 🌱");
 
@@ -195,7 +203,7 @@ export default function LoginForm() {
               <input
                 type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                onChange={handleRememberMeChange}
                 disabled={isLoading}
                 className="w-4 h-4 rounded border-green-300 text-green-600 focus:ring-green-500 disabled:opacity-50"
               />

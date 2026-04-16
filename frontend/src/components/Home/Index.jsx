@@ -78,16 +78,16 @@ export default function Index() {
 
                     {/* botones */}
                     <AnimatedSection delay={400}>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <Link to="/ai">
-                                <button className="btn-hover group px-8 py-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold text-lg shadow-xl shadow-green-500/25 hover:shadow-green-500/40 flex items-center gap-3 hover:scale-105 transition-all duration-500">
+                                <button className="btn-hover group px-8 py-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold text-lg shadow-xl shadow-green-500/25 hover:shadow-green-500/40 flex items-center gap-3 hover:scale-105 transition-all duration-500 w-full sm:w-auto justify-center">
                                     Comenzar Ahora
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </Link>
 
                             <Link to="/maps">
-                                <button className="btn-hover px-8 py-4 rounded-full border-2 border-green-600 text-green-600 font-semibold text-lg shadow-xl shadow-green-500/0 hover:bg-gradient-to-r from-green-500 to-emerald-600 hover:text-white transition-all flex items-center gap-3 hover:shadow-green-500/40 hover:border-none hover:scale-105 duration-500">
+                                <button className="btn-hover px-8 py-4 rounded-full border-2 border-green-600 text-green-600 font-semibold text-lg shadow-xl shadow-green-500/0 hover:bg-gradient-to-r from-green-500 to-emerald-600 hover:text-white transition-all flex items-center gap-3 hover:shadow-green-500/40 hover:border-none hover:scale-105 duration-500 w-full sm:w-auto justify-center">
                                     <Map className="w-5 h-5" />
                                     Ver Mapas
                                 </button>
