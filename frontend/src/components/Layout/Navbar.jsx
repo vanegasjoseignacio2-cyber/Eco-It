@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { useCookieConsent } from "../../context/Cookieconsentcontext";
 import {
     Leaf,
     Menu,
@@ -31,6 +32,7 @@ export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const { usuario, estaAutenticado, logout } = useAuth();
+    const { isAccepted, showConsentRequiredToast } = useCookieConsent();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -171,26 +173,42 @@ export default function Navbar() {
                         ) : (
                             // BOTONES DE LOGIN/REGISTRO
                             <>
-                                <Link to="/login">
+                                <Link to={isAccepted ? "/login" : "#"} onClick={(e) => {
+                                    if (!isAccepted) {
+                                        e.preventDefault();
+                                        showConsentRequiredToast();
+                                    }
+                                }}>
                                     <motion.div
-                                        whileHover={{ y: -3, scale: 1.05, boxShadow: "0px 8px 15px rgba(0, 0, 0, 0.2)" }}
-                                        whileTap={{ scale: 0.95 }}
+                                        whileHover={isAccepted ? { y: -3, scale: 1.05, boxShadow: "0px 8px 15px rgba(0, 0, 0, 0.2)" } : {}}
+                                        whileTap={isAccepted ? { scale: 0.95 } : {}}
                                         transition={{ type: "spring", stiffness: 250, damping: 18 }}
-                                        className="p-[2px] rounded-full bg-gradient-to-r from-green-500 to-emerald-600 inline-block"
+                                        className={`p-[2px] rounded-full bg-gradient-to-r from-green-500 to-emerald-600 inline-block ${!isAccepted ? 'opacity-50 grayscale' : ''}`}
                                     >
-                                        <button className="px-5 py-2 rounded-full bg-white text-green-600 font-semibold hover:bg-transparent hover:text-white transition-all duration-500 flex items-center gap-2">
+                                        <button 
+                                            type="button"
+                                            title={!isAccepted ? "Acepta las cookies para ingresar" : ""}
+                                            className={`px-5 py-2 rounded-full bg-white text-green-600 font-semibold transition-all duration-500 flex items-center gap-2 ${isAccepted ? 'hover:bg-transparent hover:text-white' : ''}`}
+                                        >
                                             <LogIn className="w-4 h-4" />
                                             Ingresar
                                         </button>
                                     </motion.div>
                                 </Link>
 
-                                <Link to="/register">
+                                <Link to={isAccepted ? "/register" : "#"} onClick={(e) => {
+                                    if (!isAccepted) {
+                                        e.preventDefault();
+                                        showConsentRequiredToast();
+                                    }
+                                }}>
                                     <motion.button
-                                        whileHover={{ y: -3, scale: 1.05, boxShadow: "0px 8px 15px rgba(0, 0, 0, 0.2)" }}
-                                        whileTap={{ scale: 0.95 }}
+                                        type="button"
+                                        title={!isAccepted ? "Acepta las cookies para registrarte" : ""}
+                                        whileHover={isAccepted ? { y: -3, scale: 1.05, boxShadow: "0px 8px 15px rgba(0, 0, 0, 0.2)" } : {}}
+                                        whileTap={isAccepted ? { scale: 0.95 } : {}}
                                         transition={{ type: "spring", stiffness: 250, damping: 18 }}
-                                        className="px-5 py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold shadow-lg transition-all flex items-center gap-2"
+                                        className={`px-5 py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold shadow-lg transition-all flex items-center gap-2 ${!isAccepted ? 'opacity-50 grayscale' : ''}`}
                                     >
                                         <UserPlus className="w-4 h-4" />
                                         Registro
@@ -293,20 +311,34 @@ export default function Navbar() {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 gap-3 pt-2">
-                                    <Link to="/login" onClick={() => setIsOpen(false)}>
+                                    <Link to={isAccepted ? "/login" : "#"} onClick={(e) => {
+                                        if (!isAccepted) {
+                                            e.preventDefault();
+                                            showConsentRequiredToast();
+                                        } else if (isOpen) {
+                                            setIsOpen(false);
+                                        }
+                                    }}>
                                         <motion.button
-                                            whileHover={{ scale: 1.03 }}
-                                            whileTap={{ scale: 0.97 }}
-                                            className="w-full px-4 py-2.5 rounded-xl border-2 border-green-500 text-green-600 font-semibold hover:bg-green-50 transition-all"
+                                            whileHover={isAccepted ? { scale: 1.03 } : {}}
+                                            whileTap={isAccepted ? { scale: 0.97 } : {}}
+                                            className={`w-full px-4 py-2.5 rounded-xl border-2 border-green-500 text-green-600 font-semibold transition-all ${!isAccepted ? 'opacity-50 grayscale' : 'hover:bg-green-50'}`}
                                         >
                                             Ingresar
                                         </motion.button>
                                     </Link>
-                                    <Link to="/register" onClick={() => setIsOpen(false)}>
+                                    <Link to={isAccepted ? "/register" : "#"} onClick={(e) => {
+                                        if (!isAccepted) {
+                                            e.preventDefault();
+                                            showConsentRequiredToast();
+                                        } else if (isOpen) {
+                                            setIsOpen(false);
+                                        }
+                                    }}>
                                         <motion.button
-                                            whileHover={{ scale: 1.03 }}
-                                            whileTap={{ scale: 0.97 }}
-                                            className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold shadow-md"
+                                            whileHover={isAccepted ? { scale: 1.03 } : {}}
+                                            whileTap={isAccepted ? { scale: 0.97 } : {}}
+                                            className={`w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold shadow-md ${!isAccepted ? 'opacity-50 grayscale' : ''}`}
                                         >
                                             Registro
                                         </motion.button>

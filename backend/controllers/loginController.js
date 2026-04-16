@@ -15,7 +15,7 @@ export const loginUsuario = async (req, res) => {
         // Buscar usuario por email (incluimos password por el select: false del modelo)
         const usuario = await User.findOne({ email }).select('+password');
         if (!usuario) {
-            return res.status(404).json({ message: "Usuario no encontrado" });
+            return res.status(401).json({ message: "Correo o contraseña incorrectos" });
         }
 
         // Verificar si el usuario tiene contraseña (para evitar errores con usuarios de Google)
@@ -28,7 +28,7 @@ export const loginUsuario = async (req, res) => {
         // Comparar contraseñas
         const passwordValida = await bcrypt.compare(password, usuario.password);
         if (!passwordValida) {
-            return res.status(401).json({ message: "Contraseña incorrecta" });
+            return res.status(401).json({ message: "Correo o contraseña incorrectos" });
         }
 
         const token = jwt.sign(
@@ -63,7 +63,7 @@ export const loginUsuario = async (req, res) => {
         console.error("❌ Error en loginUsuario:", error);
         res.status(500).json({
             message: "Error al iniciar sesión",
-            error: error.message,
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 };

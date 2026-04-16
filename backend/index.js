@@ -8,7 +8,10 @@ dotenv.config({ path: join(__dirname, '.env') });
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
 import { rateLimit } from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
+import { globalLimiter } from './middlewares/limiters.js';
 import mongoose from 'mongoose';
 import passport from 'passport';
 import session from 'express-session';
@@ -16,17 +19,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import User from './models/user.js';
 
-// Configuración de Rate Limiting (Antispam y Anti-DDoS)
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 300, // límite de 300 peticiones por IP
-    standardHeaders: true, 
-    legacyHeaders: false,
-    message: {
-        success: false,
-        mensaje: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo en 15 minutos.'
-    }
-});
+// Los limitadores se importan desde ./middlewares/limiters.js
 
 // Importar rutas
 import authRoutes from './routes/authRoutes.js';
@@ -53,15 +46,34 @@ export const io = new Server(httpServer, {
     }
 });
 
+// Middleware de autenticación para Socket.io
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+    if (!token) {
+        console.log('Socket connection denied: No token provided');
+        return next(new Error('Authentication error: Token required'));
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.usuario = decoded;
+        next();
+    } catch (err) {
+        console.log('Socket connection denied: Invalid token');
+        next(new Error('Authentication error: Invalid token'));
+    }
+});
+
 // Mapa de usuarios conectados: userId → { nombre, sockets: Set<socketId> }
 export const usuariosConectados = new Map();
 
 io.on('connection', (socket) => {
     console.log('Socket conectado:', socket.id);
 
-    // El cliente envía sus datos al conectarse
-    socket.on('usuario:conectado', async (usuario) => {
-        const userId = usuario._id;
+    // Al conectarse totalmente tras el handshake exitoso
+    socket.on('usuario:conectado', async () => {
+        // Usamos la información del token verificado en el middleware (socket.usuario)
+        const userId = socket.usuario.id;
+        const nombre = socket.usuario.nombre || 'Usuario';
 
         if (usuariosConectados.has(userId)) {
             // Ya existe: solo agrega el nuevo socketId (nueva pestaña)
@@ -69,7 +81,7 @@ io.on('connection', (socket) => {
         } else {
             // Usuario nuevo: crea su entrada
             usuariosConectados.set(userId, {
-                nombre: usuario.nombre,
+                nombre: nombre,
                 sockets: new Set([socket.id])
             });
             // Notificar que se conectó en tiempo real
@@ -95,7 +107,7 @@ io.on('connection', (socket) => {
         }
 
         io.emit('usuarios:online', usuariosConectados.size);
-        console.log(`${usuario.nombre} conectado. Total usuarios únicos: ${usuariosConectados.size}`);
+        console.log(`${nombre} conectado. Total usuarios únicos: ${usuariosConectados.size}`);
     });
 
     // Al desconectarse
@@ -129,7 +141,14 @@ app.set('trust proxy', 1);
 
 // Seguridad HTTP con Helmet
 app.use(helmet({
-    contentSecurityPolicy: false, // Desactivar si causa problemas con Leaflet/Cloudinary en desarrollo
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "img-src": ["'self'", "data:", "https://res.cloudinary.com", "https://*.tile.openstreetmap.org"],
+            "script-src": ["'self'", "'unsafe-inline'"], // unsafe-inline es a veces necesario para React, pero se puede restringir más
+            "connect-src": ["'self'", "https://api.cloudinary.com", "wss://*.openrouter.ai"]
+        }
+    },
     crossOriginEmbedderPolicy: false
 }));
 
@@ -141,27 +160,11 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Saneamiento contra inyección NoSQL (Manual para compatibilidad con Express 5)
-app.use((req, res, next) => {
-    const sanitize = (obj) => {
-        if (obj && typeof obj === 'object') {
-            Object.keys(obj).forEach(key => {
-                if (key.startsWith('$') || key.includes('.')) {
-                    delete obj[key];
-                } else {
-                    sanitize(obj[key]);
-                }
-            });
-        }
-    };
-    sanitize(req.body);
-    sanitize(req.params);
-    sanitize(req.query);
-    next();
-});
+// Saneamiento contra inyección NoSQL robusto
+app.use(mongoSanitize());
 
 // Aplicar Rate Limiting global
-app.use(limiter);
+app.use(globalLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
