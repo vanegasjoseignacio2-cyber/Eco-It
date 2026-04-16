@@ -9,17 +9,19 @@ function setCookie(name, value, days = 365) {
 }
 
 export default function CookieConsent() {
-  const { bannerVisible, closeBanner, openBanner } = useCookieConsent();
+  const { bannerVisible, closeBanner, openBanner, updateConsentState } = useCookieConsent();
   const { showToast } = useToast();
 
   const handleAccept = () => {
     setCookie('cookie_consent', 'accepted');
+    updateConsentState();
     closeBanner();
     showToast('¡Cookies aceptadas! Todas las funciones están habilitadas.', 'success', 3000);
   };
 
   const handleReject = () => {
     setCookie('cookie_consent', 'rejected');
+    updateConsentState();
     closeBanner();
     // duration=0 → no se cierra automáticamente; action → botón dentro del toast
     showToast(

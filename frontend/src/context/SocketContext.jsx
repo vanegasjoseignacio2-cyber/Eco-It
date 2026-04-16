@@ -37,7 +37,7 @@ export const SocketProvider = ({ children }) => {
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      newSocket.emit('usuario:conectado', usuario);
+      newSocket.emit('usuario:conectado');
     });
 
     // Escuchar conteo de usuarios online

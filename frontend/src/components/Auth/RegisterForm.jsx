@@ -21,6 +21,7 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useCookieConsent } from "../../context/Cookieconsentcontext";
 
 // ─── Helpers de API ───────────────────────────────────────────────────────────
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -57,6 +58,7 @@ const calcTimeLeft = () => {
 export default function RegisterForm() {
     const navigate = useNavigate();
     const { login } = useAuth();
+    const { isAccepted, showConsentRequiredToast } = useCookieConsent();
     const { validar, validarEmail } = useOfensiveValidator();
 
     // ── Paso ─────────────────────────────────────────────────────────────────
@@ -163,6 +165,11 @@ export default function RegisterForm() {
 
         setError("");
         setSuccessMessage("");
+
+        if (!isAccepted) {
+            showConsentRequiredToast();
+            return;
+        }
 
         if (!formValid) {
             setError("Por favor completa todos los campos correctamente");
@@ -636,12 +643,13 @@ export default function RegisterForm() {
                                     >
                                         <motion.button
                                             type="submit"
-                                            whileHover={formValid && !loading ? { scale: 1.02 } : {}}
-                                            whileTap={formValid && !loading ? { scale: 0.98 } : {}}
-                                            disabled={!formValid || loading}
-                                            className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${formValid && !loading
+                                            whileHover={(formValid && !loading && isAccepted) ? { scale: 1.02 } : {}}
+                                            whileTap={(formValid && !loading && isAccepted) ? { scale: 0.98 } : {}}
+                                            disabled={loading || (isAccepted && !formValid)}
+                                            title={!isAccepted ? "Acepta las cookies para crear tu cuenta" : ""}
+                                            className={`w-full py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${(formValid && !loading && isAccepted)
                                                 ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-green-500/25 cursor-pointer"
-                                                : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+                                                : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"}`}
                                         >
                                             {loading ? (
                                                 <>

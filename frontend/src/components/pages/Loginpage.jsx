@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
     const { showToast } = useToast();
-    const { openBanner, getCookie } = useCookieConsent();
+    const { showConsentRequiredToast, getCookie } = useCookieConsent();
     const { estaAutenticado } = useAuth();
 
     useEffect(() => {
@@ -19,14 +19,9 @@ export default function Login() {
         const consent = getCookie('cookie_consent');
 
         if (consent !== 'accepted') {
-            showToast(
-                '⚠️ Debes aceptar las cookies para poder iniciar sesión.',
-                'warning',
-                0,
-                { label: 'Aceptar cookies', onClick: openBanner }
-            );
+            showConsentRequiredToast();
         }
-    }, [estaAutenticado, showToast, openBanner, getCookie]);
+    }, [estaAutenticado, showConsentRequiredToast, getCookie]);
 
     return (
         <div className="min-h-screen flex flex-col nature-bg">
