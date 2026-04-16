@@ -40,12 +40,27 @@ export default function AIPage() {
     // Referencia para cancelar petición actual
     const abortControllerRef = useRef(null);
 
+    // Estado local para Ban
+    const [banInfo, setBanInfo] = useState(null);
+
+    const checkBanError = (err) => {
+        if (err?.data?.banned) {
+            setBanInfo({
+                reason: err.data.banReason || 'Contenido inapropiado',
+                hasta: err.data.banHasta
+            });
+            return true;
+        }
+        return false;
+    };
+
     const loadChats = async () => {
         if (!estaAutenticado || !token) return;
         try {
             const data = await obtenerChats(token);
             setChats(data);
         } catch (err) {
+            if (checkBanError(err)) return;
             console.error("Error al cargar historial:", err);
         }
     };
@@ -189,6 +204,13 @@ export default function AIPage() {
                 if (!activeChatId) await loadChats();
             }
         } catch (err) {
+            if (checkBanError(err)) {
+                setMessages(prev => prev.map(msg =>
+                    msg.id === botMsgId ? { ...msg, content: `❌ Mensaje bloqueado. La imagen contenía material prohibido.` } : msg
+                ));
+                return;
+            }
+
             if (err.name === 'AbortError') {
                 console.log('Petición cancelada por el usuario');
                 // No mostramos error, simplemente dejamos el mensaje como está
@@ -348,8 +370,41 @@ export default function AIPage() {
                                     selectedImage={selectedImage}
                                     onImageRemove={() => setSelectedImage(null)}
                                     isTyping={isTyping}
-                                    disabled={!estaAutenticado}
+                                    disabled={!estaAutenticado || !!banInfo}
                                 />
+                                
+                                {/* OVERLAY DE BANEO */}
+                                <AnimatePresence>
+                                    {banInfo && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            className="absolute inset-0 z-[100] backdrop-blur-xl bg-white/70 flex flex-col items-center justify-center p-8 text-center rounded-[32px] border-4 border-red-100"
+                                        >
+                                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-red-100">
+                                                <AlertTriangle className="w-10 h-10 text-red-600" />
+                                            </div>
+                                            <h2 className="text-3xl font-black text-red-900 mb-3 tracking-tight">Acceso Restringido</h2>
+                                            <p className="text-red-700 text-lg max-w-sm mb-8 leading-relaxed font-medium">
+                                                Has sido baneado del servicio de Inteligencia Artificial.
+                                            </p>
+                                            
+                                            <div className="bg-white px-8 py-6 rounded-2xl shadow-sm border border-red-100 w-full max-w-sm space-y-4">
+                                                <div>
+                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Motivo del Baneo</p>
+                                                    <p className="text-gray-900 font-medium">{banInfo.reason}</p>
+                                                </div>
+                                                <div className="h-px bg-gray-100 w-full" />
+                                                <div>
+                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Expira el</p>
+                                                    <p className="text-red-600 font-bold">
+                                                        {banInfo.hasta ? new Date(banInfo.hasta).toLocaleString() : 'Permanente'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </motion.div>
 

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, X, AlertTriangle } from "lucide-react";
 import AdminSidebar from "../Admin/adminSlidebar";
 import AdminHero from "../Admin/adminHero";
 import AdminUsers from "../Admin/adminUsers";
@@ -8,12 +10,17 @@ import AdminMap from "../Admin/AdminMap";
 import AdminImages from "../Admin/AdminImages";
 import AdminSessionTracker from "../Admin/AdminSessionTracker";
 import { useToast } from "../../context/ToastContext";
-import { useEffect } from "react";
+import { useSocket } from "../../context/SocketContext";
 
 export default function AdminLayout() {
     const [activeSection, setActiveSection] = useState("dashboard");
+    const [notifications, setNotifications] = useState([]);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
 
     const { showToast } = useToast();
+    const { socket } = useSocket();
+
+    const unreadCount = notifications.filter(n => !n.read).length;
 
     useEffect(() => {
         // Mostrar aviso de seguridad al entrar al panel
@@ -24,6 +31,31 @@ export default function AdminLayout() {
         );
     }, [showToast]);
 
+    useEffect(() => {
+        if (!socket) return;
+        const handleAlertaStr = (data) => {
+            // Mostrar Toast temporal
+            showToast(
+                `⚠️ ALERTA OBSCENA: El usuario ${data.email || data.nombre} acaba de subir una imagen explícita a la IA. El contenido fue bloqueado.`,
+                "error",
+                10000
+            );
+
+            // Almacenar en el Centro de Notificaciones
+            setNotifications(prev => [{
+                id: Date.now(),
+                type: "alerta_obscena",
+                email: data.email,
+                nombre: data.nombre,
+                fecha: data.fecha,
+                read: false
+            }, ...prev]);
+        };
+        
+        socket.on("admin:alerta_obscena", handleAlertaStr);
+        return () => socket.off("admin:alerta_obscena", handleAlertaStr);
+    }, [socket, showToast]);
+
     const SECTIONS = {
         dashboard: <AdminHero />,
         users: <AdminUsers />,
@@ -33,16 +65,131 @@ export default function AdminLayout() {
         images: <AdminImages/>
     };
 
+    const markAllAsRead = () => {
+        setNotifications(prev => prev.map(n => ({...n, read: true})));
+    };
+
     return (
-        <div className="flex h-screen overflow-hidden bg-green-50">
+        <div className="flex h-screen w-full overflow-hidden bg-green-50 relative">
             <AdminSessionTracker />
             <AdminSidebar
                 activeSection={activeSection}
                 setActiveSection={setActiveSection}
             />
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto relative">
+                {/* Floating Notification Bell */}
+                <div className="absolute top-[52px] right-8 z-[40]">
+                    <button 
+                        onClick={() => setIsNotifOpen(true)}
+                        className="relative p-3 bg-white rounded-full shadow-md hover:shadow-xl transition-all duration-300 border border-green-100 group"
+                    >
+                        <Bell className="w-5 h-5 text-green-600 group-hover:text-green-700 transition-colors" />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 w-5 h-5 flex items-center justify-center bg-red-500 text-white text-[10px] font-black rounded-full animate-pulse border-2 border-white shadow-sm">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
                 {SECTIONS[activeSection] || <AdminHero />}
             </main>
+
+            {/* Slide-over Notification Center */}
+            <AnimatePresence>
+                {isNotifOpen && (
+                    <>
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            onClick={() => setIsNotifOpen(false)}
+                            className="fixed inset-0 bg-emerald-950/20 backdrop-blur-sm z-[50]"
+                        />
+                        <motion.div
+                            initial={{ x: "100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "100%" }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-[60] flex flex-col border-l border-green-100"
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-5 border-b border-green-50 bg-gradient-to-br from-green-50 to-white min-h-[84px]">
+                                <h2 className="text-lg font-bold text-green-950 flex items-center gap-2">
+                                    <div className="p-1.5 bg-green-100 text-green-600 rounded-lg">
+                                        <Bell className="w-4 h-4" />
+                                    </div>
+                                    Notificaciones
+                                </h2>
+                                <button 
+                                    onClick={() => setIsNotifOpen(false)} 
+                                    className="p-2 bg-white hover:bg-green-50 border border-transparent hover:border-green-100 rounded-full transition-all"
+                                >
+                                    <X className="w-4 h-4 text-green-600" />
+                                </button>
+                            </div>
+                            
+                            {/* Body */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                                {notifications.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-center px-4 min-h-[84px]">
+                                        <div className="w-16 h-16 bg-green-50 text-green-200 rounded-full flex items-center justify-center mb-4">
+                                            <Bell className="w-8 h-8" />
+                                        </div>
+                                        <p className="text-sm font-semibold text-green-900">Todo está tranquilo</p>
+                                        <p className="text-xs text-green-600 mt-1">No tienes notificaciones pendientes.</p>
+                                    </div>
+                                ) : (
+                                    notifications.map(notif => (
+                                        <motion.div 
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            key={notif.id} 
+                                            className={`p-4 rounded-2xl border shadow-sm transition-all ${
+                                                notif.read ? 'bg-white border-green-100' : 'bg-red-50 border-red-200 shadow-red-100'
+                                            } relative`}
+                                        >
+                                            {!notif.read && (
+                                                <span className="absolute top-4 right-4 flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                                </span>
+                                            )}
+                                            
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-2 bg-red-100 rounded-xl text-red-600 shadow-inner">
+                                                    <AlertTriangle className="w-5 h-5" />
+                                                </div>
+                                                <div className="pr-4">
+                                                    <p className="font-bold text-red-900 text-sm">Bloqueo de Seguridad IA</p>
+                                                    <p className="text-xs text-slate-700 mt-1.5 leading-relaxed">
+                                                        El usuario <span className="font-bold text-slate-900">{notif.email || notif.nombre}</span> intentó analizar contenido obsceno. El evento fue interceptado.
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400 mt-3 font-semibold uppercase tracking-wider">
+                                                        {new Date(notif.fecha).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Footer */}
+                            {notifications.length > 0 && unreadCount > 0 && (
+                                <div className="p-4 border-t border-green-50 bg-white">
+                                    <button 
+                                        onClick={markAllAsRead}
+                                        className="w-full py-2.5 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-all shadow-sm"
+                                    >
+                                        Marcar todas como leídas
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -366,7 +366,7 @@ export default function AdminImages() {
             <motion.div
                 initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pr-24 min-h-[84px]"
             >
                 <div>
                     <div className="flex items-center gap-2 mb-1">

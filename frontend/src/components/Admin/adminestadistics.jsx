@@ -179,7 +179,7 @@ export default function AdminEstadisticas() {
                     initial={{ opacity: 0, y: -14 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pr-24 min-h-[84px]"
                 >
                     <div>
                         <p className="text-xs font-semibold text-green-400 uppercase tracking-widest mb-1">Panel de análisis</p>

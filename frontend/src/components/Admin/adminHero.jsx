@@ -120,7 +120,7 @@ export default function AdminHero() {
                     initial={{ opacity: 0, y: -16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="flex items-start justify-between mb-10"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 pr-24 min-h-[84px]"
                 >
                     <div>
                         <div className="flex items-center gap-2 mb-1">

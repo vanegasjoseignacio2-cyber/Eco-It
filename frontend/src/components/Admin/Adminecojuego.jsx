@@ -118,7 +118,7 @@ export default function AdminEcojuego() {
                     initial={{ opacity: 0, y: -16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pr-24 min-h-[84px]"
                 >
                     <div>
                         <h1 className="text-3xl font-bold text-green-900 flex items-center gap-2">

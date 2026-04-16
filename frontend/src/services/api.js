@@ -27,7 +27,10 @@ const fetchAPI = async (endpoint, options = {}) => {
       if (response.status === 401) {
         window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       }
-      throw new Error(data.message || data.mensaje || 'Error en la petición');
+      const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
+      error.data = data;
+      error.status = response.status;
+      throw error;
     }
 
     return data;
@@ -143,7 +146,10 @@ export const consultarIA = async (token, pregunta, chatId, onChunk, signal) => {
     if (response.status === 401) {
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
     }
-    throw new Error(data.message || data.mensaje || 'Error en la petición');
+    const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
+    error.data = data;
+    error.status = response.status;
+    throw error;
   }
 
   // Leer stream chunk a chunk

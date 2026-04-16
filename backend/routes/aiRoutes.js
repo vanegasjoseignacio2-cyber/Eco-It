@@ -6,6 +6,30 @@ import { verificarToken } from "../middlewares/authMiddleware.js";
 
 export const aiRouter = Router();
 
+// Middleware para verificar si el usuario está baneado
+const checkBan = async (req, res, next) => {
+  if (req.usuario.status === 'banned') {
+    if (new Date() < new Date(req.usuario.banHasta)) {
+      return res.status(403).json({ 
+        error: "Usuario baneado", 
+        banned: true, 
+        banReason: req.usuario.banReason, 
+        banHasta: req.usuario.banHasta 
+      });
+    } else {
+      // Levantar el ban si ya expiró
+      req.usuario.status = 'active';
+      req.usuario.banHasta = null;
+      req.usuario.banReason = null;
+      await req.usuario.save();
+    }
+  }
+  next();
+};
+
+// Aplicar verificación de baneo a todas las rutas de IA
+aiRouter.use(verificarToken, checkBan);
+
 const GEMINI_MODEL = "google/gemini-2.5-flash-lite";
 const FREE_MODEL = "openrouter/free";
 
@@ -41,9 +65,9 @@ const promptImagen = `Eres EcoBot, un asistente visual especializado EXCLUSIVAME
 REGLAS ESTRICTAS:
 1. Analiza la imagen proporcionada SOLO desde la perspectiva del reciclaje y medio ambiente.
 2. Sé totalmente CONCISO y DIRECTO. Minimiza la cantidad de texto al máximo.
-3. FILTRO DE CONTENIDO: Si detectas que la imagen o texto contiene material inapropiado, obsceno o sexual, recházalo de inmediato.
-4. Identifica materiales reciclables y sugiere cómo desecharlos brevemente.
-5. Si la imagen no tiene relación con el reciclaje, di que no puedes analizarla.
+3. FILTRO DE CONTENIDO (CERO TOLERANCIA): Si detectas explícitamente contenido obsceno, desnudez, índole sexual o violencia en la imagen o contexto, tu respuesta DEBE comenzar obligatoriamente con la palabra EXACTA "ALERTA_OBSCENA:". Seguido de eso, responde únicamente: "El envío de contenido inapropiado no está permitido y ha sido reportado."
+4. Si la imagen NO es de reciclaje pero tampoco es obscena (ej. una silla, un zapato normal, paisaje), simplemente indica de forma amigable que solo puedes analizar elementos relacionados con sostenibilidad. NO uses la frase "ALERTA_OBSCENA:" en este caso.
+5. Identifica materiales reciclables y sugiere cómo desecharlos brevemente.
 6. Responde siempre en español.`;
 
 
@@ -96,7 +120,7 @@ async function mantenerLimiteChats(userId) {
 // -----------------------------------------------------
 
 // GET /api/ai/chats
-aiRouter.get("/chats", verificarToken, async (req, res) => {
+aiRouter.get("/chats", async (req, res) => {
   try {
     const chats = await Chat.find({ userId: req.usuario._id })
       .sort({ updatedAt: -1 })
@@ -109,7 +133,7 @@ aiRouter.get("/chats", verificarToken, async (req, res) => {
 });
 
 // GET /api/ai/chats/:id
-aiRouter.get("/chats/:id", verificarToken, async (req, res) => {
+aiRouter.get("/chats/:id", async (req, res) => {
   try {
     const chat = await Chat.findOne({ _id: req.params.id, userId: req.usuario._id });
     if (!chat) return res.status(404).json({ error: "Chat no encontrado" });
@@ -121,7 +145,7 @@ aiRouter.get("/chats/:id", verificarToken, async (req, res) => {
 });
 
 // DELETE /api/ai/chats/:id
-aiRouter.delete("/chats/:id", verificarToken, async (req, res) => {
+aiRouter.delete("/chats/:id", async (req, res) => {
   try {
     const chat = await Chat.findOneAndDelete({ _id: req.params.id, userId: req.usuario._id });
     if (!chat) return res.status(404).json({ error: "Chat no encontrado" });
@@ -133,7 +157,7 @@ aiRouter.delete("/chats/:id", verificarToken, async (req, res) => {
 });
 
 // DELETE /api/ai/chats (Todos los chats del usuario)
-aiRouter.delete("/chats", verificarToken, async (req, res) => {
+aiRouter.delete("/chats", async (req, res) => {
   try {
     await Chat.deleteMany({ userId: req.usuario._id });
     res.json({ success: true, message: "Todos los chats han sido eliminados" });
@@ -146,7 +170,7 @@ aiRouter.delete("/chats", verificarToken, async (req, res) => {
 // -----------------------------------------------------
 
 // POST /api/ai/consultar
-aiRouter.post("/consultar", verificarToken, async (req, res) => {
+aiRouter.post("/consultar", async (req, res) => {
   const { pregunta, chatId } = req.body;
 
   if (!pregunta || !pregunta.trim()) {
@@ -247,7 +271,7 @@ aiRouter.post("/consultar", verificarToken, async (req, res) => {
 
 
 // POST /api/ai/analizar-imagen
-aiRouter.post("/analizar-imagen", verificarToken, async (req, res) => {
+aiRouter.post("/analizar-imagen", async (req, res) => {
   const { imagen, contexto, chatId } = req.body;
 
   if (!imagen) {
@@ -297,7 +321,36 @@ aiRouter.post("/analizar-imagen", verificarToken, async (req, res) => {
       ],
     });
 
-    const respuesta = completion.choices[0]?.message?.content || "No pude analizar la imagen.";
+    let respuesta = completion.choices[0]?.message?.content || "No pude analizar la imagen.";
+
+    // Verificar si la IA consideró la imagen obscena
+    if (respuesta.includes("ALERTA_OBSCENA:")) {
+      // Aplicar ban de 24 horas y notificar
+      const banTime = new Date();
+      banTime.setHours(banTime.getHours() + 24);
+      req.usuario.status = 'banned';
+      req.usuario.banHasta = banTime;
+      req.usuario.banReason = "Contenido imagen inapropiado";
+      await req.usuario.save();
+
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("admin:alerta_obscena", {
+          email: req.usuario.email,
+          nombre: req.usuario.nombre,
+          fecha: new Date(),
+          mensaje: "Se detectó el envío de una imagen con contenido obsceno/inapropiado.",
+          imagen: imagen
+        });
+      }
+      
+      return res.status(403).json({
+         error: "Fuiste baneado por contenido inapropiado.",
+         banned: true,
+         banReason: req.usuario.banReason,
+         banHasta: req.usuario.banHasta
+      });
+    }
 
     // Guardar en la DB
     chatActual.mensajes.push({ role: "user", content: contexto || "📷 Análisis de imagen", imagen: imagen });

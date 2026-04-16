@@ -629,7 +629,7 @@ export default function AdminMap() {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 40 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
-                            className="absolute top-4 right-4 bottom-4 w-80 z-[1000] bg-white rounded-2xl shadow-2xl border border-green-100 flex flex-col overflow-hidden"
+                            className="absolute top-24 right-4 bottom-4 w-80 z-[1000] bg-white rounded-2xl shadow-2xl border border-green-100 flex flex-col overflow-hidden"
                         >
                             {showForm ? (
                                 <FormPanel

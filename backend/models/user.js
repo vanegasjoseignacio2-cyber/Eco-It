@@ -70,6 +70,10 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    banReason: {
+        type: String,
+        default: null
+    },
 
     puntosFavoritos: [{
         type: mongoose.Schema.Types.ObjectId,
