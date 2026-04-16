@@ -78,6 +78,19 @@ export const banearUsuarioAdmin = async (req, res) => {
 
         await usuario.save();
 
+        // Notificar a otros administradores en tiempo real
+        const io = req.app.get("io");
+        if (io) {
+            io.to("admins").emit("admin:usuario_baneado", {
+                email: usuario.email,
+                nombre: `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim(),
+                adminName: req.usuario.nombre,
+                dias: diasDelBaneo,
+                fecha: new Date(),
+                mensaje: `El usuario ${usuario.email} ha sido baneado por ${diasDelBaneo} días.`
+            });
+        }
+
         res.status(200).json({ success: true, message: `Usuario baneado por ${diasDelBaneo} días`, usuario });
     } catch (error) {
         console.error("Error al banear usuario:", error);

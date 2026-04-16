@@ -51,9 +51,34 @@ export default function AdminLayout() {
                 read: false
             }, ...prev]);
         };
+
+        const handleUsuarioBaneado = (data) => {
+            // Mostrar Toast temporal
+            showToast(
+                `🔨 USUARIO BANEADO: ${data.nombre} (${data.email}) fue baneado por ${data.adminName}.`,
+                "warning",
+                10000
+            );
+
+            // Almacenar en el Centro de Notificaciones
+            setNotifications(prev => [{
+                id: Date.now(),
+                type: "usuario_baneado",
+                email: data.email,
+                nombre: data.nombre,
+                adminName: data.adminName,
+                dias: data.dias,
+                fecha: data.fecha,
+                read: false
+            }, ...prev]);
+        };
         
         socket.on("admin:alerta_obscena", handleAlertaStr);
-        return () => socket.off("admin:alerta_obscena", handleAlertaStr);
+        socket.on("admin:usuario_baneado", handleUsuarioBaneado);
+        return () => {
+            socket.off("admin:alerta_obscena", handleAlertaStr);
+            socket.off("admin:usuario_baneado", handleUsuarioBaneado);
+        };
     }, [socket, showToast]);
 
     const SECTIONS = {
@@ -146,24 +171,31 @@ export default function AdminLayout() {
                                             animate={{ opacity: 1, y: 0 }}
                                             key={notif.id} 
                                             className={`p-4 rounded-2xl border shadow-sm transition-all ${
-                                                notif.read ? 'bg-white border-green-100' : 'bg-red-50 border-red-200 shadow-red-100'
+                                                notif.read ? 'bg-white border-green-100' : 
+                                                (notif.type === 'alerta_obscena' ? 'bg-red-50 border-red-200 shadow-red-100' : 'bg-amber-50 border-amber-200 shadow-amber-100')
                                             } relative`}
                                         >
                                             {!notif.read && (
                                                 <span className="absolute top-4 right-4 flex h-2 w-2">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${notif.type === 'alerta_obscena' ? 'bg-red-400' : 'bg-amber-400'}`}></span>
+                                                    <span className={`relative inline-flex rounded-full h-2 w-2 ${notif.type === 'alerta_obscena' ? 'bg-red-500' : 'bg-amber-500'}`}></span>
                                                 </span>
                                             )}
                                             
                                             <div className="flex items-start gap-3">
-                                                <div className="p-2 bg-red-100 rounded-xl text-red-600 shadow-inner">
+                                                <div className={`p-2 rounded-xl shadow-inner ${notif.type === 'alerta_obscena' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
                                                     <AlertTriangle className="w-5 h-5" />
                                                 </div>
                                                 <div className="pr-4">
-                                                    <p className="font-bold text-red-900 text-sm">Bloqueo de Seguridad IA</p>
+                                                    <p className={`font-bold text-sm ${notif.type === 'alerta_obscena' ? 'text-red-900' : 'text-amber-900'}`}>
+                                                        {notif.type === 'alerta_obscena' ? 'Bloqueo de Seguridad IA' : 'Usuario Baneado'}
+                                                    </p>
                                                     <p className="text-xs text-slate-700 mt-1.5 leading-relaxed">
-                                                        El usuario <span className="font-bold text-slate-900">{notif.email || notif.nombre}</span> intentó analizar contenido obsceno. El evento fue interceptado.
+                                                        {notif.type === 'alerta_obscena' ? (
+                                                            <>El usuario <span className="font-bold text-slate-900">{notif.email || notif.nombre}</span> intentó analizar contenido obsceno. El evento fue interceptado.</>
+                                                        ) : (
+                                                            <>El administrador <span className="font-bold text-slate-900">{notif.adminName}</span> ha baneado a <span className="font-bold text-slate-900">{notif.nombre || notif.email}</span> por <span className="font-bold">{notif.dias} días</span>.</>
+                                                        )}
                                                     </p>
                                                     <p className="text-[10px] text-slate-400 mt-3 font-semibold uppercase tracking-wider">
                                                         {new Date(notif.fecha).toLocaleString()}
