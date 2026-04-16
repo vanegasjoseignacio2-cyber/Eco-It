@@ -44,6 +44,7 @@ const fadeUp = {
 export default function AdminEstadisticas() {
     const { token } = useAuth();
     const { usuariosOnline } = useSocket();
+    const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState({
         totalUsuarios: "0",
         usuariosOnline: "0",
@@ -54,29 +55,33 @@ export default function AdminEstadisticas() {
         chartData: null,
     });
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await fetch("http://localhost:3000/api/admin/stats", {
-                    headers: { Authorization: `Bearer ${token}` },
+    const fetchStats = async () => {
+        setRefreshing(true);
+        try {
+            const res = await fetch("http://localhost:3000/api/admin/stats", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            console.log("Respuesta API:", data);
+            if (data.success) {
+                setStats({
+                    totalUsuarios: data.totalUsuarios?.toString() || "0",
+                    usuariosOnline: data.usuariosOnline?.toString() || "0",
+                    consultasHoy: data.consultasHoy || 0,
+                    mejorMes: data.mejorMes || "—",
+                    picoDiario: data.picoDiario || 0,
+                    nuevosHoy: data.nuevosHoy || 0,
+                    chartData: data.chartData || null,
                 });
-                const data = await res.json();
-                console.log("Respuesta API:", data);
-                if (data.success) {
-                    setStats({
-                        totalUsuarios: data.totalUsuarios?.toString() || "0",
-                        usuariosOnline: data.usuariosOnline?.toString() || "0",
-                        consultasHoy: data.consultasHoy || 0,
-                        mejorMes: data.mejorMes || "—",
-                        picoDiario: data.picoDiario || 0,
-                        nuevosHoy: data.nuevosHoy || 0,
-                        chartData: data.chartData || null,
-                    });
-                }
-            } catch (error) {
-                console.error("Error al obtener estadísticas:", error);
             }
-        };
+        } catch (error) {
+            console.error("Error al obtener estadísticas:", error);
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
         if (token) fetchStats();
     }, [token]);
 
@@ -84,6 +89,13 @@ export default function AdminEstadisticas() {
     const [period, setPeriod] = useState("year");
 
     const tab = CHART_TABS.find((c) => c.id === activeChart);
+
+    // Determinar qué clave de datos usar según el período seleccionado
+    const getChartKey = (baseKey) => {
+        if (period === "month") return `${baseKey}Month`;
+        if (period === "week") return `${baseKey}Week`;
+        return baseKey; // "year" → datos mensuales (default)
+    };
 
     // Base vacía mientras carga
     const baseChart = {
@@ -94,30 +106,14 @@ export default function AdminEstadisticas() {
     // Si viene data del servidor la usamos, si no la base en cero
     const chartSource = stats.chartData ? stats.chartData : baseChart;
 
-    // Si por alguna razón las queries vinieran con campo "date" en lugar de ya agrupadas,
-    // las agrupamos por mes aquí en el frontend
-    let chartDataForBars = {
-        ...baseChart,
-        ...chartSource,
-    };
-    if (
-        activeChart === "queries" &&
-        chartSource.queries &&
-        chartSource.queries.length > 0 &&
-        chartSource.queries[0].date
-    ) {
-        const monthlyByLabel = {};
-        chartSource.queries.forEach((item) => {
-            const date = new Date(item.date);
-            const monthLabel = MONTHS[date.getMonth()];
-            const value = Number(item.value) || 0;
-            monthlyByLabel[monthLabel] = (monthlyByLabel[monthLabel] || 0) + value;
-        });
-        const aggregatedQueries = MONTHS.map((m) => ({ label: m, value: monthlyByLabel[m] || 0 }));
-        chartDataForBars = { ...chartDataForBars, queries: aggregatedQueries };
-    }
+    // Seleccionar los datos correctos según período y tab activo
+    const chartKey = getChartKey(activeChart);
+    let bars = chartSource[chartKey] || chartSource[activeChart] || baseChart.users;
 
-    const bars = chartDataForBars[activeChart] || baseChart.users;
+    // Fallback: si el backend no envía datos del período, usar base vacía
+    if (!bars || bars.length === 0) {
+        bars = baseChart.users;
+    }
 
     // Máximo valor real para saber si el gráfico está en cero absoluto
     const actualMax = Math.max(...bars.map((d) => d.value));
@@ -126,7 +122,7 @@ export default function AdminEstadisticas() {
     // La escala para usuarios se basa en el total en BD; para el resto, en el máximo real
     const totalUsuariosNum = parseInt(stats.totalUsuarios, 10) || 1;
     const maxVal =
-        activeChart === "users"
+        activeChart === "users" && period === "year"
             ? Math.max(totalUsuariosNum, actualMax, 1)
             : Math.max(actualMax, 1);
 
@@ -213,11 +209,13 @@ export default function AdminEstadisticas() {
                         </div>
 
                         <motion.button
-                            whileHover={{ rotate: 180 }}
+                            onClick={fetchStats}
+                            disabled={refreshing}
+                            whileHover={{ rotate: refreshing ? 0 : 180 }}
                             transition={{ duration: 0.4 }}
-                            className="p-2.5 rounded-xl bg-white border border-green-100 text-green-400 hover:text-green-600 shadow-sm hover:shadow-md transition-all"
+                            className="p-2.5 rounded-xl bg-white border border-green-100 text-green-400 hover:text-green-600 shadow-sm hover:shadow-md transition-all disabled:opacity-60"
                         >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                         </motion.button>
                     </div>
                 </motion.div>
@@ -334,7 +332,7 @@ export default function AdminEstadisticas() {
 
                         <AnimatePresence mode="wait">
                             <motion.div
-                                key={activeChart}
+                                key={`${activeChart}-${period}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
@@ -345,7 +343,7 @@ export default function AdminEstadisticas() {
                                 <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-2">
                                     {[100, 75, 50, 25, 0].map((pctLabel) => (
                                         <div key={pctLabel} className="flex items-center gap-1">
-                                            <span className="w-7 text-right text-[9px] font-semibold text-green-300 shrink-0">
+                                            <span className="w-7 text-right text-[9px] font-semibold text-green-500 shrink-0">
                                                 {pctLabel}%
                                             </span>
                                             <div className="flex-1 h-px border-t border-dashed border-green-100" />
@@ -354,12 +352,12 @@ export default function AdminEstadisticas() {
                                 </div>
 
                                 {/* Barras */}
-                                <div className="flex items-stretch gap-1.5 h-56 pb-8 pl-7 pt-2">
+                                <div className={`flex items-stretch h-56 pb-8 pl-7 pt-2 ${bars.length > 12 ? 'gap-[2px]' : 'gap-1.5'}`}>
                                     {bars.map((bar, i) => {
                                         const pct = maxVal > 0 ? (bar.value / maxVal) * 100 : 0;
                                         const barPct = bar.value > 0 ? Math.max(pct, 4) : 3;
                                         return (
-                                            <div key={bar.label} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                            <div key={`${bar.label}-${i}`} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                                                 {/* Tooltip valor */}
                                                 {bar.value > 0 && (
                                                     <span className="absolute top-0 text-[10px] font-bold text-green-700 opacity-0 group-hover:opacity-100 transition-all bg-green-50 rounded px-1 z-10 whitespace-nowrap">
@@ -370,7 +368,7 @@ export default function AdminEstadisticas() {
                                                 <motion.div
                                                     initial={{ scaleY: 0 }}
                                                     animate={{ scaleY: 1 }}
-                                                    transition={{ duration: 0.5, delay: i * 0.035, ease: [0.34, 1.1, 0.64, 1] }}
+                                                    transition={{ duration: 0.5, delay: i * (bars.length > 12 ? 0.015 : 0.035), ease: [0.34, 1.1, 0.64, 1] }}
                                                     className="w-full rounded-t-md cursor-default"
                                                     style={{
                                                         height: `${barPct}%`,
@@ -380,8 +378,14 @@ export default function AdminEstadisticas() {
                                                         transformOrigin: "bottom",
                                                     }}
                                                 />
-                                                {/* Label mes */}
-                                                <span className="text-[9px] text-green-300 font-medium absolute -bottom-6">{bar.label}</span>
+                                                {/* Label */}
+                                                <span className={`font-medium absolute -bottom-6 whitespace-nowrap ${
+                                                    bars.length > 12
+                                                        ? 'text-[7px] text-green-500'
+                                                        : 'text-[9px] text-green-500'
+                                                } ${bars.length > 20 && i % 2 !== 0 ? 'hidden' : ''}`}>
+                                                    {bar.label}
+                                                </span>
                                             </div>
                                         );
                                     })}

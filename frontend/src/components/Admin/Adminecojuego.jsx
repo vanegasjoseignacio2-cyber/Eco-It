@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Gamepad2,
@@ -59,9 +59,36 @@ export default function AdminEcojuego() {
     const [missions, setMissions] = useState(MOCK_MISSIONS);
     const [showForm, setShowForm] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     // TODO: form state conectar con POST /api/admin/game/missions para crear
     const [form, setForm] = useState({ title: "", description: "", type: "recycling", points: 50 });
+
+    // Fetch game data from API (will use real endpoint when available)
+    const fetchGameData = useCallback(async () => {
+        setLoading(true);
+        try {
+            // TODO: Replace with real API calls:
+            // const [missionsRes, leaderboardRes, statsRes] = await Promise.all([
+            //   fetch('/api/admin/game/missions', { headers: { Authorization: `Bearer ${token}` } }),
+            //   fetch('/api/admin/game/leaderboard?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
+            //   fetch('/api/admin/game/stats', { headers: { Authorization: `Bearer ${token}` } }),
+            // ]);
+
+            // Simulated refresh: reset to source data
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            setMissions([...MOCK_MISSIONS]);
+        } catch (error) {
+            console.error('Error al obtener datos del juego:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Initial load
+    useEffect(() => {
+        fetchGameData();
+    }, [fetchGameData]);
 
     const handleToggle = (id) => {
         // TODO: PATCH /api/admin/game/missions/:id/toggle → activa o desactiva misión en BD
@@ -103,12 +130,14 @@ export default function AdminEcojuego() {
 
                     <div className="flex items-center gap-2">
                         <motion.button
+                            onClick={fetchGameData}
                             whileHover={{ rotate: 180 }}
                             transition={{ duration: 0.4 }}
-                            // TODO: onClick → refetch missions y leaderboard desde BD
-                            className="p-2.5 rounded-xl bg-white border border-green-200 text-green-600 hover:shadow-md transition-all"
+                            // TODO: refetch real missions y leaderboard desde BD
+                            className={`p-2.5 rounded-xl bg-white border border-green-200 text-green-600 hover:shadow-md transition-all ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                            disabled={loading}
                         >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </motion.button>
 
                         <motion.button

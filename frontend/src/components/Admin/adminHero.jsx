@@ -81,23 +81,29 @@ export default function AdminHero() {
     const [totalUsuarios, setTotalUsuarios] = useState(0);
     const [consultasHoy, setConsultasHoy] = useState(0);
     const [totalPuntos, setTotalPuntos] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchStats = async () => {
+        if (!token) return;
+        setRefreshing(true);
+        try {
+            const res = await fetch('http://localhost:3000/api/admin/stats', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setTotalUsuarios(data.totalUsuarios);
+                setConsultasHoy(data.consultasHoy || 0);
+                setTotalPuntos(data.totalPuntos || 0);
+            }
+        } catch (error) {
+            console.error('Error al obtener stats:', error);
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await fetch('http://localhost:3000/api/admin/stats', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    setTotalUsuarios(data.totalUsuarios);
-                    setConsultasHoy(data.consultasHoy || 0);
-                    setTotalPuntos(data.totalPuntos || 0);
-                }
-            } catch (error) {
-                console.error('Error al obtener stats:', error);
-            }
-        };
         if (token) fetchStats();
     }, [token]);
 
@@ -130,24 +136,12 @@ export default function AdminHero() {
                     <motion.button
                         whileHover={{ y: -5, scale: 1.05 }}
                         transition={{ duration: 0.2 }}
-                        onClick={() => {
-                            if (!token) return;
-                            fetch('http://localhost:3000/api/admin/stats', {
-                                headers: { Authorization: `Bearer ${token}` }
-                            })
-                                .then(r => r.json())
-                                .then(data => { 
-                                    if (data.success) {
-                                        setTotalUsuarios(data.totalUsuarios);
-                                        setConsultasHoy(data.consultasHoy || 0);
-                                        setTotalPuntos(data.totalPuntos || 0);
-                                    }
-                                });
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-green-200 text-green-700 text-sm font-medium shadow-sm hover:shadow-md hover:border-green-400 transition-all"
+                        onClick={fetchStats}
+                        disabled={refreshing}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-green-200 text-green-700 text-sm font-medium shadow-sm hover:shadow-md hover:border-green-400 transition-all disabled:opacity-60"
                     >
-                        <RefreshCw className="w-4 h-4" />
-                        Actualizar
+                        <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        {refreshing ? 'Actualizando...' : 'Actualizar'}
                     </motion.button>
                 </motion.div>
 

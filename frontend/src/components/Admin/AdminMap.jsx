@@ -446,12 +446,12 @@ export default function AdminMap() {
                                 Mapa de Puntos
                             </h2>
                         </div>
-                        {/* TODO: onClick → refetch points desde BD */}
                         <motion.button
                             onClick={fetchPoints}
-                            whileHover={{ rotate: 180 }}
+                            disabled={loading}
+                            whileHover={{ rotate: loading ? 0 : 180 }}
                             transition={{ duration: 0.4 }}
-                            className="p-2 rounded-xl bg-green-50 text-green-400 hover:text-green-600 hover:bg-green-100 transition-colors"
+                            className={`p-2 rounded-xl bg-green-50 text-green-400 hover:text-green-600 hover:bg-green-100 transition-colors ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </motion.button>

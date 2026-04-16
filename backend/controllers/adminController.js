@@ -219,10 +219,61 @@ export const obtenerStats = async (req, res) => {
         }
         const mejorMes = totalUsuarios > 0 && Math.max(...registroPorMes) > 0 ? mesesLabel[maxMesInt] : '—';
 
+        // ── Datos diarios para los últimos 30 días ─────────────────────
+        const hace30dias = new Date();
+        hace30dias.setDate(hace30dias.getDate() - 30);
+        hace30dias.setHours(0, 0, 0, 0);
+
+        const hace7dias = new Date();
+        hace7dias.setDate(hace7dias.getDate() - 7);
+        hace7dias.setHours(0, 0, 0, 0);
+
+        // Generar etiquetas de días para los últimos 30 días
+        const diasLabels30 = [];
+        const diasLabels7 = [];
+        for (let i = 29; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key = d.toISOString().split('T')[0];
+            const label = `${d.getDate()}/${d.getMonth() + 1}`;
+            diasLabels30.push({ key, label });
+            if (i < 7) diasLabels7.push({ key, label });
+        }
+
+        // Agrupar registros de usuarios por día
+        const usuariosPorDia = {};
+        usuarios.forEach(user => {
+            if (user.createdAt) {
+                const fechaStr = new Date(user.createdAt).toISOString().split('T')[0];
+                usuariosPorDia[fechaStr] = (usuariosPorDia[fechaStr] || 0) + 1;
+            }
+        });
+
+        // Agrupar consultas por día
+        const consultasPorDia = {};
+        todosLosChats.forEach(chat => {
+            if (chat.mensajes && chat.mensajes.length > 0) {
+                chat.mensajes.forEach(msg => {
+                    if (msg.role === 'user' && msg.content && !msg.content.includes("Imagen enviada para análisis de datos")) {
+                        const fecha = new Date(msg.fecha || chat.updatedAt || chat.createdAt);
+                        const fechaStr = fecha.toISOString().split('T')[0];
+                        consultasPorDia[fechaStr] = (consultasPorDia[fechaStr] || 0) + 1;
+                    }
+                });
+            }
+        });
+
         // Estructura Chart Data
         const chartData = {
+            // Datos anuales (por mes)
             users: mesesLabel.map((m, i) => ({ label: m, value: activosPorMes[i] })),
             queries: mesesLabel.map((m, i) => ({ label: m, value: consultasPorMes[i] })),
+            // Datos mensuales (por día, últimos 30 días)
+            usersMonth: diasLabels30.map(d => ({ label: d.label, value: usuariosPorDia[d.key] || 0 })),
+            queriesMonth: diasLabels30.map(d => ({ label: d.label, value: consultasPorDia[d.key] || 0 })),
+            // Datos semanales (por día, últimos 7 días)
+            usersWeek: diasLabels7.map(d => ({ label: d.label, value: usuariosPorDia[d.key] || 0 })),
+            queriesWeek: diasLabels7.map(d => ({ label: d.label, value: consultasPorDia[d.key] || 0 })),
         };
 
         res.json({
