@@ -335,7 +335,7 @@ aiRouter.post("/analizar-imagen", async (req, res) => {
 
       const io = req.app.get("io");
       if (io) {
-        io.emit("admin:alerta_obscena", {
+        io.to("admins").emit("admin:alerta_obscena", {
           email: req.usuario.email,
           nombre: req.usuario.nombre,
           fecha: new Date(),

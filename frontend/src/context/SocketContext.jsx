@@ -12,48 +12,52 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
   const { token, usuario } = useAuth();
-  const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
   const [usuariosOnline, setUsuariosOnline] = useState(0);
 
   useEffect(() => {
     // No connect if there's no token (not authenticated)
-    if (!token) return;
+    if (!token) {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
+      return;
+    }
 
     const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
     // Create socket with token in auth (server should validate)
-    const socket = io(backend, {
+    const newSocket = io(backend, {
       auth: { token },
       transports: ['websocket'],
       reconnectionAttempts: 5,
     });
 
-    socketRef.current = socket;
+    setSocket(newSocket);
 
-    socket.on('connect', () => {
-      socket.emit('usuario:conectado', usuario);
+    newSocket.on('connect', () => {
+      newSocket.emit('usuario:conectado', usuario);
     });
 
     // Escuchar conteo de usuarios online
-    socket.on('usuarios:online', (count) => {
+    newSocket.on('usuarios:online', (count) => {
       setUsuariosOnline(count);
     });
 
-    socket.on('disconnect', (reason) => {
+    newSocket.on('disconnect', (reason) => {
       console.log('Socket desconectado:', reason);
     });
 
     // Cleanup
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
+      newSocket.disconnect();
+      setSocket(null);
     };
   }, [token]);
 
   const value = {
-    socket: socketRef.current,
+    socket,
     usuariosOnline,
   };
 

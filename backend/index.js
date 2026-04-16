@@ -83,6 +83,17 @@ io.on('connection', (socket) => {
             }
         }
 
+        // Refrescar el rol desde la BD para asegurar permisos actuales
+        try {
+            const userInDb = await User.findById(userId).select('rol');
+            if (userInDb && (userInDb.rol === 'admin' || userInDb.rol === 'superadmin')) {
+                socket.join('admins');
+                console.log(`Socket ${socket.id} unido a sala 'admins' (Rol: ${userInDb.rol})`);
+            }
+        } catch (e) {
+            console.error('Error al verificar rol para sala admins:', e.message);
+        }
+
         io.emit('usuarios:online', usuariosConectados.size);
         console.log(`${usuario.nombre} conectado. Total usuarios únicos: ${usuariosConectados.size}`);
     });

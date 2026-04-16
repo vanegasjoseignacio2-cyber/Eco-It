@@ -32,6 +32,24 @@ export const cambiarRolUsuario = async (req, res) => {
         usuario.rol = rol;
         await usuario.save();
 
+        // Actualizar salas de socket en tiempo real
+        const io = req.app.get("io");
+        if (io && usuariosConectados.has(id)) {
+            const data = usuariosConectados.get(id);
+            data.sockets.forEach(socketId => {
+                const s = io.sockets.sockets.get(socketId);
+                if (s) {
+                    if (rol === 'admin') {
+                        s.join('admins');
+                        console.log(`Socket ${socketId} unido dinámicamente a 'admins'`);
+                    } else {
+                        s.leave('admins');
+                        console.log(`Socket ${socketId} removido dinámicamente de 'admins'`);
+                    }
+                }
+            });
+        }
+
         res.status(200).json({ success: true, mensaje: `El rol del usuario ha sido cambiado a ${rol}`, usuario });
     } catch (error) {
         console.error("Error al cambiar rol:", error);
