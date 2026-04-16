@@ -618,9 +618,9 @@ export default function RegisterForm() {
                                         />
                                         <span>
                                             Acepto los{" "}
-                                            <a href="#" className="text-green-600 font-semibold hover:underline">términos de servicio</a>
+                                            <a href="/terminosycondiciones" className="text-green-600 font-semibold hover:underline">términos y condiciones</a>
                                             {" "}y la{" "}
-                                            <a href="#" className="text-green-600 font-semibold hover:underline">política de privacidad</a>
+                                            <a href="/politicadeprivacidad" className="text-green-600 font-semibold hover:underline">política de privacidad</a>
                                         </span>
                                     </motion.label>
                                     {touched.acceptTerms && !acceptTerms && (

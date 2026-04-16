@@ -14,6 +14,8 @@ import ProfileEcoIt    from "./components/Perfil/Perfil";
 import EditProfile     from "./components/Perfil/EditarPefil";
 import GamePage        from "./components/pages/GamePage";
 import AdminLayout     from "./components/pages/AdminLayout";
+import PoliticaDePrivacidad from "./components/legal/Politicadeprivacidad";
+import TerminosYCondiciones from "./components/legal/Terminosycondiciones";
 
 // ── Guards ───────────────────────────────────────────────────────────────────
 import PrivateRoute  from "./context/PrivateRoute";
@@ -36,6 +38,8 @@ function App() {
         <Route path="/"        element={<AdminRestrictionGuard><Home /></AdminRestrictionGuard>} />
         <Route path="/contact" element={<AdminRestrictionGuard><Contact /></AdminRestrictionGuard>} />
         <Route path="/maps"    element={<AdminRestrictionGuard><Mapapage /></AdminRestrictionGuard>} />
+        <Route path="/politicadeprivacidad" element={<AdminRestrictionGuard><PoliticaDePrivacidad /></AdminRestrictionGuard>} />
+        <Route path="/terminosycondiciones"    element={<AdminRestrictionGuard><TerminosYCondiciones /></AdminRestrictionGuard>} />
 
         {/* ── Solo sin sesión activa ───────────────────────────────────────── */}
         <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
