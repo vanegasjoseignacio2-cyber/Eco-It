@@ -10,12 +10,12 @@ const socials = [
 
 export default function SocialLinks() {
     return (
-        <div className="bg-white/70 rounded-2xl p-6">
+        <div className="bg-white/70 rounded-2xl p-6 text-center lg:text-left">
             <h3 className="font-semibold text-green-900 mb-4">
                 Síguenos en redes
             </h3>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 justify-center lg:justify-start">
                 {socials.map((social) => {
                     const Icon = social.icon;
 

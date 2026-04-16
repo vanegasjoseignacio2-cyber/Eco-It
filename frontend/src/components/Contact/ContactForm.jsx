@@ -19,6 +19,8 @@ const PALABRAS_OFENSIVAS = [
     'sapa','sapo','gordo','gorda','carechimba','caremondá','caremonda',
     'chimba','chimbo','penes','vagina','pelado marica','hpta','hijpta',
     'mk','mka','marik','marika','mar1ca','mar!ca','hptas','maricones','tetranutras','tetranutra',
+    'pene',
+
     'sapas','porno','pornografía','xvideos','porn hub','pornhub','mlp','tragaleche','culean',
     'soplamonda','pichaslargas','culear','culito','mia khalifa','polla','zunga','sunga','soplapicha',
     'consolador','mal parido','malparido','malparidos','becerro','mrd','qulo','kulo','teta','chocho',
@@ -158,8 +160,10 @@ const PALABRAS_BOUNDARY_ESTRICTO = [
  * Se filtran mediante SAFE_WORDS para evitar falsos positivos.
  */
 const PALABRAS_SUBSTRING = [
+    // Se mantiene aquí también para detectar 'tengopene', etc.
     'pene',
 ];
+
 
 /**
  * Whitelist de palabras seguras que contienen substrings ofensivos pero son válidas.
@@ -726,16 +730,16 @@ export default function ContactForm() {
             <div className="glass-card rounded-3xl p-8 md:p-10 shadow-xl bg-white/60 border-2 border-green-300">
 
                 {/* Cabecera */}
-                <h2 className="text-2xl flex gap-2 items-center md:text-3xl font-bold text-green-900 mb-2">
+                <h2 className="text-2xl flex gap-2 items-center justify-center md:justify-start md:text-3xl font-bold text-green-900 mb-2">
                     <SendHorizonal className="w-6 h-6 inline" />
                     Envíanos un mensaje
                 </h2>
-                <p className="text-green-600 mb-1">
+                <p className="text-green-600 mb-1 text-center md:text-left">
                     Completa el formulario y te responderemos lo antes posible.
                 </p>
 
                 {/* Badge sesión */}
-                <div className="mb-6">
+                <div className="mb-6 flex justify-center md:justify-start">
                     {user ? (
                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold
                                          bg-green-100 text-green-700 border border-green-300

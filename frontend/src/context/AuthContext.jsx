@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import { useToast } from './ToastContext';
+import { AUTH_EXPIRED_EVENT } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -27,22 +29,31 @@ export const AuthProvider = ({ children }) => {
       cargarUsuario();
     };
 
+    const handleAuthExpired = () => {
+      console.warn('Sesión expirada - Redirigiendo a login');
+      logout();
+      showToast('Su sesión ha expirado. Por favor, inicie sesión nuevamente.', 'error', 5000);
+      navigate('/login', { replace: true });
+    };
+
     window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
 
     return () => {
       window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
     };
   }, []);
 
   const cargarUsuario = () => {
-    // Intentar cargar de localStorage primero (usuarios normales)
-    let tokenGuardado = localStorage.getItem('token');
-    let usuarioGuardado = localStorage.getItem('usuario');
+    // Intentar cargar de sessionStorage primero (sesiones volátiles / admins)
+    let tokenGuardado = sessionStorage.getItem('token');
+    let usuarioGuardado = sessionStorage.getItem('usuario');
 
-    // Si no está en localStorage, buscar en sessionStorage (admins)
+    // Si no está en sessionStorage, buscar en localStorage (usuarios con 'Recordarme')
     if (!tokenGuardado) {
-      tokenGuardado = sessionStorage.getItem('token');
-      usuarioGuardado = sessionStorage.getItem('usuario');
+      tokenGuardado = localStorage.getItem('token');
+      usuarioGuardado = localStorage.getItem('usuario');
     }
 
     if (tokenGuardado && usuarioGuardado) {
@@ -79,18 +90,20 @@ export const AuthProvider = ({ children }) => {
    */
   const login = (tokenNuevo, usuarioNuevo, redirectOverride = null) => {
     const isAdmin = usuarioNuevo.rol === "admin" || usuarioNuevo.rol === "superadmin";
-    const storage = isAdmin ? sessionStorage : localStorage;
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    
+    // Si es admin o no marcó 'Recordarme', usamos sessionStorage
+    const storage = (isAdmin || !rememberMe) ? sessionStorage : localStorage;
 
     localStorage.setItem("sesionActiva", "true");
     storage.setItem('token', tokenNuevo);
     storage.setItem('usuario', JSON.stringify(usuarioNuevo));
 
-    // Si es admin, nos aseguramos de que no haya restos en localStorage
-    if (isAdmin) {
+    // Limpiar el otro storage para evitar inconsistencias
+    if (storage === sessionStorage) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
     } else {
-      // Si es usuario normal, limpiamos sessionStorage por si acaso
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('usuario');
     }

@@ -132,6 +132,17 @@ aiRouter.delete("/chats/:id", verificarToken, async (req, res) => {
   }
 });
 
+// DELETE /api/ai/chats (Todos los chats del usuario)
+aiRouter.delete("/chats", verificarToken, async (req, res) => {
+  try {
+    await Chat.deleteMany({ userId: req.usuario._id });
+    res.json({ success: true, message: "Todos los chats han sido eliminados" });
+  } catch (error) {
+    console.error("Error al eliminar todos los chats:", error);
+    res.status(500).json({ error: "Error al eliminar todos los chats" });
+  }
+});
+
 // -----------------------------------------------------
 
 // POST /api/ai/consultar

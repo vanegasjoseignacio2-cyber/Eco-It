@@ -51,7 +51,7 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
 
                     {/* Brand */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 flex flex-col items-center md:items-start text-center md:text-left">
                         <Link to="/" className="flex items-center gap-2">
                             <motion.div
                                 whileHover={{ rotate: 360 }}
@@ -63,12 +63,12 @@ export default function Footer() {
                             <span className="text-3xl font-bold">Eco-It</span>
                         </Link>
 
-                        <p className="text-green-100/80 leading-relaxed">
+                        <p className="text-green-100/80 leading-relaxed max-w-sm">
                             Transformando el mundo a través de la tecnología y la conciencia
                             ecológica. Juntos podemos hacer la diferencia.
                         </p>
 
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 justify-center md:justify-start">
                             {socialLinks.map((social) => (
                                 <motion.a
                                     key={social.label}
@@ -84,7 +84,7 @@ export default function Footer() {
                     </div>
 
                     {/* Navegación */}
-                    <div>
+                    <div className="text-center md:text-left">
                         <h3 className="text-lg font-semibold mb-6">Navegación</h3>
                         <ul className="space-y-3">
                             {footerLinks.navegacion.map((link) => (
@@ -101,7 +101,7 @@ export default function Footer() {
                     </div>
 
                     {/* Recursos */}
-                    <div>
+                    <div className="text-center md:text-left">
                         <h3 className="text-lg font-semibold mb-6">Recursos</h3>
                         <ul className="space-y-3">
                             {footerLinks.recursos.map((link) => (
@@ -118,18 +118,18 @@ export default function Footer() {
                     </div>
 
                     {/* Contacto */}
-                    <div>
+                    <div className="text-center md:text-left">
                         <h3 className="text-lg font-semibold mb-6">Contacto</h3>
                         <ul className="space-y-4">
-                            <li className="flex items-center gap-3 text-green-100/70">
+                            <li className="flex items-center justify-center md:justify-start gap-3 text-green-100/70">
                                 <Mail className="w-5 h-5 text-green-400" />
                                 <span>contacto@eco-it.com</span>
                             </li>
-                            <li className="flex items-center gap-3 text-green-100/70">
+                            <li className="flex items-center justify-center md:justify-start gap-3 text-green-100/70">
                                 <Phone className="w-5 h-5 text-green-400" />
                                 <span>+57 123 456 7890</span>
                             </li>
-                            <li className="flex items-start gap-3 text-green-100/70">
+                            <li className="flex items-start justify-center md:justify-start gap-3 text-green-100/70">
                                 <MapPin className="w-5 h-5 text-green-400 flex-shrink-0" />
                                 <span>Garzón-Huila, Colombia</span>
                             </li>
@@ -139,16 +139,16 @@ export default function Footer() {
 
                 {/* Bottom */}
                 <div className="mt-12 pt-8 border-t border-white/10">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
                         <p className="text-green-100/60 text-sm">
                             © 2026 Eco-It. Todos los derechos reservados.
                         </p>
 
-                        <div className="flex items-center gap-2 text-green-100/60 text-sm">
+                        <div className="flex items-center justify-center gap-2 text-green-100/60 text-sm">
                             <span>Impulsando la sostenibilidad ambiental</span>
                         </div>
 
-                        <div className="flex gap-6">
+                        <div className="flex flex-wrap justify-center gap-6">
                             {footerLinks.legal.map((link) => (
                                 <a
                                     key={link.name}

@@ -1,5 +1,7 @@
 const BASE_URL = 'http://localhost:3000/api';
 
+export const AUTH_EXPIRED_EVENT = 'auth-expired';
+
 // Función auxiliar para hacer peticiones
 const fetchAPI = async (endpoint, options = {}) => {
   try {
@@ -22,6 +24,9 @@ const fetchAPI = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
+      if (response.status === 401) {
+        window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+      }
       throw new Error(data.message || data.mensaje || 'Error en la petición');
     }
 
@@ -122,7 +127,7 @@ export const restablecerPassword = async (email, codigo, password) => {
 
 // ============= IA =============
 
-export const consultarIA = async (token, pregunta, chatId, onChunk) => {
+export const consultarIA = async (token, pregunta, chatId, onChunk, signal) => {
   const response = await fetch(`${BASE_URL}/ai/consultar`, {
     method: 'POST',
     headers: {
@@ -130,10 +135,14 @@ export const consultarIA = async (token, pregunta, chatId, onChunk) => {
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ pregunta, chatId }),
+    signal,
   });
 
   if (!response.ok) {
     const data = await response.json();
+    if (response.status === 401) {
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
     throw new Error(data.message || data.mensaje || 'Error en la petición');
   }
 
@@ -161,13 +170,14 @@ export const consultarIA = async (token, pregunta, chatId, onChunk) => {
   }
 };
 
-export const analizarImagen = async (token, imagen, contexto = '', chatId = null) => {
+export const analizarImagen = async (token, imagen, contexto = '', chatId = null, signal) => {
   return fetchAPI('/ai/analizar-imagen', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ imagen, contexto, chatId }),
+    signal,
   });
 };
 
@@ -191,6 +201,15 @@ export const obtenerChat = async (token, id) => {
 
 export const eliminarChat = async (token, id) => {
   return fetchAPI(`/ai/chats/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+};
+
+export const eliminarTodosLosChats = async (token) => {
+  return fetchAPI('/ai/chats', {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
