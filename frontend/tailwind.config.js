@@ -5,7 +5,17 @@ export default {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      animation: {
+        'slide-left-infinite': 'slide-left 25s linear infinite',
+      },
+      keyframes: {
+        'slide-left': {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-100%)' },
+        },
+      },
+    },
   },
   plugins: [],
 }

@@ -3,7 +3,7 @@ import Footer from "../Layout/Footer";
 import { FadeInUp, FadeInLeft, ScaleIn } from "../animations/Animatedlogin"; // ButtonMotion removed
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Leaf, Eye, EyeOff, Lock } from "lucide-react"; // Added Eye, EyeOff, Lock
+import { Leaf, Eye, EyeOff, Lock, Check } from "lucide-react"; // Added Eye, EyeOff, Lock, Check
 import { recuperarPassword, verificarCodigo, restablecerPassword, reenviarCodigo } from "../../services/api"; // Added restablecerPassword, reenviarCodigo
 export default function RecuperarPassword() {
     const navigate = useNavigate();
@@ -44,6 +44,7 @@ export default function RecuperarPassword() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Estado del temporizador — se restaura desde localStorage si el componente fue remontado
     const [timeLeft, setTimeLeft] = useState(calcTimeLeft);
@@ -69,7 +70,15 @@ export default function RecuperarPassword() {
     const isValidCode = /^\d{6}$/.test(code);
     const codeEmpty = code.trim() === "";
 
-    const passwordMatch = password === confirmPassword && password.length >= 6;
+    const passwordRequirements = [
+        { text: "Al menos 8 caracteres", met: password.length >= 8 },
+        { text: "Una letra mayúscula", met: /[A-Z]/.test(password) },
+        { text: "Una letra minúscula", met: /[a-z]/.test(password) },
+        { text: "Un número", met: /[0-9]/.test(password) },
+        { text: "Las contraseñas coinciden", met: password === confirmPassword && password.length > 0 },
+    ];
+
+    const passwordValid = passwordRequirements.every(req => req.met);
     const passwordEmpty = password === "";
 
     // Paso 1: Enviar Email
@@ -164,8 +173,8 @@ export default function RecuperarPassword() {
     // Paso 3: Nueva Contraseña
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
-        if (!passwordMatch) {
-            setError("Las contraseñas no coinciden o son muy cortas (min 6 caracteres)");
+        if (!passwordValid) {
+            setError("La contraseña no cumple con todos los requisitos.");
             return;
         }
 
@@ -317,30 +326,53 @@ export default function RecuperarPassword() {
                                                         value={password}
                                                         onChange={(e) => setPassword(e.target.value)}
                                                         className="w-full pl-10 pr-10 py-3.5 rounded-xl bg-white border-2 border-green-200 focus:border-green-500 outline-none transition-all text-green-900 placeholder-green-400"
-                                                        placeholder="Mínimo 6 caracteres"
+                                                        placeholder="Mínimo 8 caracteres"
                                                     />
                                                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800">
                                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                                     </button>
                                                 </div>
-                                            </div>
-
-                                            {/* Confirmar Contraseña */}
+                                                 {/* Confirmar Contraseña */}
                                             <div>
                                                 <label className="block text-sm font-semibold text-green-800 mb-2">Confirmar Contraseña</label>
                                                 <div className="relative">
                                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
                                                     <input
-                                                        type={showPassword ? "text" : "password"}
+                                                        type={showConfirmPassword ? "text" : "password"}
                                                         value={confirmPassword}
                                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                                        className={`w-full pl-10 pr-10 py-3.5 rounded-xl bg-white border-2 ${!passwordMatch && confirmPassword ? "border-red-300 focus:border-red-500" : "border-green-200 focus:border-green-500"} outline-none transition-all text-green-900 placeholder-green-400`}
+                                                        className={`w-full pl-10 pr-10 py-3.5 rounded-xl bg-white border-2 ${password !== confirmPassword && confirmPassword ? "border-red-300 focus:border-red-500" : "border-green-200 focus:border-green-500"} outline-none transition-all text-green-900 placeholder-green-400`}
                                                         placeholder="Repite la contraseña"
                                                     />
+                                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800">
+                                                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    </button>
                                                 </div>
-                                                {!passwordMatch && confirmPassword && (
+                                             </div>
+                                                {!passwordValid && confirmPassword && password === confirmPassword && (
+                                                    <p className="mt-1 text-xs text-red-600">La contraseña no cumple con los requisitos mínimos.</p>
+                                                )}
+                                                {password !== confirmPassword && confirmPassword && (
                                                     <p className="mt-1 text-xs text-red-600">Las contraseñas no coinciden.</p>
                                                 )}
+                                            </div>
+
+                                            {/* Requisitos de contraseña — lista vertical (igual que el original) */}
+                                            <div className="space-y-2 pt-2 px-1">
+                                                {passwordRequirements.map((req, i) => (
+                                                    <motion.div
+                                                        key={i}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: 0.1 * i, duration: 0.4 }}
+                                                        className={`flex items-center gap-2 text-xs sm:text-sm transition-colors ${req.met ? "text-green-600" : "text-gray-500"}`}
+                                                    >
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${req.met ? "bg-green-500 scale-100" : "bg-gray-300 scale-90"}`}>
+                                                            {req.met && <Check className="w-3 h-3 text-white" />}
+                                                        </div>
+                                                        {req.text}
+                                                    </motion.div>
+                                                ))}
                                             </div>
                                         </motion.div>
                                     )}
@@ -348,7 +380,7 @@ export default function RecuperarPassword() {
                                     {/* Botón de Acción Principal CORRECTAMENTE INTEGRADO */}
                                     <motion.button
                                         type="submit"
-                                        disabled={loading || (step === 'email' && (!isValidEmail || emailEmpty)) || (step === 'code' && (!isValidCode || codeEmpty)) || (step === 'password' && !passwordMatch)}
+                                        disabled={loading || (step === 'email' && (!isValidEmail || emailEmpty)) || (step === 'code' && (!isValidCode || codeEmpty)) || (step === 'password' && !passwordValid)}
                                         whileHover={!loading ? { scale: 1.02, boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)" } : {}}
                                         whileTap={!loading ? { scale: 0.98 } : {}}
                                         className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-95 text-white font-semibold py-4 rounded-xl transition-all shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed text-lg tracking-wide"

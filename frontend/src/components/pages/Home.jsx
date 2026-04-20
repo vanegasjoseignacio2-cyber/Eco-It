@@ -7,7 +7,8 @@ import Index from "../Home/Index";
 import Ecogame from "../Home/Game";
 import Section from "../Home/Section";
 import { useCookieConsent } from "../../context/Cookieconsentcontext";
-import EcoCarousel from "../Home/carrusel";
+import EcoCarousel from "../ui/Carrusel";
+import Carrusel from "../ui/LogoCarousel";
 
 export default function Home() {
     const [loading, setLoading] = useState(() => {
@@ -38,6 +39,7 @@ export default function Home() {
             <Index />
             <EcoCarousel />
             <Ecogame />
+            <Carrusel />
             <Section />
             <Footer />
         </>

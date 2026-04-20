@@ -41,7 +41,7 @@ const httpServer = createServer(app);
 // Configurar Socket.io
 export const io = new Server(httpServer, {
     cors: {
-        origin: 'http://localhost:5173',
+        origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
         methods: ['GET', 'POST']
     }
 });
@@ -154,7 +154,7 @@ app.use(helmet({
 
 // Restricción de CORS
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

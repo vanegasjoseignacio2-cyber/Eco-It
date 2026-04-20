@@ -66,6 +66,7 @@ export default function RegisterForm() {
 
     // ── Estado formulario (idéntico al original) ──────────────────────────────
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [name, setName] = useState("");
     const [lastname, setLastname] = useState("");
     const [age, setAge] = useState("");
@@ -540,7 +541,7 @@ export default function RegisterForm() {
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                                                placeholder="••••••••"
+                                                placeholder="Mínimo 8 caracteres"
                                                 disabled={loading}
                                                 className={`w-full pl-12 pr-12 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${touched.password && isEmpty(password) ? "border-red-400" : "border-green-200"}`}
                                                 required
@@ -569,15 +570,23 @@ export default function RegisterForm() {
                                         <div className="relative">
                                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
                                             <input
-                                                type={showPassword ? "text" : "password"}
+                                                type={showConfirmPassword ? "text" : "password"}
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                                 onBlur={() => setTouched((t) => ({ ...t, confirmPassword: true }))}
-                                                placeholder="••••••••"
+                                                placeholder="Mínimo 8 caracteres"
                                                 disabled={loading}
-                                                className={`w-full pl-12 pr-4 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${confirmPassword.length > 0 && confirmPassword !== password ? "border-red-400" : "border-green-200"}`}
+                                                className={`w-full pl-12 pr-12 py-3 rounded-xl border bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-green-900 placeholder:text-green-400 disabled:opacity-50 disabled:cursor-not-allowed ${confirmPassword.length > 0 && confirmPassword !== password ? "border-red-400" : "border-green-200"}`}
                                                 required
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                disabled={loading}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 hover:text-green-800 transition-colors disabled:opacity-50"
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
                                         </div>
                                         {confirmPassword.length > 0 && confirmPassword !== password && (
                                             <p className="text-xs text-red-600 mt-1">Las contraseñas no coinciden</p>

@@ -1,5 +1,5 @@
 /**
- * AdamaCarousel.jsx — Imagen completa, sin recortes, responsive
+ * Carrusel.jsx — Imagen completa, sin recortes, responsive
  * ─────────────────────────────────────────────────────────────
  * La imagen define la altura del contenedor (width:100% height:auto).
  * No hay height fijo ni position:absolute en la imagen.
@@ -11,7 +11,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import { motion as Motion, AnimatePresence, useInView } from "framer-motion";
 import { obtenerSlidesPublicos } from "../../services/api";
 
 // ─── SLIDES DE RESPALDO ───────────────────────────────────────────────────────
@@ -62,6 +62,7 @@ function useDynamicSlides() {
         }
     }, []);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { load(); }, [load]);
 
     return slides;
@@ -99,10 +100,10 @@ const sectionVariants = {
 };
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
-export default function AdamaCarousel() {
+export default function Carrusel() {
     const slides = useDynamicSlides();
 
-    const [[current, direction], setCurrent] = useState([0, 1]);
+    const [[current, _direction], setCurrent] = useState([0, 1]);
     const [isPaused, setIsPaused] = useState(false);
 
     const wrapperRef = useRef(null);
@@ -113,6 +114,7 @@ export default function AdamaCarousel() {
     const slide         = displaySlides[current] || displaySlides[0];
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrent(([c]) => [Math.min(c, Math.max(slides.length - 1, 0)), 1]);
     }, [slides.length]);
 
@@ -165,7 +167,7 @@ export default function AdamaCarousel() {
     };
 
     return (
-        <motion.section
+        <Motion.section
             ref={wrapperRef}
             className="ada-outer"
             variants={sectionVariants}
@@ -470,29 +472,29 @@ export default function AdamaCarousel() {
             <div className="ada-inner">
 
                 {/* ── PANEL DE TEXTO ── */}
-                <motion.div
+                <Motion.div
                     className="ada-text-panel"
                     variants={textContainerVariants}
                     initial="hidden"
                     animate={isInView ? "visible" : "hidden"}
                 >
-                    <motion.span className="ada-eyebrow" variants={textItemVariants}>
+                    <Motion.span className="ada-eyebrow" variants={textItemVariants}>
                         <span className="ada-eyebrow-line" />
-                    </motion.span>
+                    </Motion.span>
 
-                    <motion.h2 className="ada-main-title" variants={textItemVariants}>
+                    <Motion.h2 className="ada-main-title" variants={textItemVariants}>
                         Actividades<br />
                         que <em>motivan</em>
-                    </motion.h2>
+                    </Motion.h2>
 
-                    <motion.p className="ada-description" variants={textItemVariants}>
+                    <Motion.p className="ada-description" variants={textItemVariants}>
                         Descubre los eventos y actividades que dan vida a nuestra comunidad.
                         Cada encuentro es una oportunidad de crecer juntos.
-                    </motion.p>
+                    </Motion.p>
 
                     {/* Info del slide activo */}
                     <AnimatePresence mode="wait">
-                        <motion.div
+                        <Motion.div
                             key={slide?._id || slide?.id || current}
                             className="ada-slide-info"
                             initial={{ opacity: 0, x: -10 }}
@@ -509,9 +511,9 @@ export default function AdamaCarousel() {
                             {slide?.subtitle && (
                                 <p className="ada-slide-subtitle">{slide.subtitle}</p>
                             )}
-                        </motion.div>
+                        </Motion.div>
                     </AnimatePresence>
-                </motion.div>
+                </Motion.div>
 
                 {/* ── PANEL CARRUSEL ── */}
                 <div className="ada-carousel-col">
@@ -564,6 +566,6 @@ export default function AdamaCarousel() {
                 </div>
 
             </div>
-        </motion.section>
+        </Motion.section>
     );
 }
