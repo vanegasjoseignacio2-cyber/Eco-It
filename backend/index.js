@@ -160,15 +160,16 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Saneamiento contra inyección NoSQL robusto
-app.use(mongoSanitize());
-
-// Aplicar Rate Limiting global
-app.use(globalLimiter);
+app.set("io", io); // Hacer Socket.io disponible en las rutas
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.set("io", io); // Hacer Socket.io disponible en las rutas
+
+// Saneamiento contra inyección NoSQL robusto - MOVIDO después de parsers
+app.use(mongoSanitize());
+
+// Aplicar Rate Limiting global - MOVIDO después de parsers
+app.use(globalLimiter);
 
 // Sesión y Passport
 app.use(session({

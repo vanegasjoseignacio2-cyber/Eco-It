@@ -3,10 +3,12 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, LogIn, CheckCircle } 
 import { iniciarSesion } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useCookieConsent } from "../../context/Cookieconsentcontext";
+import { useToast } from "../../context/ToastContext";
 
 export default function LoginForm() {
   const { login } = useAuth();
   const { isAccepted, showConsentRequiredToast } = useCookieConsent();
+  const { showToast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -81,22 +83,25 @@ export default function LoginForm() {
       });
 
       console.log('Login exitoso:', response);
-
-      setSuccessMessage("¡Bienvenido de vuelta! 🌱");
+      
+      showToast(`¡Bienvenido de vuelta, ${response.data.usuario.nombre}!`, 'success');
 
       // login() maneja la redirección según el rol (admin → /admin, usuario → /)
       login(response.data.token, response.data.usuario);
 
     } catch (err) {
       console.error('Error en login:', err);
+      const errorMsg = err.message || "Error al iniciar sesión. Verifica tu conexión.";
 
       if (err.message.includes('Credenciales inválidas')) {
         setError("Email o contraseña incorrectos. Verifica tus datos.");
       } else if (err.message.includes('email')) {
         setError("No existe una cuenta con este email.");
       } else {
-        setError(err.message || "Error al iniciar sesión. Verifica tu conexión.");
+        setError(errorMsg);
       }
+      
+      showToast(errorMsg, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -229,7 +234,7 @@ export default function LoginForm() {
             type="submit"
             disabled={isLoading || (isAccepted && !canSubmit)}
             title={!isAccepted ? "Acepta las cookies para iniciar sesión" : ""}
-            className={`w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 ${isLoading || (isAccepted && !canSubmit) || !isAccepted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 ${isLoading || (isAccepted && !canSubmit) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {isLoading ? (
               <>

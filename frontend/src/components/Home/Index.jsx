@@ -19,7 +19,17 @@ const stats = [
     { value: "", label: "Ciudades", icon: TreePine },
 ];
 
+import { useEffect } from "react";
+import { useCookieConsent } from "../../context/Cookieconsentcontext";
+
 export default function Index() {
+    const { checkAndShow } = useCookieConsent();
+
+    useEffect(() => {
+        // Mostrar el banner si no hay consentimiento guardado
+        checkAndShow();
+    }, [checkAndShow]);
+
     return (
         <main>
             {/*HERO*/}
