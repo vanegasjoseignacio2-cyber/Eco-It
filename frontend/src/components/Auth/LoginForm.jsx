@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, LogIn, CheckCircle } from "lucide-react";
 import { iniciarSesion } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { useCookieConsent } from "../../context/Cookieconsentcontext";
 
 export default function LoginForm() {
   const { login } = useAuth();
+  const { isAccepted, showConsentRequiredToast } = useCookieConsent();
 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -49,12 +51,21 @@ export default function LoginForm() {
     : "";
 
   const handleGoogleLogin = () => {
+    if (!isAccepted) {
+      showConsentRequiredToast();
+      return;
+    }
     window.location.href = "http://localhost:3000/api/auth/google";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setHasTriedSubmit(true);
+
+    if (!isAccepted) {
+      showConsentRequiredToast();
+      return;
+    }
 
     setError("");
     setSuccessMessage("");
@@ -216,8 +227,9 @@ export default function LoginForm() {
 
           <button
             type="submit"
-            disabled={isLoading || !canSubmit}
-            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || (isAccepted && !canSubmit)}
+            title={!isAccepted ? "Acepta las cookies para iniciar sesión" : ""}
+            className={`w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 ${isLoading || (isAccepted && !canSubmit) || !isAccepted ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {isLoading ? (
               <>
@@ -247,7 +259,8 @@ export default function LoginForm() {
             <button onClick={handleGoogleLogin}
               type="button"
               disabled={isLoading}
-              className="flex w-full items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!isAccepted ? "Acepta las cookies para iniciar sesión con Google" : ""}
+              className={`flex w-full items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 transition-all font-medium ${isLoading || !isAccepted ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
