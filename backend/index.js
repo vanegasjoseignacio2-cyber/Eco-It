@@ -160,8 +160,14 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Saneamiento contra inyección NoSQL robusto
-app.use(mongoSanitize());
+// Saneamiento contra inyección NoSQL — compatible con Express 5
+// express-mongo-sanitize@2.2.0 intenta reasignar req.query (ahora solo-lectura en Express 5),
+// por lo que sanitizamos req.body y req.params manualmente.
+app.use((req, res, next) => {
+    if (req.body) req.body = mongoSanitize.sanitize(req.body);
+    if (req.params) req.params = mongoSanitize.sanitize(req.params);
+    next();
+});
 
 // Aplicar Rate Limiting global
 app.use(globalLimiter);
