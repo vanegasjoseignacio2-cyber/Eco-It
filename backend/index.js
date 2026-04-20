@@ -165,10 +165,16 @@ app.set("io", io); // Hacer Socket.io disponible en las rutas
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Saneamiento contra inyección NoSQL robusto - MOVIDO después de parsers
-app.use(mongoSanitize());
+// Saneamiento contra inyección NoSQL — compatible con Express 5
+// express-mongo-sanitize@2.2.0 intenta reasignar req.query (ahora solo-lectura en Express 5),
+// por lo que sanitizamos req.body y req.params manualmente.
+app.use((req, res, next) => {
+    if (req.body) req.body = mongoSanitize.sanitize(req.body);
+    if (req.params) req.params = mongoSanitize.sanitize(req.params);
+    next();
+});
 
-// Aplicar Rate Limiting global - MOVIDO después de parsers
+// Aplicar Rate Limiting global
 app.use(globalLimiter);
 
 // Sesión y Passport
