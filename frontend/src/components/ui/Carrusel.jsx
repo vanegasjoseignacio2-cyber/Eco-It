@@ -18,8 +18,8 @@ import { obtenerSlidesPublicos } from "../../services/api";
 const FALLBACK_SLIDES = [
     {
         id: "fallback_1",
-        src: "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=1920&q=80",
-        alt: "Energía solar en la naturaleza",
+        src: "https://hjdoblekhuila.com/media/multimedia/DANTA_DE_MONTA%C3%91A.jpeg",
+        alt: "Nuestra fauna",
         tag: "Energía Limpia",
         title: "Soluciones\nSostenibles",
         subtitle: "Tecnología verde al servicio del planeta.",
