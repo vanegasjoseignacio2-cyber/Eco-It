@@ -22,7 +22,7 @@ const navItems = [
     { id: "ecojuego",    label: "Eco-Juego",    icon: Gamepad2,        badge: null },
     { id: "maps",        label: "Mapas",        icon: Map,             badge: null },
     { id: "images",        label: "Imágenes",   icon: ImagePlus,       badge: null },
-    { id: "ayuda",        label: "Ayuda",   icon: Headset,       badge: null },
+    { id: "help",        label: "Ayuda",   icon: Headset,       badge: null },
 ];
 
 export default function AdminSidebar({ activeSection, setActiveSection }) {
