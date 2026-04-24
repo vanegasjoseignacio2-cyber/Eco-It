@@ -146,7 +146,13 @@ export const AuthProvider = ({ children }) => {
 
   const actualizarUsuario = (usuarioActualizado) => {
     setUsuario(usuarioActualizado);
-    localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+    
+    // Verificar en qué storage está la sesión actual y actualizar el correspondiente
+    if (sessionStorage.getItem('token')) {
+      sessionStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+    } else if (localStorage.getItem('token')) {
+      localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+    }
 
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
   };

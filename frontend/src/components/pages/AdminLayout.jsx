@@ -8,9 +8,11 @@ import AdminEstadisticas from "../Admin/adminestadistics";
 import AdminEcojuego from "../Admin/adminecojuego";
 import AdminMap from "../Admin/AdminMap";
 import AdminImages from "../Admin/AdminImages";
+import AdminHelp from "../Admin/AdminHelp";
 import AdminSessionTracker from "../Admin/AdminSessionTracker";
 import { useToast } from "../../context/ToastContext";
 import { useSocket } from "../../context/SocketContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AdminLayout() {
     const [activeSection, setActiveSection] = useState("dashboard");
@@ -19,6 +21,7 @@ export default function AdminLayout() {
 
     const { showToast } = useToast();
     const { socket } = useSocket();
+    const { token } = useAuth();
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -32,6 +35,23 @@ export default function AdminLayout() {
     }, [showToast]);
 
     useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setNotifications(data.notifications);
+                }
+            } catch (error) {
+                console.error("Error al cargar notificaciones:", error);
+            }
+        };
+        if (token) fetchNotifications();
+    }, [token]);
+
+    useEffect(() => {
         if (!socket) return;
         const handleAlertaStr = (data) => {
             // Mostrar Toast temporal
@@ -43,7 +63,7 @@ export default function AdminLayout() {
 
             // Almacenar en el Centro de Notificaciones
             setNotifications(prev => [{
-                id: Date.now(),
+                id: data.id || Date.now() + Math.random(),
                 type: "alerta_obscena",
                 email: data.email,
                 nombre: data.nombre,
@@ -62,7 +82,7 @@ export default function AdminLayout() {
 
             // Almacenar en el Centro de Notificaciones
             setNotifications(prev => [{
-                id: Date.now(),
+                id: data.id || Date.now() + Math.random(),
                 type: "usuario_baneado",
                 email: data.email,
                 nombre: data.nombre,
@@ -87,11 +107,20 @@ export default function AdminLayout() {
         estadisticas: <AdminEstadisticas />,
         ecojuego: <AdminEcojuego />,
         maps: <AdminMap/>,
-        images: <AdminImages/>
+        images: <AdminImages/>,
+        help: <AdminHelp/>
     };
 
-    const markAllAsRead = () => {
-        setNotifications(prev => prev.map(n => ({...n, read: true})));
+    const markAllAsRead = async () => {
+        try {
+            await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications/mark-read`, {
+                method: "PATCH",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setNotifications(prev => prev.map(n => ({...n, read: true})));
+        } catch (error) {
+            console.error("Error al marcar como leídas:", error);
+        }
     };
 
     return (

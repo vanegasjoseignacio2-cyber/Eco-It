@@ -1,5 +1,6 @@
 import User from "../models/user.js";
 import Chat from "../models/chat.js";
+import Notification from "../models/notification.js";
 import { usuariosConectados } from "../index.js";
 
 export const cambiarRolUsuario = async (req, res) => {
@@ -78,16 +79,24 @@ export const banearUsuarioAdmin = async (req, res) => {
 
         await usuario.save();
 
+        const notificacionData = {
+            type: "usuario_baneado",
+            email: usuario.email,
+            nombre: `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim(),
+            adminName: req.usuario.nombre,
+            dias: diasDelBaneo,
+            fecha: new Date(),
+            mensaje: `El usuario ${usuario.email} ha sido baneado por ${diasDelBaneo} días.`
+        };
+
+        const notificacion = await Notification.create(notificacionData);
+
         // Notificar a otros administradores en tiempo real
         const io = req.app.get("io");
         if (io) {
             io.to("admins").emit("admin:usuario_baneado", {
-                email: usuario.email,
-                nombre: `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim(),
-                adminName: req.usuario.nombre,
-                dias: diasDelBaneo,
-                fecha: new Date(),
-                mensaje: `El usuario ${usuario.email} ha sido baneado por ${diasDelBaneo} días.`
+                ...notificacionData,
+                id: notificacion._id
             });
         }
 
@@ -336,3 +345,37 @@ export const obtenerDatosAdmin = (req, res) => {
     });
 };
 
+export const obtenerNotificaciones = async (req, res) => {
+    try {
+        const notificationsDocs = await Notification.find().sort({ fecha: -1 }).limit(50);
+        
+        const notifications = notificationsDocs.map(notif => {
+            const obj = notif.toObject();
+            obj.id = obj._id;
+            obj.read = obj.readBy.some(id => id.toString() === req.usuario._id.toString() || id.toString() === req.usuario.id.toString());
+            return obj;
+        });
+
+        res.json({ success: true, notifications });
+    } catch (error) {
+        console.error("Error al obtener notificaciones:", error);
+        res.status(500).json({ success: false, mensaje: "Error al obtener notificaciones" });
+    }
+};
+
+export const marcarNotificacionesLeidas = async (req, res) => {
+    try {
+        const userId = req.usuario._id || req.usuario.id;
+        
+        // Agregar el admin a readBy si no está incluido
+        await Notification.updateMany(
+            { readBy: { $ne: userId } },
+            { $addToSet: { readBy: userId } }
+        );
+
+        res.json({ success: true, mensaje: "Notificaciones marcadas como leídas" });
+    } catch (error) {
+        console.error("Error al marcar notificaciones:", error);
+        res.status(500).json({ success: false, mensaje: "Error al marcar notificaciones como leídas" });
+    }
+};

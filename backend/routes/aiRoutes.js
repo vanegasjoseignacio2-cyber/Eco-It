@@ -2,6 +2,7 @@ import { Router } from "express";
 import OpenAI from "openai";
 import User from "../models/user.js";
 import Chat from "../models/chat.js";
+import Notification from "../models/notification.js";
 import { verificarToken } from "../middlewares/authMiddleware.js";
 
 export const aiRouter = Router();
@@ -333,14 +334,40 @@ aiRouter.post("/analizar-imagen", async (req, res) => {
       req.usuario.banReason = "Contenido imagen inapropiado";
       await req.usuario.save();
 
+      const notifAlertaData = {
+        type: "alerta_obscena",
+        email: req.usuario.email,
+        nombre: req.usuario.nombre,
+        fecha: new Date(),
+        mensaje: "Se detectó el envío de una imagen con contenido obsceno/inapropiado."
+      };
+      
+      const notifBanData = {
+        type: "usuario_baneado",
+        email: req.usuario.email,
+        nombre: `${req.usuario.nombre || ""} ${req.usuario.apellido || ""}`.trim(),
+        adminName: "Sistema (IA Automático)",
+        dias: 1,
+        fecha: new Date(),
+        mensaje: `El usuario ${req.usuario.email} ha sido baneado automáticamente por 1 día debido a contenido inapropiado.`
+      };
+
+      const [notifAlerta, notifBan] = await Promise.all([
+        Notification.create(notifAlertaData),
+        Notification.create(notifBanData)
+      ]);
+
       const io = req.app.get("io");
       if (io) {
         io.to("admins").emit("admin:alerta_obscena", {
-          email: req.usuario.email,
-          nombre: req.usuario.nombre,
-          fecha: new Date(),
-          mensaje: "Se detectó el envío de una imagen con contenido obsceno/inapropiado.",
+          ...notifAlertaData,
+          id: notifAlerta._id,
           imagen: imagen
+        });
+        
+        io.to("admins").emit("admin:usuario_baneado", {
+          ...notifBanData,
+          id: notifBan._id
         });
       }
       

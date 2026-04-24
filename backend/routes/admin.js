@@ -7,7 +7,9 @@ import {
     eliminarUsuarioAdmin,
     banearUsuarioAdmin,
     desbanearUsuarioAdmin,
-    cambiarRolUsuario
+    cambiarRolUsuario,
+    obtenerNotificaciones,
+    marcarNotificacionesLeidas
 } from '../controllers/adminController.js';
 import {
     crearPunto,
@@ -22,6 +24,8 @@ const router = express.Router();
 router.get('/usuarios', verificarToken, soloAdmin, obtenerUsuarios);
 router.get('/stats', verificarToken, soloAdmin, obtenerStats);
 router.get('/admin', verificarToken, soloAdmin, obtenerDatosAdmin);
+router.get('/notifications', verificarToken, soloAdmin, obtenerNotificaciones);
+router.patch('/notifications/mark-read', verificarToken, soloAdmin, marcarNotificacionesLeidas);
 router.delete('/users/:id', verificarToken, soloAdmin, eliminarUsuarioAdmin);
 router.patch('/users/:id/ban', verificarToken, soloAdmin, banearUsuarioAdmin);
 router.patch('/users/:id/unban', verificarToken, soloAdmin, desbanearUsuarioAdmin);
