@@ -61,9 +61,13 @@ export default function Navbar() {
                         <motion.div
                             whileHover={{ rotate: 360 }}
                             transition={{ duration: 0.5 }}
-                            className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg"
+                            className="w-10 h-10 flex items-center justify-center"
                         >
-                            <Leaf className="w-6 h-6 text-white" />
+                            <img
+                                className="w-full h-full object-contain scale-[1.5]"
+                                src="https://res.cloudinary.com/dwx3v7vex/image/upload/v1777323332/logos/logos/Garza.png"
+                                alt="Logo de la garza"
+                            />
                         </motion.div>
                         <span className="text-2xl font-bold text-black tracking-wide">
                             ECO-IT

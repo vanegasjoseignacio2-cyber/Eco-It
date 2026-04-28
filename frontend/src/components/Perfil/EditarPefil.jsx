@@ -7,15 +7,17 @@ import Toast from "../ui/Toast";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import { useAuth } from "../../context/AuthContext";
 import { actualizarPerfil, eliminarPerfil } from "../../services/api";
+import { useOfensiveValidator } from "../Contact/ContactForm";
 import {
     Mail, User, Calendar, Phone,
     Save, X, Trash2, Leaf, ArrowLeft,
-    Shield, Sparkles,
+    Shield, Sparkles, AlertCircle, ShieldAlert,
 } from "lucide-react";
 
 export default function EditProfile() {
     const { usuario, token, actualizarUsuario, logout } = useAuth();
     const navigate = useNavigate();
+    const { validar } = useOfensiveValidator();
 
     const [formData, setFormData] = useState({
         email: "", nombre: "", apellido: "", edad: "", telefono: "",
@@ -24,6 +26,11 @@ export default function EditProfile() {
     const [toast, setToast]               = useState({ message: "", type: "" });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [focusedField, setFocusedField] = useState(null);
+
+    // Validation state
+    const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
+    const [showOfensiveModal, setShowOfensiveModal] = useState(false);
 
     useEffect(() => {
         if (usuario) {
@@ -37,8 +44,73 @@ export default function EditProfile() {
         }
     }, [usuario]);
 
-    const handleChange = (e) =>
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const isValidName = (v) => {
+        const base = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{3,}$/.test(v.trim());
+        if (!base) return false;
+        const res = validar(v);
+        return res.valido;
+    };
+
+    const isValidAge = (v) => {
+        if (!v) return false;
+        const edad = Number(v);
+        return /^\d+$/.test(v) && !isNaN(edad) && edad >= 6 && edad <= 110;
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        let newValue = value;
+
+        if (name === "nombre" || name === "apellido") {
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) return;
+
+            const isOffensive = !validar(value).valido;
+            if (isOffensive && value.trim().length >= 3) {
+                setShowOfensiveModal(true);
+            }
+
+            let error = "";
+            if (value.trim().length > 0 && !isValidName(value)) {
+                error = isOffensive && value.trim().length >= 3
+                    ? "Contiene palabras no permitidas"
+                    : "Solo letras, mínimo 3 caracteres";
+            }
+            setErrors(prev => ({ ...prev, [name]: error }));
+        } else if (name === "edad") {
+            newValue = value.replace(/[^0-9]/g, '').slice(0, 3);
+            let error = "";
+            if (newValue.length > 0 && !isValidAge(newValue)) {
+                error = "Ingresa una edad válida (6-110)";
+            }
+            setErrors(prev => ({ ...prev, [name]: error }));
+        } else if (name === "telefono") {
+            newValue = value.replace(/\D/g, "").slice(0, 10);
+            let error = "";
+            if (newValue.length > 0 && !/^3\d{9}$/.test(newValue)) {
+                error = "Número inválido (ej: 3201234567)";
+            }
+            setErrors(prev => ({ ...prev, [name]: error }));
+        }
+
+        setFormData(prev => ({ ...prev, [name]: newValue }));
+        setTouched(prev => ({ ...prev, [name]: true }));
+    };
+
+    const handleKeyDown = (e, name) => {
+        if (name === "edad" && ['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+            e.preventDefault();
+        }
+    };
+
+    const handleBlur = (name) => {
+        setTouched(prev => ({ ...prev, [name]: true }));
+    };
+
+    const formValid = 
+        isValidName(formData.nombre) && 
+        isValidName(formData.apellido) && 
+        isValidAge(formData.edad) && 
+        /^3\d{9}$/.test(formData.telefono);
 
     const showToast  = (message, type = "success") => setToast({ message, type });
     const closeToast = () => setToast({ message: "", type: "" });
@@ -312,16 +384,35 @@ export default function EditProfile() {
                                                         name={field.name}
                                                         value={formData[field.name]}
                                                         onChange={handleChange}
+                                                        onKeyDown={(e) => handleKeyDown(e, field.name)}
                                                         onFocus={() => setFocusedField(field.name)}
-                                                        onBlur={() => setFocusedField(null)}
+                                                        onBlur={() => {
+                                                            setFocusedField(null);
+                                                            handleBlur(field.name);
+                                                        }}
                                                         placeholder={field.placeholder}
                                                         readOnly={field.readOnly}
                                                         min={field.min}
                                                         max={field.max}
                                                         disabled={loading}
-                                                        className="field-input w-full pl-11 pr-4 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-50"
+                                                        className={`field-input w-full pl-11 pr-4 py-3.5 rounded-2xl text-sm font-medium disabled:opacity-50 transition-all ${
+                                                            errors[field.name] && touched[field.name] ? "!border-red-400 !bg-red-50" : ""
+                                                        }`}
                                                     />
                                                 </div>
+                                                <AnimatePresence>
+                                                    {errors[field.name] && touched[field.name] && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -5 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -5 }}
+                                                            className="flex items-center gap-1.5 mt-2 text-xs text-red-600 font-semibold"
+                                                        >
+                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                                            {errors[field.name]}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </motion.div>
                                         ))}
 
@@ -335,10 +426,10 @@ export default function EditProfile() {
                                             <div className="grid grid-cols-2 gap-3">
                                                 <motion.button
                                                     type="submit"
-                                                    disabled={loading}
-                                                    whileHover={{ scale: 1.02, boxShadow: "0 0 24px rgba(74,222,128,0.3)" }}
-                                                    whileTap={{ scale: 0.97 }}
-                                                    className="py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                                    disabled={loading || !formValid}
+                                                    whileHover={formValid && !loading ? { scale: 1.02, boxShadow: "0 0 24px rgba(74,222,128,0.3)" } : {}}
+                                                    whileTap={formValid && !loading ? { scale: 0.97 } : {}}
+                                                    className={`py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${!formValid && !loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                     style={{
                                                         background: "linear-gradient(135deg, #16a34a, #059669)",
                                                         color: "#f0fdf4",
@@ -417,6 +508,66 @@ export default function EditProfile() {
                     confirmText="Sí, eliminar"
                     cancelText="Mmm, mejor no"
                 />
+                <AnimatePresence>
+                    {showOfensiveModal && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                            style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}
+                            onClick={() => setShowOfensiveModal(false)}
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.85, y: 30 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.85, y: 30 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                                className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-red-200 overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="bg-gradient-to-br from-red-500 to-rose-600 p-6 text-center">
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+                                        className="w-16 h-16 mx-auto rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 shadow-lg"
+                                    >
+                                        <ShieldAlert className="w-8 h-8 text-white" />
+                                    </motion.div>
+                                    <h3 className="text-xl font-bold text-white">Lenguaje no permitido</h3>
+                                    <p className="text-sm text-red-100 mt-1">Se detectó contenido inapropiado</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-100 mb-5">
+                                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-red-800">Lenguaje ofensivo detectado</p>
+                                            <p className="text-xs text-red-600 mt-1">
+                                                El nombre o apellido ingresado contiene términos que no están permitidos
+                                                en nuestra plataforma. Por favor, usa nombres apropiados.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOfensiveModal(false)}
+                                        className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg hover:shadow-red-500/25 transition-all active:scale-[0.98]"
+                                    >
+                                        Entendido, corregir
+                                    </button>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowOfensiveModal(false)}
+                                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                                >
+                                    <X className="w-4 h-4 text-white" />
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </>
     );
