@@ -5,7 +5,7 @@ import AdminSidebar from "../Admin/adminSlidebar";
 import AdminHero from "../Admin/adminHero";
 import AdminUsers from "../Admin/adminUsers";
 import AdminEstadisticas from "../Admin/adminestadistics";
-import AdminEcojuego from "../Admin/adminecojuego";
+import AdminEcojuego from "../Admin/Adminecojuego";
 import AdminMap from "../Admin/AdminMap";
 import AdminImages from "../Admin/AdminImages";
 import AdminHelp from "../Admin/AdminHelp";
