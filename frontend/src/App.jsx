@@ -25,12 +25,14 @@ import AdminRestrictionGuard from "./context/AdminRestrictionGuard";
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 import ScrollToTop from "./components/animations/Scrolltotop";
+import ScrollToTopButton from "./components/ui/ScrollToTopButton";
 import 'leaflet/dist/leaflet.css';
 
 function App() {
   return (
     <>
       <ScrollToTop />
+      <ScrollToTopButton />
 
       <Routes>
 

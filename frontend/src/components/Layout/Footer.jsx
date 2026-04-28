@@ -55,9 +55,13 @@ export default function Footer() {
                             <motion.div
                                 whileHover={{ rotate: 360 }}
                                 transition={{ duration: 0.5 }}
-                                className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center"
+                                className="w-10 h-10 bg-white rounded-full overflow-hidden flex items-center justify-center"
                             >
-                                <Leaf className="w-7 h-7 text-white" />
+                                <img
+                                    className="w-full h-full object-contain scale-[1.6]"
+                                    src="https://res.cloudinary.com/dwx3v7vex/image/upload/v1777323332/logos/logos/Garza.png"
+                                    alt="Logo de la garza"
+                                />
                             </motion.div>
                             <span className="text-3xl font-bold">Eco-It</span>
                         </Link>

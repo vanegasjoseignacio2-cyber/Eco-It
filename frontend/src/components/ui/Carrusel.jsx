@@ -22,25 +22,43 @@ const FALLBACK_SLIDES = [
         alt: "Nuestra fauna",
         tag: "Nuestra fauna",
         title: "Danta de\nmontaña",
-        subtitle: "Tecnología verde al servicio del planeta.",
+        subtitle: "Es considerado el jardinero de los bosques y páramos debido a su papel crucial en la dispersión de semillas",
         active: true,
     },
     {
         id: "fallback_2",
-        src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80",
+        src: "https://elcampesino.co/wp-content/uploads/2018/12/oso_de_anteojos_foto_Giovanny_Pulido_33-2.jpg",
         alt: "Bosque digital",
-        tag: "Ecosistema",
-        title: "Innovación\nNatural",
-        subtitle: "Fusionamos datos con biodiversidad.",
+        tag: "Nuestra fauna",
+        title: "Oso de \nanteojos",
+        subtitle: "Sus manchas son únicas, como huellas dactilares; no existen dos osos de anteojos iguales.",
         active: true,
     },
     {
         id: "fallback_3",
-        src: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=1920&q=80",
-        alt: "Ciudad sostenible",
-        tag: "Smart Cities",
-        title: "Ciudades\nInteligentes",
-        subtitle: "Infraestructura conectada y eco-responsable.",
+        src: "https://www.agenciadeviajesyimmytours.com/wp-content/uploads/2023/01/paramo-de-miraflores_2.jpg",
+        alt: "paramo ",
+        tag: "Nuestro páramo",
+        title: "Cerro paramo de\n miraflores",
+        subtitle: "Este páramo es el hogar del oso de anteojos, una especie majestuosa que sobrevive en las cumbres, pero que hoy lucha contra la pérdida de su hábitat natural.",
+        active: true,
+    },
+    {
+        id: "fallback_4",
+        src: "https://www.elnuevosiglo.com.co/sites/default/files/2020-05/09asfoto%20ambiente%20mayo%2030.jpg",
+        alt: "paramo ",
+        tag: "Nuestro páramo",
+        title: "Frailejones",
+        subtitle: "Cada gota de agua que sale de tu grifo en gran parte del Huila comenzó su viaje siendo atrapada por los pelitos de esas hojas. Ver una imagen de un frailejón es, literalmente, ver la fuente de tu propia vida.",
+        active: true,
+    },
+     {
+        id: "fallback_5",
+        src: "https://tsmnoticias.com/wp-content/uploads/2020/01/En-peligro-el-parque-regional-Cerro-P%C3%A1ramo-de-Miraflores-7.jpeg",
+        alt: "nuetra fauna ",
+        tag: "Nuestra fauna",
+        title: "Gallito de las rocas",
+        subtitle: "El gallito de las rocas del Huila cambia drásticamente el ecosistema: dispersa semillas clave que permiten regenerar bosques enteros tras disturbios.",
         active: true,
     },
 ];
@@ -110,6 +128,7 @@ export default function Carrusel() {
     const isInView   = useInView(wrapperRef, { once: false, margin: "-10%" });
     const dragStart  = useRef(null);
 
+    const isFallback = slides === FALLBACK_SLIDES || slides.length === 0;
     const displaySlides = slides.length > 0 ? slides : FALLBACK_SLIDES;
     const slide         = displaySlides[current] || displaySlides[0];
 
@@ -483,13 +502,19 @@ export default function Carrusel() {
                     </Motion.span>
 
                     <Motion.h2 className="ada-main-title" variants={textItemVariants}>
-                        Actividades<br />
-                        que <em>motivan</em>
+                        {isFallback ? (
+                            <>Nuestra<br />riqueza <em>natural</em></>
+                        ) : (
+                            <>Actividades<br />que <em>motivan</em></>
+                        )}
                     </Motion.h2>
 
                     <Motion.p className="ada-description" variants={textItemVariants}>
-                        Descubre los eventos y actividades que dan vida a nuestra comunidad.
-                        Cada encuentro es una oportunidad de crecer juntos.
+                        {isFallback ? (
+                            "Descubre la fauna, flora y los ecosistemas que dan vida a nuestro municipio. Un patrimonio natural que debemos conocer y proteger."
+                        ) : (
+                            "Descubre los eventos y actividades que dan vida a nuestra comunidad. Cada encuentro es una oportunidad de crecer juntos."
+                        )}
                     </Motion.p>
 
                     {/* Info del slide activo */}
