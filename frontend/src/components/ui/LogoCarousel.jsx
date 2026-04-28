@@ -57,29 +57,19 @@ const logos = [
     ),
   },
   {
-    name: "DataGreen",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <rect x="4" y="12" width="6" height="10" rx="1.5" stroke="#4a7c59" strokeWidth="1.5"/>
-        <rect x="11" y="8" width="6" height="14" rx="1.5" stroke="#4a7c59" strokeWidth="1.5"/>
-        <rect x="18" y="5" width="6" height="17" rx="1.5" stroke="#4a7c59" strokeWidth="1.5"/>
-      </svg>
-    ),
+    name: "Eco ambiental colombia ",
+    img: "https://res.cloudinary.com/dwx3v7vex/image/upload/v1777323331/logos/logos/ecoambientalcol.jpg",
+    href: "https://www.ecoambientalcolombiaesp.com/",
   },
   {
-    name: "ClimateOps",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <path d="M14 5a9 9 0 100 18A9 9 0 0014 5z" stroke="#527052" strokeWidth="1.5"/>
-        <path d="M9 14c1-3 3-4 5-4s4 1 5 4" stroke="#527052" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
+    name: "Eco ambientales del huila",
+    img: "https://res.cloudinary.com/dwx3v7vex/image/upload/v1777323331/logos/logos/EcoAmbientales.png",
+    href: "#",
   },
   {
     name: "Asociación de Recicladores de Garzón",
-    // Coloca la imagen en /public/logos/recicladores_garzon.png de tu proyecto
-    img: "/logos/recicladores_garzon.png",
-    href: "https://www.informacolombia.com/directorio-empresas/informacion-empresa/eco-ambientales-huila-esp-sas",
+    img: "https://res.cloudinary.com/dwx3v7vex/image/upload/v1777323333/logos/logos/recicladores_garzon.png",
+    href: "#",
   },
 ];
 
@@ -135,7 +125,7 @@ export default function LogoCarousel() {
         }
       `}</style>
 
-      <section className="bg-[#f8f9f6] pt-10 pb-6">
+      <section className="bg-green-50 pt-10 pb-6">
         <h2 className="text-center text-2xl font-semibold mb-1 text-[#1a2e1a]">
           Empresas que confían en Eco-It
         </h2>

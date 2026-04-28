@@ -11,7 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 
 const PALABRAS_OFENSIVAS = [
     // Español - Colombia
-    'mierda','puta','puto','hijueputa','hijueputo','malparido','malparida',
+    'chupamelacola','mierda','puta','puto','hijueputa','hijueputo','malparido','malparida',
     'gonorrea','marica','idiota','imbécil','imbecil','estúpido','estupido',
     'pendejo','pendeja','coño','verga','culo','perra','perro',
     'maricón','maricon','cabrón','cabron','joder','hostia','gilipollas',
