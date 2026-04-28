@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://backend-production-1e6e.up.railway.app',
         changeOrigin: true,
         secure: false,
       },

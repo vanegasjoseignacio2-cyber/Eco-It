@@ -28,12 +28,12 @@ export default function MapSection() {
     const [selectedPlace, setSelectedPlace] = useState(null);
 
     useEffect(() => {
-        fetch("http://localhost:3000/api/map/points")
+        fetch("https://backend-production-1e6e.up.railway.app/api/map/points")
             .then(r => r.json())
             .then(data => { if (data.success) setAllPoints(data.puntos); })
             .catch(console.error);
 
-        const socket = io("http://localhost:3000");
+        const socket = io("https://backend-production-1e6e.up.railway.app");
         socket.on("map:updated", ({ puntos }) => setAllPoints(puntos));
         return () => socket.disconnect();
     }, []);

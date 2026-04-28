@@ -104,7 +104,7 @@ export default function AdminUsers() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res  = await fetch("http://localhost:3000/api/admin/usuarios", {
+            const res  = await fetch("https://backend-production-1e6e.up.railway.app/api/admin/usuarios", {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
@@ -141,7 +141,7 @@ export default function AdminUsers() {
         const { userId, nombre } = deleteModal;
         setDeleteModal({ open: false, userId: null, nombre: "" });
         try {
-            const res  = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
+            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -163,7 +163,7 @@ export default function AdminUsers() {
         setBanModal({ open: false, userId: null, nombre: "" });
         if (!dias || dias < 1) return;
         try {
-            const res  = await fetch(`http://localhost:3000/api/admin/users/${userId}/ban`, {
+            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}/ban`, {
                 method: "PATCH",
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ dias }),
@@ -182,7 +182,7 @@ export default function AdminUsers() {
 
     const handleUnbanUser = async (userId, nombre) => {
         try {
-            const res  = await fetch(`http://localhost:3000/api/admin/users/${userId}/unban`, {
+            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}/unban`, {
                 method: "PATCH",
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -201,7 +201,7 @@ export default function AdminUsers() {
     const handleToggleAdmin = async (userId, nombre, rolActual) => {
         const nuevoRol = rolActual === "admin" ? "user" : "admin";
         try {
-            const res  = await fetch(`http://localhost:3000/api/admin/users/${userId}/role`, {
+            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}/role`, {
                 method: "PATCH",
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ rol: nuevoRol }),

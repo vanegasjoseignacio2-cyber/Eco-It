@@ -25,7 +25,7 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    const backend = import.meta.env.VITE_BACKEND_URL || 'https://backend-production-1e6e.up.railway.app';
 
     // Create socket with token in auth (server should validate)
     const newSocket = io(backend, {

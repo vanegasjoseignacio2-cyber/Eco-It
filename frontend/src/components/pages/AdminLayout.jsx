@@ -37,7 +37,7 @@ export default function AdminLayout() {
     useEffect(() => {
         const fetchNotifications = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications`, {
+                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://backend-production-1e6e.up.railway.app'}/api/admin/notifications`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const data = await res.json();
@@ -113,7 +113,7 @@ export default function AdminLayout() {
 
     const markAllAsRead = async () => {
         try {
-            await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications/mark-read`, {
+            await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://backend-production-1e6e.up.railway.app'}/api/admin/notifications/mark-read`, {
                 method: "PATCH",
                 headers: { Authorization: `Bearer ${token}` }
             });

@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'https://backend-production-1e6e.up.railway.app/api';
 
 export const AUTH_EXPIRED_EVENT = 'auth-expired';
 

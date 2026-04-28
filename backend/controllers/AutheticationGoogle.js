@@ -8,7 +8,7 @@ export function setupGoogleAuth() {
   passport.use(new GoogleStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/api/auth/google/callback"
+    callbackURL: "https://backend-production-1e6e.up.railway.app/api/auth/google/callback"
   },
     async (accessToken, refreshToken, profile, done) => {
       try {
