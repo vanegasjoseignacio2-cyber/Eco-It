@@ -1,6 +1,5 @@
 import { Router } from "express";
 import OpenAI from "openai";
-import User from "../models/user.js";
 import Chat from "../models/chat.js";
 import Notification from "../models/notification.js";
 import { verificarToken } from "../middlewares/authMiddleware.js";
@@ -11,11 +10,11 @@ export const aiRouter = Router();
 const checkBan = async (req, res, next) => {
   if (req.usuario.status === 'banned') {
     if (new Date() < new Date(req.usuario.banHasta)) {
-      return res.status(403).json({ 
-        error: "Usuario baneado", 
-        banned: true, 
-        banReason: req.usuario.banReason, 
-        banHasta: req.usuario.banHasta 
+      return res.status(403).json({
+        error: "Usuario baneado",
+        banned: true,
+        banReason: req.usuario.banReason,
+        banHasta: req.usuario.banHasta
       });
     } else {
       // Levantar el ban si ya expiró
@@ -57,6 +56,8 @@ REGLAS ESTRICTAS:
 3. CERO TOLERANCIA A LENGUAJE INAPROPIADO: Si el usuario usa contenido ofensivo, obsceno, sexual, explícito o violento, NO GENERES NINGUNA RESPUESTA y devuelve estrictamente este texto: "Por favor, usa un lenguaje adecuado. Estoy aquí para ayudarte con el medio ambiente."
 4. Si el usuario pregunta sobre CUALQUIER otro tema (economía, tecnología, etc.), debes NEGARTE a responder.
 5. Responde siempre en español, con tono educado pero firme.
+6. CONTEXTO COLOMBIANO: Adapta TODAS tus respuestas a la normativa e información de reciclaje en Colombia. Haz énfasis en el código de colores de canecas usado en el país (Blanco: aprovechables como plástico, vidrio, metales; Negro: no aprovechables como papel higiénico, servilletas sucias; Verde: orgánicos aprovechables como restos de comida).
+7. FORMATO DE RESPUESTA: NO uses formato Markdown en tus respuestas. NO uses negritas (**), ni encabezados (###), ni listas con asteriscos u otros símbolos especiales. Responde estrictamente en texto plano, utilizando saltos de línea normales y numeración simple (1., 2.) o guiones simples (-) para listar, sin aplicar formatos de texto de Markdown.
 
 Cuando rechaces un tema fuera de tu especialidad, usa exactamente este mensaje:
 "Lo siento, solo puedo ayudarte con temas relacionados al reciclaje y la sostenibilidad ambiental. ¿Tienes alguna pregunta sobre cómo reciclar?"`;
@@ -69,7 +70,9 @@ REGLAS ESTRICTAS:
 3. FILTRO DE CONTENIDO (CERO TOLERANCIA): Si detectas explícitamente contenido obsceno, desnudez, índole sexual o violencia en la imagen o contexto, tu respuesta DEBE comenzar obligatoriamente con la palabra EXACTA "ALERTA_OBSCENA:". Seguido de eso, responde únicamente: "El envío de contenido inapropiado no está permitido y ha sido reportado."
 4. Si la imagen NO es de reciclaje pero tampoco es obscena (ej. una silla, un zapato normal, paisaje), simplemente indica de forma amigable que solo puedes analizar elementos relacionados con sostenibilidad. NO uses la frase "ALERTA_OBSCENA:" en este caso.
 5. Identifica materiales reciclables y sugiere cómo desecharlos brevemente.
-6. Responde siempre en español.`;
+6. Responde siempre en español.
+7. CONTEXTO COLOMBIANO: Tus sugerencias sobre cómo desechar materiales deben basarse en la normativa colombiana de clasificación, indicando el color de la caneca correspondiente (Blanco: aprovechables, Negro: no aprovechables, Verde: orgánicos).
+8. FORMATO DE RESPUESTA: NO uses formato Markdown en tus respuestas. NO uses negritas (**), ni encabezados (###), ni listas con asteriscos u otros símbolos especiales. Responde estrictamente en texto plano.`;
 
 
 /**
@@ -110,7 +113,7 @@ async function mantenerLimiteChats(userId) {
       .sort({ updatedAt: 1 })
       .limit(excesos)
       .select('_id');
-    
+
     const idsAEliminar = chatsAntiguos.map(chat => chat._id);
     await Chat.deleteMany({ _id: { $in: idsAEliminar } });
   }
@@ -186,17 +189,17 @@ aiRouter.post("/consultar", async (req, res) => {
     if (chatId) {
       chatActual = await Chat.findOne({ _id: chatId, userId: req.usuario._id });
       if (!chatActual) return res.status(404).json({ error: "Chat no encontrado" });
-      
+
       // Añadir historial al contexto del modelo (solo rol y contenido aplicable)
       // Evitamos pasar imagenes porque requeriría el modelo multimodal Gemini por defecto. 
       // Si queremos imágenes viejas, habría que usar siempre gemini. Por simplicidad pasamos todo texto.
       for (const tMsg of chatActual.mensajes) {
         if (tMsg.role === 'user' || tMsg.role === 'bot') {
-           const mapRole = tMsg.role === 'bot' ? 'assistant' : 'user';
-           // Evitamos mensajes sin contenido de texto (si subió solo imagen)
-           if (tMsg.content && tMsg.content !== "📷 Imagen enviada para análisis") {
-              arrayMensajesModelo.push({ role: mapRole, content: tMsg.content });
-           }
+          const mapRole = tMsg.role === 'bot' ? 'assistant' : 'user';
+          // Evitamos mensajes sin contenido de texto (si subió solo imagen)
+          if (tMsg.content && tMsg.content !== "📷 Imagen enviada para análisis") {
+            arrayMensajesModelo.push({ role: mapRole, content: tMsg.content });
+          }
         }
       }
     } else {
@@ -341,7 +344,7 @@ aiRouter.post("/analizar-imagen", async (req, res) => {
         fecha: new Date(),
         mensaje: "Se detectó el envío de una imagen con contenido obsceno/inapropiado."
       };
-      
+
       const notifBanData = {
         type: "usuario_baneado",
         email: req.usuario.email,
@@ -364,18 +367,18 @@ aiRouter.post("/analizar-imagen", async (req, res) => {
           id: notifAlerta._id,
           imagen: imagen
         });
-        
+
         io.to("admins").emit("admin:usuario_baneado", {
           ...notifBanData,
           id: notifBan._id
         });
       }
-      
+
       return res.status(403).json({
-         error: "Fuiste baneado por contenido inapropiado.",
-         banned: true,
-         banReason: req.usuario.banReason,
-         banHasta: req.usuario.banHasta
+        error: "Fuiste baneado por contenido inapropiado.",
+        banned: true,
+        banReason: req.usuario.banReason,
+        banHasta: req.usuario.banHasta
       });
     }
 
