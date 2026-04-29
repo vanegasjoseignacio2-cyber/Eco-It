@@ -130,12 +130,13 @@ export default function AdminEcojuego() {
 
                     <div className="flex items-center gap-2">
                         <motion.button
-                            onClick={() => window.location.reload()}
+                            onClick={fetchGameData}
                             whileHover={{ rotate: 180 }}
                             transition={{ duration: 0.4 }}
-                            className="p-2.5 rounded-xl bg-white border border-green-200 text-green-600 hover:shadow-md transition-all"
+                            className={`p-2.5 rounded-xl bg-white border border-green-200 text-green-600 hover:shadow-md transition-all ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                            disabled={loading}
                         >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </motion.button>
 
                         <motion.button

@@ -380,7 +380,7 @@ export default function AdminImages() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => window.location.reload()}
+                    <button onClick={fetchSlides}
                         className="p-2.5 rounded-xl border border-green-100 hover:bg-green-50 text-green-500 transition-all"
                         title="Recargar">
                         <RefreshCw className="w-4 h-4" />

@@ -209,12 +209,13 @@ export default function AdminEstadisticas() {
                         </div>
 
                         <motion.button
-                            onClick={() => window.location.reload()}
-                            whileHover={{ rotate: 180 }}
+                            onClick={fetchStats}
+                            disabled={refreshing}
+                            whileHover={{ rotate: refreshing ? 0 : 180 }}
                             transition={{ duration: 0.4 }}
-                            className="p-2.5 rounded-xl bg-white border border-green-100 text-green-400 hover:text-green-600 shadow-sm hover:shadow-md transition-all"
+                            className="p-2.5 rounded-xl bg-white border border-green-100 text-green-400 hover:text-green-600 shadow-sm hover:shadow-md transition-all disabled:opacity-60"
                         >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                         </motion.button>
                     </div>
                 </motion.div>
