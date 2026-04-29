@@ -105,7 +105,7 @@ export const sendWelcomeEmail = async (email, nombre) => {
                     <li>Localizar puntos de reciclaje cercanos.</li>
                 </ul>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="http://localhost:5173/login" style="${buttonStyles}">Iniciar Sesión</a>
+                    <a href="${process.env.FRONT_URL}login" style="${buttonStyles}">Iniciar Sesión</a>
                 </div>
                 <p>¡Esperamos que disfrutes de la experiencia!</p>
             </div>
