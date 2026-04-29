@@ -28,9 +28,11 @@ router.post('/recuperar-password/restablecer', authLimiter, restablecerPassword)
 // Rutas de Google OAuth
 router.get('/google', passport.authenticate("google", { scope: ["profile", "email"] }));
 
+const FRONT = (process.env.FRONT_URL || '').trim().replace(/\/$/, '');
+
 router.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: `${process.env.FRONT_URL}login` }),
+    passport.authenticate("google", { failureRedirect: `${FRONT}/login` }),
     (req, res) => {
         const token = jwt.sign(
             {
@@ -47,7 +49,7 @@ router.get(
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
-        res.redirect(`${process.env.FRONT_URL}auth/google/success?token=${token}`);
+        res.redirect(`${FRONT}/auth/google/success?token=${token}`);
     }
 );
 router.put('/completar-perfil', verificarToken, validarPerfilCompleto, async (req, res) => {
