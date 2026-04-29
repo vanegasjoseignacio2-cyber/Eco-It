@@ -53,7 +53,7 @@ const promptSystem = `Eres EcoBot, un asistente virtual especializado EXCLUSIVAM
 REGLAS ESTRICTAS:
 1. SOLO puedes responder preguntas sobre: reciclaje, clasificación de residuos, compostaje, reducción de residuos, economía circular, contaminación ambiental, energías renovables y sostenibilidad.
 2. SÉ EXTREMADAMENTE CONCISO Y DIRECTO. Evita introducciones largas y ve directo al grano para optimizar la lectura.
-3. CERO TOLERANCIA A LENGUAJE INAPROPIADO: Si el usuario usa contenido ofensivo, obsceno, sexual, explícito o violento, NO GENERES NINGUNA RESPUESTA y devuelve estrictamente este texto: "Por favor, usa un lenguaje adecuado. Estoy aquí para ayudarte con el medio ambiente."
+3. CERO TOLERANCIA A LENGUAJE INAPROPIADO: Si el usuario usa contenido ofensivo, obsceno, sexual, explícito o violento, NO GENERES NINGUNA RESPUESTA y devuelve estrictamente este texto: "ALERTA_LENGUAJE_INAPROPIADO: Por favor, usa un lenguaje adecuado. Tu cuenta ha sido reportada por uso de lenguaje inapropiado."
 4. Si el usuario pregunta sobre CUALQUIER otro tema (economía, tecnología, etc.), debes NEGARTE a responder.
 5. Responde siempre en español, con tono educado pero firme.
 6. CONTEXTO COLOMBIANO: Adapta TODAS tus respuestas a la normativa e información de reciclaje en Colombia. Haz énfasis en el código de colores de canecas usado en el país (Blanco: aprovechables como plástico, vidrio, metales; Negro: no aprovechables como papel higiénico, servilletas sucias; Verde: orgánicos aprovechables como restos de comida).
@@ -75,6 +75,65 @@ REGLAS ESTRICTAS:
 7. CONTEXTO COLOMBIANO: Tus sugerencias sobre cómo desechar materiales deben basarse en la normativa colombiana de clasificación, indicando el color de la caneca correspondiente (Blanco: aprovechables, Negro: no aprovechables, Verde: orgánicos).
 8. FORMATO DE RESPUESTA: NO uses formato Markdown en tus respuestas. NO uses negritas (**), ni encabezados (###), ni listas con asteriscos u otros símbolos especiales. Responde estrictamente en texto plano.`;
 
+
+/**
+ * Helper para ejecutar el baneo automático de un usuario
+ */
+async function ejecutarBaneoAutomatico(req, razon, imagen = null) {
+  const banTime = new Date();
+  banTime.setHours(banTime.getHours() + 24);
+  
+  req.usuario.status = 'banned';
+  req.usuario.banHasta = banTime;
+  req.usuario.banReason = razon;
+  await req.usuario.save();
+
+  const notifAlertaData = {
+    type: imagen ? "alerta_obscena" : "alerta_lenguaje",
+    email: req.usuario.email,
+    nombre: req.usuario.nombre,
+    fecha: new Date(),
+    mensaje: imagen 
+      ? "Se detectó el envío de una imagen con contenido obsceno/inapropiado."
+      : "Se detectó el uso de lenguaje inapropiado/sexual en el chat."
+  };
+
+  const notifBanData = {
+    type: "usuario_baneado",
+    email: req.usuario.email,
+    nombre: `${req.usuario.nombre || ""} ${req.usuario.apellido || ""}`.trim(),
+    adminName: "Sistema (IA Automático)",
+    dias: 1,
+    fecha: new Date(),
+    mensaje: `El usuario ${req.usuario.email} ha sido baneado automáticamente por 1 día debido a contenido inapropiado.`
+  };
+
+  const [notifAlerta, notifBan] = await Promise.all([
+    Notification.create(notifAlertaData),
+    Notification.create(notifBanData)
+  ]);
+
+  const io = req.app.get("io");
+  if (io) {
+    if (imagen) {
+      io.to("admins").emit("admin:alerta_obscena", {
+        ...notifAlertaData,
+        id: notifAlerta._id,
+        imagen: imagen
+      });
+    } else {
+      io.to("admins").emit("admin:alerta_lenguaje", {
+        ...notifAlertaData,
+        id: notifAlerta._id
+      });
+    }
+
+    io.to("admins").emit("admin:usuario_baneado", {
+      ...notifBanData,
+      id: notifBan._id
+    });
+  }
+}
 
 /**
  * Verifica si un error indica que la cuota del modelo gratuito se agotó.
@@ -255,6 +314,11 @@ aiRouter.post("/consultar", async (req, res) => {
 
     // 3. Guardar mensajes en la base de datos
     if (respuestaCompleta) {
+      // Verificar si hubo una alerta de lenguaje inapropiado
+      if (respuestaCompleta.includes("ALERTA_LENGUAJE_INAPROPIADO:")) {
+        await ejecutarBaneoAutomatico(req, "Lenguaje explícito e inapropiado");
+      }
+
       chatActual.mensajes.push({ role: "user", content: pregunta });
       chatActual.mensajes.push({ role: "bot", content: respuestaCompleta });
       chatActual.updatedAt = Date.now();
@@ -330,50 +394,7 @@ aiRouter.post("/analizar-imagen", async (req, res) => {
 
     // Verificar si la IA consideró la imagen obscena
     if (respuesta.includes("ALERTA_OBSCENA:")) {
-      // Aplicar ban de 24 horas y notificar
-      const banTime = new Date();
-      banTime.setHours(banTime.getHours() + 24);
-      req.usuario.status = 'banned';
-      req.usuario.banHasta = banTime;
-      req.usuario.banReason = "Contenido imagen inapropiado";
-      await req.usuario.save();
-
-      const notifAlertaData = {
-        type: "alerta_obscena",
-        email: req.usuario.email,
-        nombre: req.usuario.nombre,
-        fecha: new Date(),
-        mensaje: "Se detectó el envío de una imagen con contenido obsceno/inapropiado."
-      };
-
-      const notifBanData = {
-        type: "usuario_baneado",
-        email: req.usuario.email,
-        nombre: `${req.usuario.nombre || ""} ${req.usuario.apellido || ""}`.trim(),
-        adminName: "Sistema (IA Automático)",
-        dias: 1,
-        fecha: new Date(),
-        mensaje: `El usuario ${req.usuario.email} ha sido baneado automáticamente por 1 día debido a contenido inapropiado.`
-      };
-
-      const [notifAlerta, notifBan] = await Promise.all([
-        Notification.create(notifAlertaData),
-        Notification.create(notifBanData)
-      ]);
-
-      const io = req.app.get("io");
-      if (io) {
-        io.to("admins").emit("admin:alerta_obscena", {
-          ...notifAlertaData,
-          id: notifAlerta._id,
-          imagen: imagen
-        });
-
-        io.to("admins").emit("admin:usuario_baneado", {
-          ...notifBanData,
-          id: notifBan._id
-        });
-      }
+      await ejecutarBaneoAutomatico(req, "Contenido imagen inapropiado", imagen);
 
       return res.status(403).json({
         error: "Fuiste baneado por contenido inapropiado.",

@@ -196,6 +196,14 @@ export default function AIPage() {
                         loadChats();
                     }
                     if (chunkContent) {
+                        // Detectar trigger de baneo en el stream
+                        if (chunkContent.includes("ALERTA_LENGUAJE_INAPROPIADO:")) {
+                            setBanInfo({
+                                reason: 'Lenguaje explícito e inapropiado',
+                                hasta: new Date(Date.now() + 24 * 60 * 60 * 1000) // Estimación de 24h
+                            });
+                            return;
+                        }
                         setMessages(prev => prev.map(msg =>
                             msg.id === botMsgId ? { ...msg, content: msg.content + chunkContent } : msg
                         ));

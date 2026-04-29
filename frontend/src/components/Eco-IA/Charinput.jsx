@@ -138,11 +138,20 @@ export default function ChatInput({
 
                     {/* Botón enviar / detener */}
                     <motion.button
+                        type="button"
                         whileHover={(canSend || canStop) ? { scale: 1.08 } : {}}
                         whileTap={(canSend || canStop) ? { scale: 0.92 } : {}}
-                        onClick={isTyping ? onStop : onSend}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (isTyping) {
+                                onStop();
+                            } else if (canSend) {
+                                onSend();
+                            }
+                        }}
                         disabled={!canSend && !canStop}
-                        className="flex-shrink-0 p-2.5 sm:p-3 rounded-xl transition-all"
+                        className="flex-shrink-0 p-3 sm:p-3.5 rounded-xl transition-all relative z-10 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
                         style={
                             isTyping
                                 ? {
@@ -173,7 +182,7 @@ export default function ChatInput({
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.7, opacity: 0 }}
                                 transition={{ duration: 0.15 }}
-                                className="flex items-center justify-center"
+                                className="flex items-center justify-center pointer-events-none"
                             >
                                 {isTyping ? (
                                     <Square className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />

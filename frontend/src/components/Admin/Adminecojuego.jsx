@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Gamepad2,
@@ -56,6 +57,7 @@ const TYPE_CONFIG = {
 };
 
 export default function AdminEcojuego() {
+    const { token } = useAuth();
     const [missions, setMissions] = useState(MOCK_MISSIONS);
     const [showForm, setShowForm] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
@@ -64,26 +66,24 @@ export default function AdminEcojuego() {
     // TODO: form state conectar con POST /api/admin/game/missions para crear
     const [form, setForm] = useState({ title: "", description: "", type: "recycling", points: 50 });
 
-    // Fetch game data from API (will use real endpoint when available)
+    // Fetch game data from API
     const fetchGameData = useCallback(async () => {
+        if (!token) return;
         setLoading(true);
         try {
-            // TODO: Replace with real API calls:
-            // const [missionsRes, leaderboardRes, statsRes] = await Promise.all([
-            //   fetch('/api/admin/game/missions', { headers: { Authorization: `Bearer ${token}` } }),
-            //   fetch('/api/admin/game/leaderboard?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
-            //   fetch('/api/admin/game/stats', { headers: { Authorization: `Bearer ${token}` } }),
-            // ]);
-
-            // Simulated refresh: reset to source data
-            await new Promise((resolve) => setTimeout(resolve, 600));
-            setMissions([...MOCK_MISSIONS]);
+            const res = await fetch("https://backend-production-1e6e.up.railway.app/api/admin/game/stats", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                // setMissions(data.missions);
+            }
         } catch (error) {
             console.error('Error al obtener datos del juego:', error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [token]);
 
     // Initial load
     useEffect(() => {
@@ -130,14 +130,12 @@ export default function AdminEcojuego() {
 
                     <div className="flex items-center gap-2">
                         <motion.button
-                            onClick={fetchGameData}
+                            onClick={() => window.location.reload()}
                             whileHover={{ rotate: 180 }}
                             transition={{ duration: 0.4 }}
-                            // TODO: refetch real missions y leaderboard desde BD
-                            className={`p-2.5 rounded-xl bg-white border border-green-200 text-green-600 hover:shadow-md transition-all ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                            disabled={loading}
+                            className="p-2.5 rounded-xl bg-white border border-green-200 text-green-600 hover:shadow-md transition-all"
                         >
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className="w-4 h-4" />
                         </motion.button>
 
                         <motion.button
