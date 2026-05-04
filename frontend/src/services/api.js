@@ -8,6 +8,7 @@ const fetchAPI = async (endpoint, options = {}) => {
     // Configurar opciones de fetch
     const fetchOptions = {
       method: options.method || 'GET',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -62,41 +63,29 @@ export const iniciarSesion = async (credenciales) => {
 
 // ============= USUARIO =============
 
-export const obtenerPerfil = async (token) => {
+export const obtenerPerfil = async () => {
   return fetchAPI('/user/perfil', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
-export const actualizarPerfil = async (token, datosActualizados) => {
+export const actualizarPerfil = async (datosActualizados) => {
   return fetchAPI('/user/perfil', {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: JSON.stringify(datosActualizados),
   });
 };
 
-export const cambiarPassword = async (token, passwords) => {
+export const cambiarPassword = async (passwords) => {
   return fetchAPI('/user/cambiar-password', {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: JSON.stringify(passwords),
   });
 };
 
-export const eliminarPerfil = async (token) => {
+export const eliminarPerfil = async () => {
   return fetchAPI('/user/perfil', {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
@@ -130,12 +119,12 @@ export const restablecerPassword = async (email, codigo, password) => {
 
 // ============= IA =============
 
-export const consultarIA = async (token, pregunta, chatId, onChunk, signal) => {
+export const consultarIA = async (pregunta, chatId, onChunk, signal) => {
   const response = await fetch(`${BASE_URL}/ai/consultar`, {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ pregunta, chatId }),
     signal,
@@ -176,59 +165,41 @@ export const consultarIA = async (token, pregunta, chatId, onChunk, signal) => {
   }
 };
 
-export const analizarImagen = async (token, imagen, contexto = '', chatId = null, signal) => {
+export const analizarImagen = async (imagen, contexto = '', chatId = null, signal) => {
   return fetchAPI('/ai/analizar-imagen', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: JSON.stringify({ imagen, contexto, chatId }),
     signal,
   });
 };
 
-export const obtenerChats = async (token) => {
+export const obtenerChats = async () => {
   return fetchAPI('/ai/chats', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
-export const obtenerChat = async (token, id) => {
+export const obtenerChat = async (id) => {
   return fetchAPI(`/ai/chats/${id}`, {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
-export const eliminarChat = async (token, id) => {
+export const eliminarChat = async (id) => {
   return fetchAPI(`/ai/chats/${id}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
-export const eliminarTodosLosChats = async (token) => {
+export const eliminarTodosLosChats = async () => {
   return fetchAPI('/ai/chats', {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
-export const obtenerSugerencias = async (token) => {
+export const obtenerSugerencias = async () => {
   return fetchAPI('/ai/sugerencias', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
@@ -238,50 +209,35 @@ export const obtenerSlidesPublicos = async () => {
   return fetchAPI('/carousel');
 };
 
-export const obtenerSlidesAdmin = async (token) => {
+export const obtenerSlidesAdmin = async () => {
   return fetchAPI('/carousel/admin', {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
-export const crearSlide = async (token, datosSlide) => {
+export const crearSlide = async (datosSlide) => {
   return fetchAPI('/carousel', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: JSON.stringify(datosSlide),
   });
 };
 
-export const actualizarSlide = async (token, id, datosActualizados) => {
+export const actualizarSlide = async (id, datosActualizados) => {
   return fetchAPI(`/carousel/${id}`, {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: JSON.stringify(datosActualizados),
   });
 };
 
-export const eliminarSlide = async (token, id) => {
+export const eliminarSlide = async (id) => {
   return fetchAPI(`/carousel/${id}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
   });
 };
 
-export const reordenarSlides = async (token, ids) => {
+export const reordenarSlides = async (ids) => {
   return fetchAPI('/carousel/reorder', {
     method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: JSON.stringify({ slides: ids }),
   });
 };

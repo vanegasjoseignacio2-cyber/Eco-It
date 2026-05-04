@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useToast } from './ToastContext';
-import { AUTH_EXPIRED_EVENT } from '../services/api';
+import { AUTH_EXPIRED_EVENT, obtenerPerfil } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -45,36 +45,23 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const cargarUsuario = () => {
-    // Intentar cargar de sessionStorage primero (sesiones volátiles / admins)
-    let tokenGuardado = sessionStorage.getItem('token');
-    let usuarioGuardado = sessionStorage.getItem('usuario');
-
-    // Si no está en sessionStorage, buscar en localStorage (usuarios con 'Recordarme')
-    if (!tokenGuardado) {
-      tokenGuardado = localStorage.getItem('token');
-      usuarioGuardado = localStorage.getItem('usuario');
-    }
-
-    if (tokenGuardado && usuarioGuardado) {
-      try {
-        const usuarioParsed = JSON.parse(usuarioGuardado);
-        setToken(tokenGuardado);
-        setUsuario(usuarioParsed);
-      } catch (error) {
-        console.error('Error al cargar usuario:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('usuario');
+  const cargarUsuario = async () => {
+    try {
+      const response = await obtenerPerfil();
+      if (response && response.data) {
+        setToken(true); // Solo usamos 'true' como flag visual, el token real está en la cookie
+        setUsuario(response.data);
+      } else {
         setToken(null);
         setUsuario(null);
       }
-    } else {
+    } catch (error) {
+      console.log('No hay sesión activa o token expirado');
       setToken(null);
       setUsuario(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   /**
@@ -90,26 +77,9 @@ export const AuthProvider = ({ children }) => {
    */
   const login = (tokenNuevo, usuarioNuevo, redirectOverride = null) => {
     const isAdmin = usuarioNuevo.rol === "admin" || usuarioNuevo.rol === "superadmin";
-    const rememberMe = localStorage.getItem('rememberMe') === 'true';
-    
-    // Si es admin o no marcó 'Recordarme', usamos sessionStorage
-    const storage = (isAdmin || !rememberMe) ? sessionStorage : localStorage;
-
-    localStorage.setItem("sesionActiva", "true");
-    storage.setItem('token', tokenNuevo);
-    storage.setItem('usuario', JSON.stringify(usuarioNuevo));
-
-    // Limpiar el otro storage para evitar inconsistencias
-    if (storage === sessionStorage) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
-    } else {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('usuario');
-    }
 
     // actualizar estado primero
-    setToken(tokenNuevo);
+    setToken(true); // Flag de autenticado
     setUsuario(usuarioNuevo);
 
     // permitir que React aplique el setState antes de navegar
@@ -127,33 +97,29 @@ export const AuthProvider = ({ children }) => {
     }, 0);
   };
 
-  const logout = () => {
+  const logout = async () => {
     console.log('Logout - Limpiando sesión');
+
+    try {
+      // Llamar al backend para eliminar la cookie HttpOnly
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+      await fetch(`${backendUrl}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Error al hacer logout en el servidor:', error);
+    }
 
     setToken(null);
     setUsuario(null);
-
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    localStorage.removeItem('rememberMe');
     localStorage.removeItem('sesionActiva');
-
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('usuario');
 
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
   };
 
   const actualizarUsuario = (usuarioActualizado) => {
     setUsuario(usuarioActualizado);
-    
-    // Verificar en qué storage está la sesión actual y actualizar el correspondiente
-    if (sessionStorage.getItem('token')) {
-      sessionStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
-    } else if (localStorage.getItem('token')) {
-      localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
-    }
-
     window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
   };
 

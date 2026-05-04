@@ -50,11 +50,18 @@ export const loginUsuario = async (req, res) => {
             user: `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.email
         });
 
+        // Configurar cookie HttpOnly
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none', // Importante para cross-origin (frontend y backend en distinto dominio)
+            maxAge: 12 * 60 * 60 * 1000 // 12 horas
+        });
+
         // Si todo es correcto
         res.status(200).json({
             message: "Inicio de sesión correcto",
             data: {
-                token,
                 usuario: {
                     id: usuario._id,
                     nombre: usuario.nombre,
@@ -75,4 +82,14 @@ export const loginUsuario = async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
+};
+
+// Cerrar sesión
+export const logoutUsuario = (req, res) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none'
+    });
+    res.status(200).json({ success: true, message: "Sesión cerrada correctamente" });
 };

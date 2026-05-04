@@ -4,13 +4,20 @@ import Users from "../models/user.js";
 // verifica el token y consulta el usuario actualizado en BD
 export const verificarToken = async (req, res, next) => {
     try {
-        const authHeader = req.headers["authorization"];
+        // Leer token de cookies (HttpOnly) primero
+        let token = req.cookies?.token;
 
-        if (!authHeader || !authHeader.startsWith("Bearer")) {
-            return res.status(401).json({ message: "Token requerido"});
+        // Fallback al header Authorization
+        if (!token) {
+            const authHeader = req.headers["authorization"];
+            if (authHeader && authHeader.startsWith("Bearer")) {
+                token = authHeader.split(" ")[1];
+            }
         }
 
-        const token = authHeader.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Token requerido"});
+        }
 
         //decodifica el token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

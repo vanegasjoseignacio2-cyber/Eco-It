@@ -6,8 +6,13 @@ function ScrollToTop() {
 
     useEffect(() => {
         if (hash) {
-            const el = document.querySelector(hash);
-            if (el) el.scrollIntoView({ behavior: "smooth" });
+            try {
+                const el = document.querySelector(hash);
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+            } catch (error) {
+                // Ignorar errores de selectores inválidos (como tokens en el hash)
+                console.warn("ScrollToTop: Selector de hash inválido ignorado");
+            }
         } else {
             window.scrollTo({ top: 0, behavior: "smooth" });
         }

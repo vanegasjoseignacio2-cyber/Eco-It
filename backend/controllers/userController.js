@@ -26,6 +26,8 @@ export const obtenerPerfil = async (req, res) => {
         telefono: usuario.telefono,
         edad: usuario.edad,
         avatar: usuario.avatar,
+        rol: usuario.rol,
+        perfilCompleto: usuario.perfilCompleto,
         createdAt: usuario.createdAt
       }
     });

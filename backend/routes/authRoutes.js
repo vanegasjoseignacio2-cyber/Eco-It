@@ -3,7 +3,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { verificarToken } from '../middlewares/authMiddleware.js';
 import { registrarUser } from '../controllers/registerController.js';
-import { loginUsuario } from '../controllers/loginController.js';
+import { loginUsuario, logoutUsuario } from '../controllers/loginController.js';
 import { enviarCodigoRecuperacion, verificarCodigo, restablecerPassword, reenviarCodigo } from '../controllers/recoveryController.js';
 import passport from '../controllers/AutheticationGoogle.js';
 import { enviarCodigoRegistro, verificarYRegistrar, reenviarCodigoRegistro } from '../controllers/registerController.js';
@@ -18,6 +18,7 @@ router.post('/verificar-registro', authLimiter, verificarYRegistrar);
 router.post('/reenviar-codigo-registro', authLimiter, reenviarCodigoRegistro);
 
 router.post('/login', authLimiter, validarLogin, loginUsuario);
+router.post('/logout', logoutUsuario);
 
 // Rutas de recuperación de contraseña
 router.post('/recuperar-password', authLimiter, enviarCodigoRecuperacion);
@@ -28,28 +29,36 @@ router.post('/recuperar-password/restablecer', authLimiter, restablecerPassword)
 // Rutas de Google OAuth
 router.get('/google', passport.authenticate("google", { scope: ["profile", "email"] }));
 
-const FRONT = (process.env.FRONT_URL || '').trim().replace(/\/$/, '');
-
 router.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: `${FRONT}/login` }),
+    (req, res, next) => {
+        const FRONT = (process.env.FRONT_URL || 'http://localhost:5173').trim().replace(/\/$/, '');
+        passport.authenticate("google", { failureRedirect: `${FRONT}/login` })(req, res, next);
+    },
     (req, res) => {
+        // Obtenemos FRONT_URL dentro del handler para asegurar que dotenv ya cargó
+        const FRONT = (process.env.FRONT_URL || 'http://localhost:5173').trim().replace(/\/$/, '');
+        
         const token = jwt.sign(
             {
                 id: req.user._id,
                 rol: req.user.rol,
-                nombre: req.user.nombre,
-                apellido: req.user.apellido,
-                email: req.user.email,
-                edad: req.user.edad,
-                telefono: req.user.telefono,
-                googleId: req.user.googleId,
                 perfilCompleto: req.user.perfilCompleto
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '12h' }
         );
-        res.redirect(`${FRONT}/auth/google/success?token=${token}`);
+
+        // Configurar cookie HttpOnly
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+            maxAge: 12 * 60 * 60 * 1000 // 12 horas
+        });
+
+        // Redirigir limpio sin tokens en la URL
+        res.redirect(`${FRONT}/auth/google/success`);
     }
 );
 router.put('/completar-perfil', verificarToken, validarPerfilCompleto, async (req, res) => {

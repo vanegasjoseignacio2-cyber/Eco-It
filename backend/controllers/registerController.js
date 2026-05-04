@@ -195,13 +195,20 @@ export const verificarYRegistrar = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        // Configurar cookie HttpOnly
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días (coincide con expiresIn de jwt)
+        });
+
         console.log(`✅ Usuario registrado y verificado: ${email}`);
 
         return res.status(201).json({
             success: true,
             mensaje: '¡Cuenta verificada y creada exitosamente!',
             data: {
-                token,
                 usuario: {
                     id:              nuevoUser._id,
                     nombre:          nuevoUser.nombre,
