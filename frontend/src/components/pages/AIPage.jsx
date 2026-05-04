@@ -40,15 +40,9 @@ export default function AIPage() {
     // Referencia para cancelar petición actual
     const abortControllerRef = useRef(null);
 
-    // Estado local para Ban
-    const [banInfo, setBanInfo] = useState(null);
-
     const checkBanError = (err) => {
         if (err?.data?.banned) {
-            setBanInfo({
-                reason: err.data.banReason || 'Contenido inapropiado',
-                hasta: err.data.banHasta
-            });
+            showToast(`Acceso restringido: ${err.data.banReason || 'Contenido inapropiado'}`, "error");
             return true;
         }
         return false;
@@ -180,8 +174,14 @@ export default function AIPage() {
         try {
             if (imagen) {
                 const response = await analizarImagen(token, imagen, pregunta || "", activeChatId, controller.signal);
+                const respuesta = response.data.respuesta;
+                
+                if (respuesta.includes("ALERTA_OBSCENA:")) {
+                    showToast("¡Advertencia! Se ha detectado contenido inapropiado en la imagen.", "warning");
+                }
+
                 setMessages(prev => prev.map(msg =>
-                    msg.id === botMsgId ? { ...msg, content: response.data.respuesta } : msg
+                    msg.id === botMsgId ? { ...msg, content: respuesta } : msg
                 ));
                 if (response.data.chatId && !activeChatId) {
                     setActiveChatId(response.data.chatId);
@@ -196,13 +196,9 @@ export default function AIPage() {
                         loadChats();
                     }
                     if (chunkContent) {
-                        // Detectar trigger de baneo en el stream
+                        // Detectar trigger de lenguaje inapropiado en el stream
                         if (chunkContent.includes("ALERTA_LENGUAJE_INAPROPIADO:")) {
-                            setBanInfo({
-                                reason: 'Lenguaje explícito e inapropiado',
-                                hasta: new Date(Date.now() + 24 * 60 * 60 * 1000) // Estimación de 24h
-                            });
-                            return;
+                            showToast("¡Advertencia! Por favor, evita el uso de lenguaje obsceno o sexual.", "warning");
                         }
                         setMessages(prev => prev.map(msg =>
                             msg.id === botMsgId ? { ...msg, content: msg.content + chunkContent } : msg
@@ -378,41 +374,10 @@ export default function AIPage() {
                                     selectedImage={selectedImage}
                                     onImageRemove={() => setSelectedImage(null)}
                                     isTyping={isTyping}
-                                    disabled={!estaAutenticado || !!banInfo}
+                                    disabled={!estaAutenticado}
                                 />
                                 
-                                {/* OVERLAY DE BANEO */}
-                                <AnimatePresence>
-                                    {banInfo && (
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className="absolute inset-0 z-[100] backdrop-blur-xl bg-white/70 flex flex-col items-center justify-center p-8 text-center rounded-[32px] border-4 border-red-100"
-                                        >
-                                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-red-100">
-                                                <AlertTriangle className="w-10 h-10 text-red-600" />
-                                            </div>
-                                            <h2 className="text-3xl font-black text-red-900 mb-3 tracking-tight">Acceso Restringido</h2>
-                                            <p className="text-red-700 text-lg max-w-sm mb-8 leading-relaxed font-medium">
-                                                Has sido baneado del servicio de Inteligencia Artificial.
-                                            </p>
-                                            
-                                            <div className="bg-white px-8 py-6 rounded-2xl shadow-sm border border-red-100 w-full max-w-sm space-y-4">
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Motivo del Baneo</p>
-                                                    <p className="text-gray-900 font-medium">{banInfo.reason}</p>
-                                                </div>
-                                                <div className="h-px bg-gray-100 w-full" />
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Expira el</p>
-                                                    <p className="text-red-600 font-bold">
-                                                        {banInfo.hasta ? new Date(banInfo.hasta).toLocaleString() : 'Permanente'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+
                             </div>
                         </motion.div>
 
