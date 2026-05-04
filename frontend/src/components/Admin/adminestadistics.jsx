@@ -59,7 +59,7 @@ export default function AdminEstadisticas() {
     const fetchStats = async () => {
         setRefreshing(true);
         try {
-            const res = await fetch("http://localhost:3000/api/admin/stats", {
+            const res = await fetch("https://backend-production-1e6e.up.railway.app/api/admin/stats", {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();

@@ -183,7 +183,7 @@ export default function CompletarPerfil() {
         setSubmitError('');
         setCargando(true);
         try {
-            const res = await fetch('http://localhost:3000/api/auth/completar-perfil', {
+            const res = await fetch('https://backend-production-1e6e.up.railway.app/api/auth/completar-perfil', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

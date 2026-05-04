@@ -57,7 +57,7 @@ export default function LoginForm() {
       showConsentRequiredToast();
       return;
     }
-    window.location.href = "http://localhost:3000/api/auth/google";
+    window.location.href = "https://backend-production-1e6e.up.railway.app/api/auth/google";
   };
 
   const handleSubmit = async (e) => {

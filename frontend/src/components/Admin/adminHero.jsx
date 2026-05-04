@@ -117,11 +117,12 @@ export default function AdminHero() {
         if (!token) return;
         setRefreshing(true);
         try {
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
             const [resStats, resAudit] = await Promise.all([
-                fetch('http://localhost:3000/api/admin/stats', {
+                fetch(`${backendUrl}/api/admin/stats`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
-                fetch('http://localhost:3000/api/admin/audit', {
+                fetch(`${backendUrl}/api/admin/audit`, {
                     headers: { Authorization: `Bearer ${token}` }
                 })
             ]);
@@ -130,7 +131,6 @@ export default function AdminHero() {
                 resStats.json(),
                 resAudit.json()
             ]);
-
             if (data.success) {
                 setTotalUsuarios(data.totalUsuarios);
                 setConsultasHoy(data.consultasHoy || 0);

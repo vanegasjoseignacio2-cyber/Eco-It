@@ -256,7 +256,7 @@ export default function AdminMap() {
         if (!token) return;
         setLoading(true);
         try {
-            const res = await fetch("http://localhost:3000/api/admin/map/points", {
+            const res = await fetch("https://backend-production-1e6e.up.railway.app/api/admin/map/points", {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -327,8 +327,8 @@ export default function AdminMap() {
             imagen: form.imagen
         };
         const url = editingPoint
-            ? `http://localhost:3000/api/admin/map/points/${editingPoint.id}`
-            : "http://localhost:3000/api/admin/map/points";
+            ? `https://backend-production-1e6e.up.railway.app/api/admin/map/points/${editingPoint.id}`
+            : "https://backend-production-1e6e.up.railway.app/api/admin/map/points";
         const method = editingPoint ? "PATCH" : "POST";
 
         try {
@@ -362,7 +362,7 @@ export default function AdminMap() {
         const id = deleteConfirm.id;
         setDeleteConfirm({ open: false, id: null });
         try {
-            const res = await fetch(`http://localhost:3000/api/admin/map/points/${id}`, {
+            const res = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/map/points/${id}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -381,7 +381,7 @@ export default function AdminMap() {
         if (!token) return;
 
         try {
-            const res = await fetch(`http://localhost:3000/api/admin/map/points/${id}/toggle`, {
+            const res = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/map/points/${id}/toggle`, {
                 method: "PATCH",
                 headers: { Authorization: `Bearer ${token}` }
             });

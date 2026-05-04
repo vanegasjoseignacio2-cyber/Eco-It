@@ -28,7 +28,7 @@ const GamePage = () => {
             try {
                 // Consultamos el perfil actual para actualizar en tiempo real
                 // Asumiendo que esta es la ruta para obtener el perfil propio
-                const res = await fetch('http://localhost:3000/api/users/profile', {
+                const res = await fetch('https://backend-production-1e6e.up.railway.app/api/users/profile', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const data = await res.json();

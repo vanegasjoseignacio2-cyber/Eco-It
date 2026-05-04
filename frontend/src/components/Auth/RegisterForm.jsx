@@ -24,7 +24,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useCookieConsent } from "../../context/Cookieconsentcontext";
 
 // ─── Helpers de API ───────────────────────────────────────────────────────────
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API = import.meta.env.VITE_API_URL || 'https://backend-production-1e6e.up.railway.app';
 
 const enviarCodigo = (datos) =>
     fetch(`${API}/api/auth/enviar-codigo-registro`, {
