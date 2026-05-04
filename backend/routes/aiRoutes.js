@@ -77,17 +77,9 @@ REGLAS ESTRICTAS:
 
 
 /**
- * Helper para ejecutar el baneo automático de un usuario
+ * Helper para registrar una alerta de contenido inapropiado sin banear al usuario
  */
-async function ejecutarBaneoAutomatico(req, razon, imagen = null) {
-  const banTime = new Date();
-  banTime.setHours(banTime.getHours() + 24);
-  
-  req.usuario.status = 'banned';
-  req.usuario.banHasta = banTime;
-  req.usuario.banReason = razon;
-  await req.usuario.save();
-
+async function registrarAlertaContenido(req, razon, imagen = null) {
   const notifAlertaData = {
     type: imagen ? "alerta_obscena" : "alerta_lenguaje",
     email: req.usuario.email,
@@ -98,20 +90,7 @@ async function ejecutarBaneoAutomatico(req, razon, imagen = null) {
       : "Se detectó el uso de lenguaje inapropiado/sexual en el chat."
   };
 
-  const notifBanData = {
-    type: "usuario_baneado",
-    email: req.usuario.email,
-    nombre: `${req.usuario.nombre || ""} ${req.usuario.apellido || ""}`.trim(),
-    adminName: "Sistema (IA Automático)",
-    dias: 1,
-    fecha: new Date(),
-    mensaje: `El usuario ${req.usuario.email} ha sido baneado automáticamente por 1 día debido a contenido inapropiado.`
-  };
-
-  const [notifAlerta, notifBan] = await Promise.all([
-    Notification.create(notifAlertaData),
-    Notification.create(notifBanData)
-  ]);
+  const notifAlerta = await Notification.create(notifAlertaData);
 
   const io = req.app.get("io");
   if (io) {
@@ -127,11 +106,6 @@ async function ejecutarBaneoAutomatico(req, razon, imagen = null) {
         id: notifAlerta._id
       });
     }
-
-    io.to("admins").emit("admin:usuario_baneado", {
-      ...notifBanData,
-      id: notifBan._id
-    });
   }
 }
 
@@ -316,7 +290,7 @@ aiRouter.post("/consultar", async (req, res) => {
     if (respuestaCompleta) {
       // Verificar si hubo una alerta de lenguaje inapropiado
       if (respuestaCompleta.includes("ALERTA_LENGUAJE_INAPROPIADO:")) {
-        await ejecutarBaneoAutomatico(req, "Lenguaje explícito e inapropiado");
+        await registrarAlertaContenido(req, "Lenguaje explícito e inapropiado");
       }
 
       chatActual.mensajes.push({ role: "user", content: pregunta });
@@ -394,14 +368,8 @@ aiRouter.post("/analizar-imagen", async (req, res) => {
 
     // Verificar si la IA consideró la imagen obscena
     if (respuesta.includes("ALERTA_OBSCENA:")) {
-      await ejecutarBaneoAutomatico(req, "Contenido imagen inapropiado", imagen);
-
-      return res.status(403).json({
-        error: "Fuiste baneado por contenido inapropiado.",
-        banned: true,
-        banReason: req.usuario.banReason,
-        banHasta: req.usuario.banHasta
-      });
+      await registrarAlertaContenido(req, "Contenido imagen inapropiado", imagen);
+      // No baneamos, solo dejamos que la respuesta fluya para que el frontend muestre la advertencia
     }
 
     // Guardar en la DB
