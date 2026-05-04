@@ -1,4 +1,5 @@
 import CarouselSlide from '../models/CarouselSlide.js';
+import AuditLog from '../models/AuditLog.js';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Obtener todos los slides (Público)
@@ -57,6 +58,18 @@ export const createSlide = async (req, res) => {
         });
 
         await newSlide.save();
+
+        try {
+            await AuditLog.create({
+                type: 'slide',
+                action: 'Nuevo Slide',
+                details: `Slide creado: ${title || tag || 'Sin título'}`,
+                user: 'Administrador'
+            });
+        } catch (auditErr) {
+            console.error('Error al crear audit log:', auditErr);
+        }
+
         res.status(201).json({
             success: true,
             mensaje: 'Slide creado correctamente',

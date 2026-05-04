@@ -32,7 +32,7 @@ export default function Section() {
                         Cada acción cuenta.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                         {!estaAutenticado && (
                             <Link to="/register">
                                 <button className="btn-hover px-8 py-4 rounded-full bg-white text-green-600 font-semibold text-lg shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 transition-transform hover:scale-105">

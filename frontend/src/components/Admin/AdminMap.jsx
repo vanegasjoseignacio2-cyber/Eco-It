@@ -40,6 +40,7 @@ import {
     Image as ImageIcon,
     UploadCloud,
 } from "lucide-react";
+import { ListSkeleton } from "./AdminSkeletons";
 import ConfirmationModal from "../ui/ConfirmationModal";
 
 // ─── Configuración de Cloudinary ────────────────────────────────────────────────
@@ -545,8 +546,9 @@ export default function AdminMap() {
 
                 {/* Lista de puntos */}
                 <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
-                    {/* TODO: map sobre filtered → viene de GET /api/admin/map/points */}
-                    {filtered.length === 0 ? (
+                    {loading ? (
+                        <ListSkeleton rows={5} />
+                    ) : filtered.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
                             <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
                                 <MapPin className="w-6 h-6 text-green-200" />

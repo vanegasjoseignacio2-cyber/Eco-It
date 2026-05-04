@@ -34,3 +34,63 @@
   scrollbar-width: thin;
   scrollbar-color: #22c55e rgba(16, 185, 129, 0.15);
 }
+
+@keyframes google-border-move {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.bg-google-border {
+  background: linear-gradient(
+    90deg,
+    #EA4335 0%,
+    #FBBC05 6.66%,
+    #34A853 13.33%,
+    #4285F4 20.00%,
+    
+    #EA4335 26.66%,
+    #FBBC05 33.33%,
+    #34A853 40.00%,
+    #4285F4 46.66%,
+    
+    #EA4335 53.33%,
+    #FBBC05 60.00%,
+    #34A853 66.66%,
+    #4285F4 73.33%,
+    
+    #EA4335 80.00%,
+    #FBBC05 86.66%,
+    #34A853 93.33%,
+    #4285F4 100%
+  );
+  background-size: 500% 100%;
+  background-position: 0% 50%;
+}
+
+.hover\:animate-google-border:hover {
+  animation: google-border-move 6s linear infinite;
+}
+
+.bg-google-base {
+  background: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #ffffff 33%,
+    #ffffff 66%,
+    #ffffff 100%
+  );
+}
+
+.hover\:bg-google-hover:hover {
+  background: linear-gradient(
+    90deg,
+    #fef2f2 0%,
+    #fffbeb 33%,
+    #f0fdf4 66%,
+    #eff6ff 100%
+  );
+}

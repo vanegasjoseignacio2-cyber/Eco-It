@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { sendWelcomeEmail } from '../utils/emailService.js';
 import { buildVerificationEmailHTML } from '../utils/verificationEmailTemplate.js';
+import AuditLog from "../models/AuditLog.js";
+import { createAuditLog } from "../utils/auditLogger.js";
 
 // ─── Transporter lazy ────────────────────────────────────────────────────────
 const getTransporter = () => nodemailer.createTransport({
@@ -169,6 +171,14 @@ export const verificarYRegistrar = async (req, res) => {
 
         // Eliminar el registro pendiente
         await PendingRegistration.deleteOne({ email });
+
+        // Crear registro de auditoría
+        await createAuditLog(req.app, {
+            type: 'register',
+            action: 'Nuevo Usuario',
+            details: `Usuario registrado: ${nuevoUser.email}`,
+            user: `${nuevoUser.nombre} ${nuevoUser.apellido}`.trim() || nuevoUser.email
+        });
 
         // Enviar correo de bienvenida (no bloquea)
         sendWelcomeEmail(nuevoUser.email, nuevoUser.nombre)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, AlertTriangle } from "lucide-react";
+import { Bell, X, AlertTriangle, Trash2 } from "lucide-react";
 import AdminSidebar from "../Admin/adminSlidebar";
 import AdminHero from "../Admin/adminHero";
 import AdminUsers from "../Admin/adminUsers";
@@ -21,9 +21,22 @@ export default function AdminLayout() {
 
     const { showToast } = useToast();
     const { socket } = useSocket();
-    const { token } = useAuth();
+    const { token, usuario } = useAuth();
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+    // Lógica de borrado lógico (ocultar) para Admins normales
+    const [hiddenNotifIds, setHiddenNotifIds] = useState(() => {
+        try {
+            const saved = localStorage.getItem(`notif_hidden_${usuario?._id || usuario?.id || 'unknown'}`);
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch { return new Set(); }
+    });
+
+    const notificationsVisibles = notifications.filter(n => !hiddenNotifIds.has(String(n._id || n.id)));
+    const unreadCount = notificationsVisibles.filter(n => !n.read).length;
+
+    useEffect(() => {
+        localStorage.setItem(`notif_hidden_${usuario?._id || usuario?.id || 'unknown'}`, JSON.stringify([...hiddenNotifIds]));
+    }, [hiddenNotifIds, usuario]);
 
     useEffect(() => {
         // Mostrar aviso de seguridad al entrar al panel
@@ -123,6 +136,42 @@ export default function AdminLayout() {
         }
     };
 
+    const handleDeleteNotification = async (id) => {
+        // Borrado lógico para todos (ocultar de la vista)
+        setHiddenNotifIds(prev => new Set([...prev, String(id)]));
+
+        // Borrado físico solo si es Superadmin
+        if (usuario?.rol === 'superadmin') {
+            try {
+                await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications/${id}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } catch (error) {
+                console.error("Error al eliminar notificación física:", error);
+            }
+        }
+    };
+
+    const handleClearAll = async () => {
+        // Borrado lógico para todos (ocultar de la vista)
+        const allIds = notificationsVisibles.map(n => String(n._id || n.id));
+        setHiddenNotifIds(prev => new Set([...prev, ...allIds]));
+
+        // Borrado físico solo si es Superadmin
+        if (usuario?.rol === 'superadmin') {
+            try {
+                await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications/all`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setNotifications([]);
+            } catch (error) {
+                console.error("Error al vaciar notificaciones físicamente:", error);
+            }
+        }
+    };
+
     return (
         <div className="flex h-screen w-full overflow-hidden bg-green-50 relative">
             <AdminSessionTracker />
@@ -185,7 +234,7 @@ export default function AdminLayout() {
                             
                             {/* Body */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
-                                {notifications.length === 0 ? (
+                                {notificationsVisibles.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center px-4 min-h-[84px]">
                                         <div className="w-16 h-16 bg-green-50 text-green-200 rounded-full flex items-center justify-center mb-4">
                                             <Bell className="w-8 h-8" />
@@ -194,16 +243,25 @@ export default function AdminLayout() {
                                         <p className="text-xs text-green-600 mt-1">No tienes notificaciones pendientes.</p>
                                     </div>
                                 ) : (
-                                    notifications.map(notif => (
+                                    notificationsVisibles.map(notif => (
                                         <motion.div 
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            key={notif.id} 
-                                            className={`p-4 rounded-2xl border shadow-sm transition-all ${
+                                            key={notif._id || notif.id} 
+                                            className={`p-4 rounded-2xl border shadow-sm transition-all group/item ${
                                                 notif.read ? 'bg-white border-green-100' : 
                                                 (notif.type === 'alerta_obscena' ? 'bg-red-50 border-red-200 shadow-red-100' : 'bg-amber-50 border-amber-200 shadow-amber-100')
                                             } relative`}
                                         >
+                                            {/* Botón eliminar individual */}
+                                            <button
+                                                onClick={() => handleDeleteNotification(notif._id || notif.id)}
+                                                className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white shadow-sm opacity-0 group-hover/item:opacity-100 transition-all z-10"
+                                                title="Eliminar notificación"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+
                                             {!notif.read && (
                                                 <span className="absolute top-4 right-4 flex h-2 w-2">
                                                     <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${notif.type === 'alerta_obscena' ? 'bg-red-400' : 'bg-amber-400'}`}></span>
@@ -237,13 +295,22 @@ export default function AdminLayout() {
                             </div>
 
                             {/* Footer */}
-                            {notifications.length > 0 && unreadCount > 0 && (
-                                <div className="p-4 border-t border-green-50 bg-white">
+                            {notificationsVisibles.length > 0 && (
+                                <div className="p-4 border-t border-green-50 bg-white space-y-2">
+                                    {unreadCount > 0 && (
+                                        <button 
+                                            onClick={markAllAsRead}
+                                            className="w-full py-2.5 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-all shadow-sm"
+                                        >
+                                            Marcar todas como leídas
+                                        </button>
+                                    )}
                                     <button 
-                                        onClick={markAllAsRead}
-                                        className="w-full py-2.5 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition-all shadow-sm"
+                                        onClick={handleClearAll}
+                                        className="w-full py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                                     >
-                                        Marcar todas como leídas
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Vaciar notificaciones
                                     </button>
                                 </div>
                             )}

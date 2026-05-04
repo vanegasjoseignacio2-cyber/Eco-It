@@ -1,6 +1,6 @@
 import { ImagePlus, Send, X, Mic, AlertCircle, Square } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { useOfensiveValidator } from "../Contact/ContactForm";
 
 export default function ChatInput({
@@ -15,8 +15,16 @@ export default function ChatInput({
     disabled
 }) {
     const fileInputRef = useRef(null);
+    const inputRef = useRef(null);
     const [focused, setFocused] = useState(false);
     const { validar } = useOfensiveValidator();
+
+    // Auto-focus al terminar de escribir o al montar
+    useEffect(() => {
+        if (!isTyping && !disabled) {
+            inputRef.current?.focus();
+        }
+    }, [isTyping, disabled]);
 
     // Validación en tiempo real
     const validation = useMemo(() => {
@@ -28,8 +36,23 @@ export default function ChatInput({
     const canSend = !disabled && !isTyping && (inputValue.trim() || selectedImage) && !isOfensive;
     const canStop = isTyping && onStop;
 
+    // Función para filtrar emojis y caracteres no latinos
+    const filterInput = (text) => {
+        // 1. Bloquear emojis y pictogramas extendidos
+        let cleaned = text.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+        
+        // 2. Bloquear caracteres fuera del rango latino extendido, números y puntuación común
+        // Permite: A-Z, a-z, 0-9, caracteres españoles (áéíóúñ...), puntuación básica y símbolos comunes
+        // Excluye: Ruso, Chino, Árabe, etc.
+        cleaned = cleaned.replace(/[^\x20-\x7E\xA0-\xFF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF\n\r]/gu, '');
+        
+        return cleaned;
+    };
+
     const handleChange = (e) => {
-        setInputValue(e.target.value);
+        const val = e.target.value;
+        const filtered = filterInput(val);
+        setInputValue(filtered);
     };
 
     return (
@@ -120,6 +143,7 @@ export default function ChatInput({
                     {/* Input texto */}
                     <div className="flex-1 flex flex-col">
                         <input
+                            ref={inputRef}
                             value={inputValue}
                             onChange={handleChange}
                             onKeyDown={e => e.key === "Enter" && !e.shiftKey && canSend && onSend()}
@@ -138,11 +162,15 @@ export default function ChatInput({
 
                     {/* Botón enviar / detener */}
                     <motion.button
-                        whileHover={(canSend || canStop) ? { scale: 1.08 } : {}}
-                        whileTap={(canSend || canStop) ? { scale: 0.92 } : {}}
-                        onClick={isTyping ? onStop : onSend}
+                        whileHover={(canSend || canStop) ? { scale: 1.05 } : {}}
+                        whileTap={(canSend || canStop) ? { scale: 0.95 } : {}}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (isTyping) onStop();
+                            else if (canSend) onSend();
+                        }}
                         disabled={!canSend && !canStop}
-                        className="flex-shrink-0 p-2.5 sm:p-3 rounded-xl transition-all"
+                        className="flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl transition-all cursor-pointer active:opacity-80"
                         style={
                             isTyping
                                 ? {

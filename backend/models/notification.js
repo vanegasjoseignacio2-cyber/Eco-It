@@ -20,4 +20,7 @@ const notificationSchema = new mongoose.Schema({
     timestamps: true 
 });
 
+// Índice TTL para auto-eliminar a los 7 días (604800 segundos)
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 604800 });
+
 export default mongoose.model('Notification', notificationSchema);

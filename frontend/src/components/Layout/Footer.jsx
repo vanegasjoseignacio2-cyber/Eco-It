@@ -18,12 +18,6 @@ const footerLinks = {
         { name: "Juego", href: "/game" },
         { name: "Contacto", href: "/contact" },
     ],
-    recursos: [
-        { name: "Guía de Reciclaje", href: "#" },
-        { name: "Tips Ecológicos", href: "#" },
-        { name: "Puntos de Acopio", href: "#" },
-        { name: "Blog", href: "#" },
-    ],
     legal: [
         { name: "Términos y condiciones", href: "/terminosycondiciones" },
         { name: "Privacidad", href: "/politicadeprivacidad" },
@@ -47,15 +41,15 @@ export default function Footer() {
             </div>
 
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12">
 
                     {/* Brand */}
-                    <div className="space-y-6 flex flex-col items-center md:items-start text-center md:text-left">
-                        <Link to="/" className="flex items-center gap-2">
+                    <div className="col-span-2 md:col-span-2 space-y-6 flex flex-col items-start text-left">
+                        <Link to="/" className="flex items-center gap-2 group">
                             <motion.div
                                 whileHover={{ rotate: 360 }}
                                 transition={{ duration: 0.5 }}
-                                className="w-10 h-10 bg-white rounded-full overflow-hidden flex items-center justify-center"
+                                className="w-10 h-10 bg-white rounded-full overflow-hidden flex items-center justify-center shadow-lg group-hover:shadow-green-500/50 transition-shadow"
                             >
                                 <img
                                     className="w-full h-full object-contain scale-[1.6]"
@@ -87,54 +81,38 @@ export default function Footer() {
                     </div>
 
                     {/* Navegación */}
-                    <div className="text-center md:text-left">
+                    <div className="col-span-1 text-left">
                         <h3 className="text-lg font-semibold mb-6">Navegación</h3>
                         <ul className="space-y-3">
                             {footerLinks.navegacion.map((link) => (
                                 <li key={link.name}>
                                     <Link
                                         to={link.href}
-                                        className="text-green-100/70 hover:text-white transition-colors hover:translate-x-1 inline-block"
+                                        className="relative text-green-100/70 hover:text-white transition-colors group pb-1 inline-block"
                                     >
                                         {link.name}
+                                        <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-gradient-to-r from-green-400 via-emerald-300 to-teal-400 transition-all duration-300 group-hover:w-full rounded-full"></span>
                                     </Link>
                                 </li>
                             ))}
                         </ul>
                     </div>
 
-                    {/* Recursos */}
-                    <div className="text-center md:text-left">
-                        <h3 className="text-lg font-semibold mb-6">Recursos</h3>
-                        <ul className="space-y-3">
-                            {footerLinks.recursos.map((link) => (
-                                <li key={link.name}>
-                                    <a
-                                        href={link.href}
-                                        className="text-green-100/70 hover:text-white transition-colors"
-                                    >
-                                        {link.name}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
                     {/* Contacto */}
-                    <div className="text-center md:text-left">
+                    <div className="col-span-1 text-left">
                         <h3 className="text-lg font-semibold mb-6">Contacto</h3>
                         <ul className="space-y-4">
-                            <li className="flex items-center justify-center md:justify-start gap-3 text-green-100/70">
-                                <Mail className="w-5 h-5 text-green-400" />
-                                <span>contacto@eco-it.com</span>
+                            <li className="flex items-start gap-3 text-green-100/70 group cursor-pointer hover:text-white transition-colors">
+                                <Mail className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-green-300 transition-transform duration-300" />
+                                <a href="mailto:contacto@eco-it.com" className="break-all sm:break-normal">contacto@eco-it.com</a>
                             </li>
-                            <li className="flex items-center justify-center md:justify-start gap-3 text-green-100/70">
-                                <Phone className="w-5 h-5 text-green-400" />
-                                <span>+57 123 456 7890</span>
+                            <li className="flex items-start gap-3 text-green-100/70 group cursor-pointer hover:text-white transition-colors">
+                                <Phone className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-green-300 transition-transform duration-300" />
+                                <a href="tel:+571234567890">+57 123 456 7890</a>
                             </li>
-                            <li className="flex items-start justify-center md:justify-start gap-3 text-green-100/70">
-                                <MapPin className="w-5 h-5 text-green-400 flex-shrink-0" />
-                                <span>Garzón-Huila, Colombia</span>
+                            <li className="flex items-start gap-3 text-green-100/70 group cursor-pointer hover:text-white transition-colors">
+                                <MapPin className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-green-300 transition-transform duration-300" />
+                                <a href="https://maps.google.com/?q=Garzón-Huila,Colombia" target="_blank" rel="noopener noreferrer">Garzón-Huila, Colombia</a>
                             </li>
                         </ul>
                     </div>
@@ -156,9 +134,10 @@ export default function Footer() {
                                 <a
                                     key={link.name}
                                     href={link.href}
-                                    className="text-green-100/60 text-sm hover:text-white transition-colors"
+                                    className="relative text-green-100/60 text-sm hover:text-white transition-colors group pb-1"
                                 >
                                     {link.name}
+                                    <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-green-400 transition-all duration-300 group-hover:w-full"></span>
                                 </a>
                             ))}
                         </div>

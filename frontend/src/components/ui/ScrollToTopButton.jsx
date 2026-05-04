@@ -71,8 +71,25 @@ export default function ScrollToTop() {
 
             {/* Círculo exterior giratorio */}
             <div className="absolute inset-[-8px] rounded-full border-2 border-dashed border-emerald-500/40 group-hover:border-emerald-700 group-hover:scale-110 transition-all duration-500 animate-[spin_10s_linear_infinite] pointer-events-none"></div>
-            
-            <ChevronUp className="relative z-10 w-8 h-8 transition-transform duration-500 group-hover:-translate-y-0.5" />
+
+            {/* Efecto de Brillo (Shiny) */}
+            <motion.div
+              animate={{
+                backgroundPosition: ["200% center", "-200% center"],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+              className="absolute inset-0 rounded-full opacity-60 pointer-events-none"
+              style={{
+                backgroundImage: "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)",
+                backgroundSize: "250% auto",
+              }}
+            />
+
+            <ChevronUp className="relative z-10 w-8 h-8 transition-transform duration-500 group-hover:-translate-y-1" />
           </button>
         </motion.div>
       )}

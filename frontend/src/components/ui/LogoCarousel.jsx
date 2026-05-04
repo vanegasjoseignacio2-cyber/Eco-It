@@ -1,39 +1,11 @@
 // LogoCarousel.jsx
 const logos = [
   {
-    name: "GreenCore",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <circle cx="14" cy="14" r="13" stroke="#4a7c59" strokeWidth="1.5"/>
-        <path d="M8 18c2-4 4-6 6-6s4 2 6 6" stroke="#4a7c59" strokeWidth="1.5" strokeLinecap="round"/>
-        <circle cx="14" cy="10" r="2" fill="#4a7c59"/>
-      </svg>
-    ),
-  },
-  {
     name: "Solartia",
     icon: (
       <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
         <rect x="3" y="3" width="22" height="22" rx="5" stroke="#5a7a5a" strokeWidth="1.5"/>
         <path d="M9 14h10M14 9v10" stroke="#5a7a5a" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    name: "EcoNova",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <path d="M14 4L4 10v8l10 6 10-6v-8L14 4z" stroke="#607d63" strokeWidth="1.5" strokeLinejoin="round"/>
-        <circle cx="14" cy="14" r="3" fill="#607d63"/>
-      </svg>
-    ),
-  },
-  {
-    name: "Renova360",
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <path d="M5 20 Q14 4 23 20" stroke="#4a6741" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M8 20 Q14 10 20 20" stroke="#4a6741" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },

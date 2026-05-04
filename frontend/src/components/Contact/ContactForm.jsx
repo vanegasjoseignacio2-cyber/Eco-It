@@ -19,7 +19,7 @@ const PALABRAS_OFENSIVAS = [
     'sapa','sapo','gordo','gorda','carechimba','caremondá','caremonda',
     'chimba','chimbo','penes','vagina','pelado marica','hpta','hijpta',
     'mk','mka','marik','marika','mar1ca','mar!ca','hptas','maricones','tetranutras','tetranutra',
-    'pene', 'mmda', 'mamada', 'culie', 'qliar', 'culiar', 'culiando', 'culion', 'culeo', 'actos sexuales', 'caca',
+    'pene', 'mmda', 'mamada', 'culie', 'qliar', 'culiar', 'culiando', 'culion', 'culeo', 'actos sexuales', 'caca','sexo',
 
     'sapas','porno','pornografía','xvideos','porn hub','pornhub','mlp','tragaleche','culean',
     'soplamonda','pichaslargas','culear','culito','mia khalifa','polla','zunga','sunga','soplapicha',

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { Map, Trash2, MapPin, Leaf, Recycle } from "lucide-react";
 import { io } from "socket.io-client";
@@ -26,6 +26,29 @@ export default function MapSection() {
     const [searchTerm, setSearchTerm]       = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [selectedPlace, setSelectedPlace] = useState(null);
+    const [isMapActive, setIsMapActive]     = useState(false);
+    const mapContainerRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (mapContainerRef.current && !mapContainerRef.current.contains(event.target)) {
+                setIsMapActive(false);
+            }
+        };
+
+        if (isMapActive) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [isMapActive]);
 
     useEffect(() => {
         fetch("http://localhost:3000/api/map/points")
@@ -130,17 +153,34 @@ export default function MapSection() {
 
                         {/* Map */}
                         <motion.div
+                            ref={mapContainerRef}
                             className="lg:col-span-2 h-[320px] sm:h-[400px] lg:h-[440px] rounded-3xl overflow-hidden relative z-0
-                                shadow-[0_8px_40px_rgba(34,197,94,0.2)] border border-green-200/40"
+                                shadow-[0_8px_40px_rgba(34,197,94,0.2)] border border-green-200/40 group"
                             initial={{ opacity: 0, x: -30 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.5, duration: 0.6, type: "spring", stiffness: 90 }}
+                            onMouseLeave={() => setIsMapActive(false)}
                         >
-                            <MapView
-                                points={filteredPoints}
-                                selectedPlace={selectedPlace}
-                                onMarkerClick={setSelectedPlace}
-                            />
+                            {/* Overlay de interacción */}
+                            {!isMapActive && (
+                                <div 
+                                    className="absolute inset-0 z-50 bg-black/5 hover:bg-black/10 flex flex-col items-center justify-center cursor-pointer transition-colors"
+                                    onClick={() => setIsMapActive(true)}
+                                >
+                                    <div className="bg-white/95 text-green-800 px-6 py-3 rounded-full font-semibold shadow-lg flex items-center gap-2 transform transition-transform hover:scale-105">
+                                        <Map className="w-5 h-5" />
+                                        Toca para explorar el mapa
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className={`w-full h-full transition-opacity ${!isMapActive ? "pointer-events-none opacity-90" : "opacity-100"}`}>
+                                <MapView
+                                    points={filteredPoints}
+                                    selectedPlace={selectedPlace}
+                                    onMarkerClick={setSelectedPlace}
+                                />
+                            </div>
                         </motion.div>
 
                         {/* Results */}

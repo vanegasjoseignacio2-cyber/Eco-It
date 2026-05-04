@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
+import { createAuditLog } from "../utils/auditLogger.js";
 
 // Iniciar sesión
 export const loginUsuario = async (req, res) => {
@@ -40,6 +41,14 @@ export const loginUsuario = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: "12h" }
         );
+
+        // Audit Log (No bloquea la respuesta)
+        createAuditLog(req.app, {
+            type: 'register', // Usamos register para indicar actividad de usuario, o podríamos crear un tipo 'login'
+            action: 'Inicio de Sesión',
+            details: `El usuario inició sesión: ${usuario.email}`,
+            user: `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.email
+        });
 
         // Si todo es correcto
         res.status(200).json({

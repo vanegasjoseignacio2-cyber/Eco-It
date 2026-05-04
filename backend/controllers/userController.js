@@ -1,5 +1,7 @@
 import User from '../models/user.js';
 import bcrypt from 'bcryptjs';
+import AuditLog from '../models/AuditLog.js';
+import { createAuditLog } from '../utils/auditLogger.js';
 
 // Controlador: Obtener perfil del usuario autenticado
 export const obtenerPerfil = async (req, res) => {
@@ -161,6 +163,14 @@ export const eliminarUsuario = async (req, res) => {
     }
 
     console.log(`Usuario eliminado: ${usuario.email}`);
+
+    // Audit log
+    await createAuditLog(req.app, {
+        type: 'delete',
+        action: 'Cuenta Auto-Eliminada',
+        details: `El usuario eliminó su propia cuenta: ${usuario.email}`,
+        user: usuario.nombre || usuario.email
+    });
 
     res.status(200).json({
       success: true,

@@ -57,6 +57,7 @@ import {
     ArrowUp,
     ArrowDown,
 } from "lucide-react";
+import { ListSkeleton, FormSkeleton } from "./AdminSkeletons";
 
 // ─── CLOUDINARY CONFIG ────────────────────────────────────────────────────────
 const CLOUD_NAME    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME    || "dwx3v7vex";
@@ -412,17 +413,7 @@ export default function AdminImages() {
                         </div>
 
                         {loading ? (
-                            <div className="divide-y divide-green-50">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
-                                        <div className="w-20 h-14 rounded-xl bg-green-50 flex-shrink-0" />
-                                        <div className="flex-1 space-y-2">
-                                            <div className="h-3 bg-green-50 rounded w-2/3" />
-                                            <div className="h-2 bg-green-50 rounded w-1/2" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <ListSkeleton rows={3} />
                         ) : slides.length === 0 ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                 className="flex flex-col items-center justify-center py-20 gap-4">
@@ -480,17 +471,21 @@ export default function AdminImages() {
                             className="bg-white rounded-2xl border border-green-100 shadow-sm overflow-hidden flex flex-col"
                             style={{ maxHeight: "85vh", position: "sticky", top: "1.5rem" }}
                         >
-                            <SlideForm
-                                form={form}
-                                setForm={setForm}
-                                editing={editing}
-                                uploading={uploading}
-                                uploadPct={uploadPct}
-                                fileInputRef={fileInputRef}
-                                onFileChange={handleFileChange}
-                                onSave={handleSave}
-                                onClose={closeForm}
-                            />
+                            {loading ? (
+                                <FormSkeleton />
+                            ) : (
+                                <SlideForm
+                                    form={form}
+                                    setForm={setForm}
+                                    editing={editing}
+                                    uploading={uploading}
+                                    uploadPct={uploadPct}
+                                    fileInputRef={fileInputRef}
+                                    onFileChange={handleFileChange}
+                                    onSave={handleSave}
+                                    onClose={closeForm}
+                                />
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

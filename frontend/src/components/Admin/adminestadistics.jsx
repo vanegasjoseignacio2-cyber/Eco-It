@@ -17,6 +17,7 @@ import {
     RefreshCw,
     ChevronRight,
 } from "lucide-react";
+import { KpiSkeleton, ChartSkeleton } from "./AdminSkeletons";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -34,11 +35,11 @@ const PERIODS = [
 
 const stagger = {
     hidden: {},
-    show: { transition: { staggerChildren: 0.08 } },
+    show: { transition: { staggerChildren: 0.04 } },
 };
 const fadeUp = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
+    show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
 };
 
 export default function AdminEstadisticas() {
@@ -139,16 +140,6 @@ export default function AdminEstadisticas() {
             pill: "bg-green-100 text-green-700",
         },
         {
-            id: "retention",
-            label: "Tasa de Retención",
-            value: "100%",
-            change: "0%",
-            up: true,
-            icon: Target,
-            accent: "#84cc16",
-            pill: "bg-lime-100 text-lime-700",
-        },
-        {
             id: "queries",
             label: "Consultas IA (Hoy)",
             value: stats.consultasHoy.toString(),
@@ -178,7 +169,7 @@ export default function AdminEstadisticas() {
                 <motion.div
                     initial={{ opacity: 0, y: -14 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: 0.3 }}
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pr-24 min-h-[84px]"
                 >
                     <div>
@@ -221,54 +212,58 @@ export default function AdminEstadisticas() {
                 </motion.div>
 
                 {/* KPI Cards */}
-                <motion.div
-                    variants={stagger}
-                    initial="hidden"
-                    animate="show"
-                    className="grid grid-cols-2 xl:grid-cols-4 gap-4"
-                >
-                    {dynamicCards.map((kpi) => {
-                        const Icon = kpi.icon;
-                        const displayValue = kpi.value;
-                        return (
-                            <motion.div
-                                key={kpi.id}
-                                variants={fadeUp}
-                                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                                className="relative bg-white rounded-2xl border border-green-100 shadow-sm p-5 overflow-hidden group cursor-default"
-                            >
-                                {/* Línea superior de acento */}
-                                <div
-                                    className="absolute inset-x-0 top-0 h-0.5 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                    style={{ background: `linear-gradient(to right, ${kpi.accent}, ${kpi.accent}55)` }}
-                                />
-                                {/* Blob decorativo */}
-                                <div
-                                    className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full opacity-10"
-                                    style={{ background: kpi.accent }}
-                                />
-
-                                <div className="flex items-start justify-between mb-5">
+                {refreshing ? (
+                    <KpiSkeleton />
+                ) : (
+                    <motion.div
+                        variants={stagger}
+                        initial="hidden"
+                        animate="show"
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                    >
+                        {dynamicCards.map((kpi) => {
+                            const Icon = kpi.icon;
+                            const displayValue = kpi.value;
+                            return (
+                                <motion.div
+                                    key={kpi.id}
+                                    variants={fadeUp}
+                                    whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                                    className="relative bg-white rounded-2xl border border-green-100 shadow-sm p-5 overflow-hidden group cursor-default"
+                                >
+                                    {/* Línea superior de acento */}
                                     <div
-                                        className="w-10 h-10 rounded-xl flex items-center justify-center shadow"
-                                        style={{ background: `linear-gradient(135deg, ${kpi.accent}bb, ${kpi.accent})` }}
-                                    >
-                                        <Icon className="w-5 h-5 text-white" />
-                                    </div>
-                                    <span className={`flex items-center gap-0.5 text-xs font-bold px-2 py-1 rounded-full ${kpi.pill}`}>
-                                        {kpi.up
-                                            ? <ArrowUpRight className="w-3 h-3" />
-                                            : <ArrowDownRight className="w-3 h-3" />}
-                                        {kpi.change}
-                                    </span>
-                                </div>
+                                        className="absolute inset-x-0 top-0 h-0.5 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                        style={{ background: `linear-gradient(to right, ${kpi.accent}, ${kpi.accent}55)` }}
+                                    />
+                                    {/* Blob decorativo */}
+                                    <div
+                                        className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full opacity-10"
+                                        style={{ background: kpi.accent }}
+                                    />
 
-                                <p className="text-3xl font-black text-green-950 tracking-tight mb-1">{displayValue}</p>
-                                <p className="text-xs text-green-400 font-medium">{kpi.label}</p>
-                            </motion.div>
-                        );
-                    })}
-                </motion.div>
+                                    <div className="flex items-start justify-between mb-5">
+                                        <div
+                                            className="w-10 h-10 rounded-xl flex items-center justify-center shadow"
+                                            style={{ background: `linear-gradient(135deg, ${kpi.accent}bb, ${kpi.accent})` }}
+                                        >
+                                            <Icon className="w-5 h-5 text-white" />
+                                        </div>
+                                        <span className={`flex items-center gap-0.5 text-xs font-bold px-2 py-1 rounded-full ${kpi.pill}`}>
+                                            {kpi.up
+                                                ? <ArrowUpRight className="w-3 h-3" />
+                                                : <ArrowDownRight className="w-3 h-3" />}
+                                            {kpi.change}
+                                        </span>
+                                    </div>
+
+                                    <p className="text-3xl font-black text-green-950 tracking-tight mb-1">{displayValue}</p>
+                                    <p className="text-xs text-green-400 font-medium">{kpi.label}</p>
+                                </motion.div>
+                            );
+                        })}
+                    </motion.div>
+                )}
 
                 {/* Chart + Panel lateral */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -277,7 +272,7 @@ export default function AdminEstadisticas() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.55, delay: 0.2 }}
+                        transition={{ duration: 0.2 }}
                         className="lg:col-span-2 bg-white rounded-2xl border border-green-100 shadow-sm p-6"
                     >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -331,74 +326,78 @@ export default function AdminEstadisticas() {
                         </div>
 
                         <AnimatePresence mode="wait">
-                            <motion.div
-                                key={`${activeChart}-${period}`}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="relative"
-                            >
-                                {/* Eje Y: etiquetas de porcentaje + líneas guía */}
-                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-2">
-                                    {[100, 75, 50, 25, 0].map((pctLabel) => (
-                                        <div key={pctLabel} className="flex items-center gap-1">
-                                            <span className="w-7 text-right text-[9px] font-semibold text-green-500 shrink-0">
-                                                {pctLabel}%
-                                            </span>
-                                            <div className="flex-1 h-px border-t border-dashed border-green-100" />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Barras */}
-                                <div className={`flex items-stretch h-56 pb-8 pl-7 pt-2 ${bars.length > 12 ? 'gap-[2px]' : 'gap-1.5'}`}>
-                                    {bars.map((bar, i) => {
-                                        const pct = maxVal > 0 ? (bar.value / maxVal) * 100 : 0;
-                                        const barPct = bar.value > 0 ? Math.max(pct, 4) : 3;
-                                        return (
-                                            <div key={`${bar.label}-${i}`} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                                                {/* Tooltip valor */}
-                                                {bar.value > 0 && (
-                                                    <span className="absolute top-0 text-[10px] font-bold text-green-700 opacity-0 group-hover:opacity-100 transition-all bg-green-50 rounded px-1 z-10 whitespace-nowrap">
-                                                        {bar.value}
-                                                    </span>
-                                                )}
-                                                {/* Barra */}
-                                                <motion.div
-                                                    initial={{ scaleY: 0 }}
-                                                    animate={{ scaleY: 1 }}
-                                                    transition={{ duration: 0.5, delay: i * (bars.length > 12 ? 0.015 : 0.035), ease: [0.34, 1.1, 0.64, 1] }}
-                                                    className="w-full rounded-t-md cursor-default"
-                                                    style={{
-                                                        height: `${barPct}%`,
-                                                        background: bar.value < 1
-                                                            ? "#f0fdf4"
-                                                            : `linear-gradient(to top, ${tab.color}55, ${tab.color})`,
-                                                        transformOrigin: "bottom",
-                                                    }}
-                                                />
-                                                {/* Label */}
-                                                <span className={`font-medium absolute -bottom-6 whitespace-nowrap ${
-                                                    bars.length > 12
-                                                        ? 'text-[7px] text-green-500'
-                                                        : 'text-[9px] text-green-500'
-                                                } ${bars.length > 20 && i % 2 !== 0 ? 'hidden' : ''}`}>
-                                                    {bar.label}
+                            {refreshing ? (
+                                <ChartSkeleton />
+                            ) : (
+                                <motion.div
+                                    key={`${activeChart}-${period}`}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="relative"
+                                >
+                                    {/* Eje Y: etiquetas de porcentaje + líneas guía */}
+                                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-2">
+                                        {[100, 75, 50, 25, 0].map((pctLabel) => (
+                                            <div key={pctLabel} className="flex items-center gap-1">
+                                                <span className="w-7 text-right text-[9px] font-semibold text-green-500 shrink-0">
+                                                    {pctLabel}%
                                                 </span>
+                                                <div className="flex-1 h-px border-t border-dashed border-green-100" />
                                             </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {allZero && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center pb-8 gap-2">
-                                        <Activity className="w-8 h-8 text-green-100" />
-                                        <p className="text-sm text-green-300 font-medium">Sin datos aún</p>
-                                        <p className="text-xs text-green-200">Esperando actividad para generar la gráfica...</p>
+                                        ))}
                                     </div>
-                                )}
-                            </motion.div>
+
+                                    {/* Barras */}
+                                    <div className={`flex items-stretch h-56 pb-8 pl-7 pt-2 ${bars.length > 12 ? 'gap-[2px]' : 'gap-1.5'}`}>
+                                        {bars.map((bar, i) => {
+                                            const pct = maxVal > 0 ? (bar.value / maxVal) * 100 : 0;
+                                            const barPct = bar.value > 0 ? Math.max(pct, 4) : 3;
+                                            return (
+                                                <div key={`${bar.label}-${i}`} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                                    {/* Tooltip valor */}
+                                                    {bar.value > 0 && (
+                                                        <span className="absolute top-0 text-[10px] font-bold text-green-700 opacity-0 group-hover:opacity-100 transition-all bg-green-50 rounded px-1 z-10 whitespace-nowrap">
+                                                            {bar.value}
+                                                        </span>
+                                                    )}
+                                                    {/* Barra */}
+                                                    <motion.div
+                                                        initial={{ scaleY: 0 }}
+                                                        animate={{ scaleY: 1 }}
+                                                        transition={{ duration: 0.5, delay: i * (bars.length > 12 ? 0.015 : 0.035), ease: [0.34, 1.1, 0.64, 1] }}
+                                                        className="w-full rounded-t-md cursor-default"
+                                                        style={{
+                                                            height: `${barPct}%`,
+                                                            background: bar.value < 1
+                                                                ? "#f0fdf4"
+                                                                : `linear-gradient(to top, ${tab.color}55, ${tab.color})`,
+                                                            transformOrigin: "bottom",
+                                                        }}
+                                                    />
+                                                    {/* Label */}
+                                                    <span className={`font-medium absolute -bottom-6 whitespace-nowrap ${
+                                                        bars.length > 12
+                                                            ? 'text-[7px] text-green-500'
+                                                            : 'text-[9px] text-green-500'
+                                                    } ${bars.length > 20 && i % 2 !== 0 ? 'hidden' : ''}`}>
+                                                        {bar.label}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {allZero && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pb-8 gap-2">
+                                            <Activity className="w-8 h-8 text-green-100" />
+                                            <p className="text-sm text-green-300 font-medium">Sin datos aún</p>
+                                            <p className="text-xs text-green-200">Esperando actividad para generar la gráfica...</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
                         </AnimatePresence>
 
                         <div className="mt-4 pt-4 border-t border-green-50 flex items-center justify-between">
@@ -423,7 +422,7 @@ export default function AdminEstadisticas() {
                         <motion.div
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.25 }}
+                            transition={{ duration: 0.2 }}
                             className="bg-white rounded-2xl border border-green-100 shadow-sm p-5"
                         >
                             <p className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">Métricas clave</p>

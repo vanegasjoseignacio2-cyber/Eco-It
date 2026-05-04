@@ -7,7 +7,7 @@ import ContactFAQ from "../Contact/ContactFAQ";
 import SocialLinks from "../Contact/SocialLinks";
 export default function Contactpage() {
     return (
-        <>
+        <div className="overflow-x-hidden">
             <Navbar showLogo sticky />
             <HeaderContact />
             <div className=" bg-green-100">
@@ -32,6 +32,6 @@ export default function Contactpage() {
                 </div>
             </div>
             <Footer />
-        </>
+        </div>
     );
 }

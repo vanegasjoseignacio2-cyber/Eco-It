@@ -6,7 +6,7 @@ import ShinyText from "../animations/ShinyText";
 
 export default function HeaderContact() {
     return (
-        <section className="relative py-16 mt-20 bg-gradient-to-tr from-green-100 via-emerald-100/70 to-teal-50/70 overflow-hidden">
+        <section className="relative pt-36 md:pt-40 pb-16 bg-gradient-to-tr from-green-100 via-emerald-100/70 to-teal-50/70 overflow-hidden">
 
             <AnimatedIconsBackground />
 

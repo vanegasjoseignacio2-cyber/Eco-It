@@ -310,7 +310,7 @@ export default function AIPage() {
                 <HeroSection />
 
                 {/* Layout principal — Tres columnas en Desktop */}
-                <section id="chat-section" className="max-w-[1600px] mx-auto px-4 sm:px-8 py-10 lg:py-20">
+                <section id="chat-section" className="max-w-[1600px] mx-auto px-4 sm:px-8 py-10 lg:py-20 scroll-mt-24">
                     <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
 
                         {/* COLUMNA 1: SIDEBAR (Historial y Datos) */}
@@ -327,7 +327,7 @@ export default function AIPage() {
                                 </motion.button>
                             </div>
 
-                            <div className="hidden lg:block h-[700px]">
+                            <div className="hidden lg:block h-[600px]">
                                 <EcoSidebar
                                     onQuestion={handleSuggestionClick}
                                     chats={chats}
@@ -349,7 +349,7 @@ export default function AIPage() {
                             <div
                                 className="flex flex-col overflow-hidden relative"
                                 style={{
-                                    height: "700px",
+                                    height: "600px",
                                     background: "rgba(255,255,255,0.92)",
                                     backdropFilter: "blur(40px) saturate(150%)",
                                     borderRadius: "32px",

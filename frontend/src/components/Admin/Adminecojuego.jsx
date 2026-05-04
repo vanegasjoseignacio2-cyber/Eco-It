@@ -18,6 +18,7 @@ import {
     RefreshCw,
     Users,
 } from "lucide-react";
+import { KpiSkeleton, ListSkeleton } from "./AdminSkeletons";
 
 // ─── DATOS DE EJEMPLO ───────────────────────────────────────────────────────
 // TODO: GET /api/admin/game/missions → lista de misiones
@@ -153,33 +154,37 @@ export default function AdminEcojuego() {
                 </motion.div>
 
                 {/* Stats rápidas */}
-                <motion.div
-                    initial="hidden"
-                    animate="show"
-                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09 } } }}
-                    className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
-                >
-                    {[
-                        { label: "Total Misiones", value: GAME_STATS.totalMissions, icon: Gamepad2, color: "text-green-600" },
-                        { label: "Misiones Activas", value: GAME_STATS.activeMissions, icon: Star, color: "text-lime-500" },
-                        { label: "Jugadores", value: GAME_STATS.totalPlayers, icon: Users, color: "text-emerald-600" },
-                        { label: "Puntos Promedio", value: GAME_STATS.avgPoints, icon: Trophy, color: "text-teal-600" },
-                    ].map(({ label, value, icon: Icon, color }) => (
-                        <motion.div
-                            key={label}
-                            variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
-                            className="bg-white rounded-2xl border border-green-100 shadow-sm p-4 flex items-center gap-3"
-                        >
-                            <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                                <Icon className={`w-5 h-5 ${color}`} />
-                            </div>
-                            <div>
-                                <p className="text-xl font-bold text-green-900">{value}</p>
-                                <p className="text-xs text-green-400">{label}</p>
-                            </div>
-                        </motion.div>
-                    ))}
-                </motion.div>
+                {loading ? (
+                    <KpiSkeleton />
+                ) : (
+                    <motion.div
+                        initial="hidden"
+                        animate="show"
+                        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09 } } }}
+                        className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
+                    >
+                        {[
+                            { label: "Total Misiones", value: GAME_STATS.totalMissions, icon: Gamepad2, color: "text-green-600" },
+                            { label: "Misiones Activas", value: GAME_STATS.activeMissions, icon: Star, color: "text-lime-500" },
+                            { label: "Jugadores", value: GAME_STATS.totalPlayers, icon: Users, color: "text-emerald-600" },
+                            { label: "Puntos Promedio", value: GAME_STATS.avgPoints, icon: Trophy, color: "text-teal-600" },
+                        ].map(({ label, value, icon: Icon, color }) => (
+                            <motion.div
+                                key={label}
+                                variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
+                                className="bg-white rounded-2xl border border-green-100 shadow-sm p-4 flex items-center gap-3"
+                            >
+                                <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                                    <Icon className={`w-5 h-5 ${color}`} />
+                                </div>
+                                <div>
+                                    <p className="text-xl font-bold text-green-900">{value}</p>
+                                    <p className="text-xs text-green-400">{label}</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -258,7 +263,9 @@ export default function AdminEcojuego() {
                         </AnimatePresence>
 
                         {/* Lista misiones */}
-                        {missions.length === 0 ? (
+                        {loading ? (
+                            <ListSkeleton rows={3} />
+                        ) : missions.length === 0 ? (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}

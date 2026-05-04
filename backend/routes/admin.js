@@ -9,7 +9,12 @@ import {
     desbanearUsuarioAdmin,
     cambiarRolUsuario,
     obtenerNotificaciones,
-    marcarNotificacionesLeidas
+    marcarNotificacionesLeidas,
+    eliminarNotificacion,
+    eliminarTodasNotificaciones,
+    obtenerAuditLogs,
+    eliminarAuditLog,
+    eliminarTodosAuditLogs
 } from '../controllers/adminController.js';
 import {
     crearPunto,
@@ -25,7 +30,12 @@ router.get('/usuarios', verificarToken, soloAdmin, obtenerUsuarios);
 router.get('/stats', verificarToken, soloAdmin, obtenerStats);
 router.get('/admin', verificarToken, soloAdmin, obtenerDatosAdmin);
 router.get('/notifications', verificarToken, soloAdmin, obtenerNotificaciones);
+router.get('/audit', verificarToken, soloAdmin, obtenerAuditLogs);
+router.delete('/audit/all', verificarToken, soloSuperadmin, eliminarTodosAuditLogs);
+router.delete('/audit/:id', verificarToken, soloSuperadmin, eliminarAuditLog);
 router.patch('/notifications/mark-read', verificarToken, soloAdmin, marcarNotificacionesLeidas);
+router.delete('/notifications/all', verificarToken, soloSuperadmin, eliminarTodasNotificaciones);
+router.delete('/notifications/:id', verificarToken, soloSuperadmin, eliminarNotificacion);
 router.delete('/users/:id', verificarToken, soloAdmin, eliminarUsuarioAdmin);
 router.patch('/users/:id/ban', verificarToken, soloAdmin, banearUsuarioAdmin);
 router.patch('/users/:id/unban', verificarToken, soloAdmin, desbanearUsuarioAdmin);

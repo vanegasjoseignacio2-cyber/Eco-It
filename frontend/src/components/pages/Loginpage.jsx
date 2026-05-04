@@ -24,7 +24,7 @@ export default function Login() {
     }, [estaAutenticado, showConsentRequiredToast, getCookie]);
 
     return (
-        <div className="min-h-screen flex flex-col nature-bg">
+        <div className="min-h-screen flex flex-col nature-bg overflow-x-hidden">
             <Navbar />
 
             <main className="bg-gradient-to-br from-emerald-100 to-green-100 flex-1 flex items-center justify-center px-4 pt-24 pb-12">

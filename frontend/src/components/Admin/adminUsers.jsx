@@ -8,6 +8,7 @@ import {
     UserCheck, UserX, Trash2, RefreshCw,
     Mail, ShieldCheck, ShieldOff, Zap, AlertTriangle,
 } from "lucide-react";
+import { TableSkeleton } from "./AdminSkeletons";
 
 /* ─── Estilos badge ───────────────────────────────────────────────────────── */
 const STATUS_STYLES = {
@@ -378,10 +379,7 @@ export default function AdminUsers() {
                         {/* Lista scrollable */}
                         <div className="users-scroll overflow-y-auto" style={{ maxHeight: "500px" }}>
                             {loading ? (
-                                <div className="py-20 flex flex-col items-center gap-4">
-                                    <div className="w-10 h-10 border-[3px] border-green-500 border-t-transparent rounded-full animate-spin" />
-                                    <p className="text-green-500 font-medium text-sm">Cargando usuarios...</p>
-                                </div>
+                                <TableSkeleton rows={6} />
                             ) : filtered.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                                     <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center">
