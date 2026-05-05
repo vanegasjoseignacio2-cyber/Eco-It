@@ -8,6 +8,7 @@ import { sendWelcomeEmail } from '../utils/emailService.js';
 import { buildVerificationEmailHTML } from '../utils/verificationEmailTemplate.js';
 import AuditLog from "../models/AuditLog.js";
 import { createAuditLog } from "../utils/auditLogger.js";
+import { cookieOptions } from "../utils/cookieConfig.js";
 
 // ─── Transporter lazy ────────────────────────────────────────────────────────
 const getTransporter = () => nodemailer.createTransport({
@@ -195,13 +196,8 @@ export const verificarYRegistrar = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Configurar cookie HttpOnly
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días (coincide con expiresIn de jwt)
-        });
+        // Configurar cookie HttpOnly (sameSite/secure varían según NODE_ENV)
+        res.cookie('token', token, cookieOptions(7 * 24 * 60 * 60 * 1000));
 
         console.log(`✅ Usuario registrado y verificado: ${email}`);
 

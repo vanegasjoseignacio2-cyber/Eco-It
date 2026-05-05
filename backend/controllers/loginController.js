@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import { createAuditLog } from "../utils/auditLogger.js";
+import { cookieOptions, clearCookieOptions } from "../utils/cookieConfig.js";
 
 // Iniciar sesión
 export const loginUsuario = async (req, res) => {
@@ -50,13 +51,8 @@ export const loginUsuario = async (req, res) => {
             user: `${usuario.nombre} ${usuario.apellido}`.trim() || usuario.email
         });
 
-        // Configurar cookie HttpOnly
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none', // Importante para cross-origin (frontend y backend en distinto dominio)
-            maxAge: 12 * 60 * 60 * 1000 // 12 horas
-        });
+        // Configurar cookie HttpOnly (sameSite/secure varían según NODE_ENV)
+        res.cookie('token', token, cookieOptions(12 * 60 * 60 * 1000));
 
         // Si todo es correcto
         res.status(200).json({
@@ -86,10 +82,6 @@ export const loginUsuario = async (req, res) => {
 
 // Cerrar sesión
 export const logoutUsuario = (req, res) => {
-    res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none'
-    });
+    res.clearCookie('token', clearCookieOptions());
     res.status(200).json({ success: true, message: "Sesión cerrada correctamente" });
 };

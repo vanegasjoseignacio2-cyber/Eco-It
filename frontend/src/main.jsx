@@ -12,9 +12,9 @@ import './index.css';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <SocketProvider>
-          <ToastProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <SocketProvider>
             {/*
               CookieConsentProvider gestiona cuándo mostrar el banner.
               CookieConsent se renderiza aquí para estar en todas las páginas,
@@ -25,9 +25,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <App />
               <CookieConsent />
             </CookieConsentProvider>
-          </ToastProvider>
-        </SocketProvider>
-      </AuthProvider>
+          </SocketProvider>
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

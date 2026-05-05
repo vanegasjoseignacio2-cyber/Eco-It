@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Gamepad2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { obtenerPerfil } from '../../services/api';
 
 // Importar componentes
 import GameHero from '../game/GameHero';
@@ -18,20 +19,16 @@ import Navbar from '../Layout/Navbar';
 import Footer from '../Layout/Footer';
 
 const GamePage = () => {
-    const { usuario, token, logout } = useAuth();
+    const { usuario, estaAutenticado, logout } = useAuth();
     const [bannedData, setBannedData] = useState(null);
 
     useEffect(() => {
         // Verificar status del usuario
         const verificarBaneo = async () => {
-            if (!token) return;
+            if (!estaAutenticado) return;
             try {
                 // Consultamos el perfil actual para actualizar en tiempo real
-                // Asumiendo que esta es la ruta para obtener el perfil propio
-                const res = await fetch('https://backend-production-1e6e.up.railway.app/api/users/profile', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const data = await res.json();
+                const data = await obtenerPerfil();
                 if (data.success && data.data.status === 'banned') {
                     setBannedData(data.data.banHasta);
                 } else if (usuario && usuario.status === 'banned') {
@@ -43,7 +40,7 @@ const GamePage = () => {
         };
 
         verificarBaneo();
-    }, [token, usuario]);
+    }, [estaAutenticado, usuario]);
 
     const renderBannedScreen = () => {
         let mensaje = "Fuiste baneado por comportamiento inadecuado.";

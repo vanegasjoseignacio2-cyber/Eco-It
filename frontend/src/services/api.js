@@ -1,9 +1,11 @@
-const BASE_URL = 'https://backend-production-1e6e.up.railway.app/api';
+// Dev: VITE_BACKEND_URL está vacío → usa '/api' → el proxy de Vite redirige a localhost:3000
+// Prod: VITE_BACKEND_URL = 'https://backend-production-1e6e.up.railway.app/api'
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
 export const AUTH_EXPIRED_EVENT = 'auth-expired';
 
 // Función auxiliar para hacer peticiones
-const fetchAPI = async (endpoint, options = {}) => {
+export const fetchAPI = async (endpoint, options = {}) => {
   try {
     // Configurar opciones de fetch
     const fetchOptions = {
@@ -25,7 +27,7 @@ const fetchAPI = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && !options.skipAuthError) {
         window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       }
       const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
@@ -36,7 +38,12 @@ const fetchAPI = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
-    console.error('Error en fetchAPI:', error);
+    // Si es un 401 esperado (verificación de sesión al arrancar), no lo mostramos como error
+    if (options.skipAuthError && error.status === 401) {
+      // silencio intencional — no hay sesión activa
+    } else {
+      console.error('Error en fetchAPI:', error);
+    }
     throw error;
   }
 };
@@ -63,9 +70,10 @@ export const iniciarSesion = async (credenciales) => {
 
 // ============= USUARIO =============
 
-export const obtenerPerfil = async () => {
+export const obtenerPerfil = async (options = {}) => {
   return fetchAPI('/user/perfil', {
     method: 'GET',
+    ...options
   });
 };
 

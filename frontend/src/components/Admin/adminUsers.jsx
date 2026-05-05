@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { fetchAPI } from "../../services/api";
 import { useSocket } from "../../context/SocketContext";
 import Toast from "../ui/Toast";
 import {
@@ -84,7 +85,7 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmLabel
 
 /* ─── Componente principal ────────────────────────────────────────────────── */
 export default function AdminUsers() {
-    const { token, usuario: currentUser } = useAuth();
+    const { estaAutenticado, usuario: currentUser } = useAuth();
     const { socket }                      = useSocket();
     const [users, setUsers]               = useState([]);
     const [loading, setLoading]           = useState(true);
@@ -105,10 +106,7 @@ export default function AdminUsers() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res  = await fetch("https://backend-production-1e6e.up.railway.app/api/admin/usuarios", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
+            const data = await fetchAPI("/admin/usuarios");
             if (data.success) setUsers(data.usuarios);
         } catch {
             showToast("No se pudo cargar la lista de usuarios", "error");
@@ -118,8 +116,8 @@ export default function AdminUsers() {
     };
 
     useEffect(() => { 
-        if (token) fetchUsers(); 
-    }, [token]);
+        if (estaAutenticado) fetchUsers(); 
+    }, [estaAutenticado]);
 
     useEffect(() => {
         if (!socket) return;
@@ -142,11 +140,9 @@ export default function AdminUsers() {
         const { userId, nombre } = deleteModal;
         setDeleteModal({ open: false, userId: null, nombre: "" });
         try {
-            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
+            const data = await fetchAPI(`/admin/users/${userId}`, {
+                method: "DELETE"
             });
-            const data = await res.json();
             if (data.success) {
                 setUsers((prev) => prev.filter((u) => u._id !== userId));
                 showToast(`${nombre} fue eliminado correctamente`, "success");
@@ -164,12 +160,10 @@ export default function AdminUsers() {
         setBanModal({ open: false, userId: null, nombre: "" });
         if (!dias || dias < 1) return;
         try {
-            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}/ban`, {
+            const data = await fetchAPI(`/admin/users/${userId}/ban`, {
                 method: "PATCH",
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ dias }),
             });
-            const data = await res.json();
             if (data.success) {
                 setUsers((prev) => prev.map((u) => u._id === userId ? { ...u, status: "banned", banHasta: data.usuario.banHasta } : u));
                 showToast(`${nombre} baneado por ${dias} días`, "warning");
@@ -183,11 +177,9 @@ export default function AdminUsers() {
 
     const handleUnbanUser = async (userId, nombre) => {
         try {
-            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}/unban`, {
-                method: "PATCH",
-                headers: { Authorization: `Bearer ${token}` },
+            const data = await fetchAPI(`/admin/users/${userId}/unban`, {
+                method: "PATCH"
             });
-            const data = await res.json();
             if (data.success) {
                 setUsers((prev) => prev.map((u) => u._id === userId ? { ...u, status: "active", banHasta: null } : u));
                 showToast(`${nombre} fue desbaneado correctamente`, "success");
@@ -202,12 +194,10 @@ export default function AdminUsers() {
     const handleToggleAdmin = async (userId, nombre, rolActual) => {
         const nuevoRol = rolActual === "admin" ? "user" : "admin";
         try {
-            const res  = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/users/${userId}/role`, {
+            const data = await fetchAPI(`/admin/users/${userId}/role`, {
                 method: "PATCH",
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ rol: nuevoRol }),
             });
-            const data = await res.json();
             if (data.success) {
                 setUsers((prev) => prev.map((u) => u._id === userId ? { ...u, rol: nuevoRol } : u));
                 showToast(

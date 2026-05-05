@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { fetchAPI } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOfensiveValidator } from '../Contact/ContactForm';
 import {
@@ -95,7 +96,7 @@ function FieldError({ msg }) {
 }
 
 export default function CompletarPerfil() {
-    const { token, usuario, login } = useAuth();
+    const { estaAutenticado, usuario, login } = useAuth();
     const navigate = useNavigate();
     const { validar } = useOfensiveValidator();
 
@@ -183,28 +184,23 @@ export default function CompletarPerfil() {
         setSubmitError('');
         setCargando(true);
         try {
-            const res = await fetch('https://backend-production-1e6e.up.railway.app/api/auth/completar-perfil', {
+            const data = await fetchAPI('/auth/completar-perfil', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
                 body: JSON.stringify({
                     apellido: form.apellido.trim(),
                     edad: Number(form.edad),
                     telefono: form.telefono,
                 }),
             });
-            const data = await res.json();
             if (data.success) {
-                login(token, data.usuario);
+                login(true, data.usuario);
                 setExito(true);
                 setTimeout(() => navigate('/'), 1800);
             } else {
                 setSubmitError(data.mensaje || 'Error al guardar los datos.');
             }
-        } catch {
-            setSubmitError('Error de conexión. Intenta de nuevo.');
+        } catch (error) {
+            setSubmitError(error.message || 'Error de conexión. Intenta de nuevo.');
         } finally {
             setCargando(false);
         }

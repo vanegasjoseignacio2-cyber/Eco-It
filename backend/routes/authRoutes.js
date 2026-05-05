@@ -9,6 +9,7 @@ import passport from '../controllers/AutheticationGoogle.js';
 import { enviarCodigoRegistro, verificarYRegistrar, reenviarCodigoRegistro } from '../controllers/registerController.js';
 import { authLimiter } from '../middlewares/limiters.js';
 import { validarRegistro, validarLogin, validarPerfilCompleto } from '../middlewares/validation.js';
+import { cookieOptions } from '../utils/cookieConfig.js';
 const router = express.Router();
 
 // Rutas de autenticación
@@ -49,13 +50,8 @@ router.get(
             { expiresIn: '12h' }
         );
 
-        // Configurar cookie HttpOnly
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none',
-            maxAge: 12 * 60 * 60 * 1000 // 12 horas
-        });
+        // Configurar cookie HttpOnly (sameSite/secure varían según NODE_ENV)
+        res.cookie('token', token, cookieOptions(12 * 60 * 60 * 1000));
 
         // Redirigir limpio sin tokens en la URL
         res.redirect(`${FRONT}/auth/google/success`);

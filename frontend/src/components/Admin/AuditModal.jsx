@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Trash, ShieldAlert, Eye, Key, Info, User, UserPlus, Ban, CheckCircle, Image as ImageIcon, Settings, ClipboardList } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { fetchAPI } from "../../services/api";
 
 const TYPE_CONFIG = {
     register:    { label: "Registro",    cls: "bg-lime-100 text-lime-700",     icon: UserPlus },
@@ -53,9 +54,8 @@ export default function AuditModal({ logs, hiddenIds, onClose, onRefresh, onHide
     const deleteOneFromDB = async (id) => {
         setDeleting(true);
         try {
-            await fetch(`http://localhost:3000/api/admin/audit/${id}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
+            await fetchAPI(`/admin/audit/${id}`, {
+                method: "DELETE"
             });
             hideOne(id);
             onRefresh?.();
@@ -70,9 +70,8 @@ export default function AuditModal({ logs, hiddenIds, onClose, onRefresh, onHide
     const deleteAllFromDB = async () => {
         setDeleting(true);
         try {
-            await fetch(`http://localhost:3000/api/admin/audit/all`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
+            await fetchAPI(`/admin/audit/all`, {
+                method: "DELETE"
             });
             hideAll();
             onRefresh?.();

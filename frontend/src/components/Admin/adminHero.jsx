@@ -1,5 +1,6 @@
 import { useSocket } from "../../context/SocketContext.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { fetchAPI } from "../../services/api";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -79,7 +80,7 @@ const cardVariants = {
 
 export default function AdminHero() {
     const { usuariosOnline, socket } = useSocket();
-    const { token, usuario } = useAuth();
+    const { estaAutenticado, usuario } = useAuth();
     const storageKey = `audit_hidden_${usuario?._id || usuario?.id || 'unknown'}`;
     const [totalUsuarios, setTotalUsuarios] = useState(0);
     const [consultasHoy, setConsultasHoy] = useState(0);
@@ -114,23 +115,14 @@ export default function AdminHero() {
     };
 
     const fetchStats = async () => {
-        if (!token) return;
+        if (!estaAutenticado) return;
         setRefreshing(true);
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-            const [resStats, resAudit] = await Promise.all([
-                fetch(`${backendUrl}/api/admin/stats`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                fetch(`${backendUrl}/api/admin/audit`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                })
-            ]);
-
             const [data, dataAudit] = await Promise.all([
-                resStats.json(),
-                resAudit.json()
+                fetchAPI('/admin/stats'),
+                fetchAPI('/admin/audit')
             ]);
+            
             if (data.success) {
                 setTotalUsuarios(data.totalUsuarios);
                 setConsultasHoy(data.consultasHoy || 0);
@@ -149,8 +141,8 @@ export default function AdminHero() {
     };
 
     useEffect(() => {
-        if (token) fetchStats();
-    }, [token]);
+        if (estaAutenticado) fetchStats();
+    }, [estaAutenticado]);
 
     useEffect(() => {
         if (!socket) return;

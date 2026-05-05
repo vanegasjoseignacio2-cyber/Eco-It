@@ -13,6 +13,7 @@ import AdminSessionTracker from "../Admin/AdminSessionTracker";
 import { useToast } from "../../context/ToastContext";
 import { useSocket } from "../../context/SocketContext";
 import { useAuth } from "../../context/AuthContext";
+import { fetchAPI } from "../../services/api";
 
 export default function AdminLayout() {
     const [activeSection, setActiveSection] = useState("dashboard");
@@ -21,7 +22,7 @@ export default function AdminLayout() {
 
     const { showToast } = useToast();
     const { socket } = useSocket();
-    const { token, usuario } = useAuth();
+    const { estaAutenticado, usuario } = useAuth();
 
     // Lógica de borrado lógico (ocultar) para Admins normales
     const [hiddenNotifIds, setHiddenNotifIds] = useState(() => {
@@ -50,10 +51,7 @@ export default function AdminLayout() {
     useEffect(() => {
         const fetchNotifications = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://backend-production-1e6e.up.railway.app'}/api/admin/notifications`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const data = await res.json();
+                const data = await fetchAPI('/admin/notifications');
                 if (data.success) {
                     setNotifications(data.notifications);
                 }
@@ -61,8 +59,8 @@ export default function AdminLayout() {
                 console.error("Error al cargar notificaciones:", error);
             }
         };
-        if (token) fetchNotifications();
-    }, [token]);
+        if (estaAutenticado) fetchNotifications();
+    }, [estaAutenticado]);
 
     useEffect(() => {
         if (!socket) return;
@@ -126,9 +124,8 @@ export default function AdminLayout() {
 
     const markAllAsRead = async () => {
         try {
-            await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://backend-production-1e6e.up.railway.app'}/api/admin/notifications/mark-read`, {
-                method: "PATCH",
-                headers: { Authorization: `Bearer ${token}` }
+            await fetchAPI('/admin/notifications/mark-read', {
+                method: "PATCH"
             });
             setNotifications(prev => prev.map(n => ({...n, read: true})));
         } catch (error) {
@@ -139,13 +136,12 @@ export default function AdminLayout() {
     const handleDeleteNotification = async (id) => {
         // Borrado lógico para todos (ocultar de la vista)
         setHiddenNotifIds(prev => new Set([...prev, String(id)]));
-
+    
         // Borrado físico solo si es Superadmin
         if (usuario?.rol === 'superadmin') {
             try {
-                await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications/${id}`, {
-                    method: "DELETE",
-                    headers: { Authorization: `Bearer ${token}` }
+                await fetchAPI(`/admin/notifications/${id}`, {
+                    method: "DELETE"
                 });
             } catch (error) {
                 console.error("Error al eliminar notificación física:", error);

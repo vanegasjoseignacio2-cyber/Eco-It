@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { fetchAPI } from "../../services/api";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { AdvancedImage } from "@cloudinary/react";
@@ -231,7 +232,7 @@ function buildArrowMarkerIcon(type) {
 // COMPONENTE PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminMap() {
-    const { token } = useAuth();
+    const { estaAutenticado } = useAuth();
     const [points, setPoints] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -253,13 +254,10 @@ export default function AdminMap() {
 
     // ─── Fetch API ──────────────────────────────────────────────────────────
     const fetchPoints = async () => {
-        if (!token) return;
+        if (!estaAutenticado) return;
         setLoading(true);
         try {
-            const res = await fetch("https://backend-production-1e6e.up.railway.app/api/admin/map/points", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const data = await fetchAPI("/admin/map/points");
             if (data.success) {
                 // Adaptamos el esquema del backend (español) al frontend (inglés)
                 const mapped = data.puntos.map(p => ({
@@ -290,8 +288,8 @@ export default function AdminMap() {
     };
 
     useEffect(() => {
-        if (token) fetchPoints();
-    }, [token]);
+        if (estaAutenticado) fetchPoints();
+    }, [estaAutenticado]);
 
     // ─── Filtrado ──────────────────────────────────────────────────────────
     const filtered = points.filter((p) => {
@@ -310,7 +308,7 @@ export default function AdminMap() {
 
     // ─── CRUD ──────────────────────────────────────────────────────────────
     const handleSave = async () => {
-        if (!token || isSaving) return;
+        if (!estaAutenticado || isSaving) return;
         const lat = parseFloat(form.lat);
         const lng = parseFloat(form.lng);
         if (!form.name.trim()) return showToast("El nombre es requerido", "error");
@@ -326,21 +324,16 @@ export default function AdminMap() {
             activo: form.active,
             imagen: form.imagen
         };
-        const url = editingPoint
-            ? `https://backend-production-1e6e.up.railway.app/api/admin/map/points/${editingPoint.id}`
-            : "https://backend-production-1e6e.up.railway.app/api/admin/map/points";
+        const endpoint = editingPoint
+            ? `/admin/map/points/${editingPoint.id}`
+            : "/admin/map/points";
         const method = editingPoint ? "PATCH" : "POST";
 
         try {
-            const res = await fetch(url, {
+            const data = await fetchAPI(endpoint, {
                 method,
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
                 body: JSON.stringify(body)
             });
-            const data = await res.json();
             if (data.success) {
                 showToast(editingPoint ? "Punto actualizado" : "Punto creado");
                 fetchPoints();
@@ -354,7 +347,7 @@ export default function AdminMap() {
     };
 
     const handleDelete = (id) => {
-        if (!token) return;
+        if (!estaAutenticado) return;
         setDeleteConfirm({ open: true, id });
     };
 
@@ -362,11 +355,9 @@ export default function AdminMap() {
         const id = deleteConfirm.id;
         setDeleteConfirm({ open: false, id: null });
         try {
-            const res = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/map/points/${id}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` }
+            const data = await fetchAPI(`/admin/map/points/${id}`, {
+                method: "DELETE"
             });
-            const data = await res.json();
             if (data.success) {
                 showToast("Punto eliminado");
                 fetchPoints();
@@ -378,14 +369,12 @@ export default function AdminMap() {
     };
 
     const handleToggleActive = async (id) => {
-        if (!token) return;
+        if (!estaAutenticado) return;
 
         try {
-            const res = await fetch(`https://backend-production-1e6e.up.railway.app/api/admin/map/points/${id}/toggle`, {
-                method: "PATCH",
-                headers: { Authorization: `Bearer ${token}` }
+            const data = await fetchAPI(`/admin/map/points/${id}/toggle`, {
+                method: "PATCH"
             });
-            const data = await res.json();
             if (data.success) {
                 const nuevoEstado = data.punto.activo ? "Activado" : "Desactivado";
                 showToast(`Punto ${nuevoEstado} con éxito`);
