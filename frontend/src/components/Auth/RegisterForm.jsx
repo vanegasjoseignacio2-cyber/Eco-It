@@ -205,7 +205,8 @@ export default function RegisterForm() {
 
             if (data.success) {
                 localStorage.removeItem('reg_code_expiry');
-                login(true, data.data.usuario);
+                // Pasamos el token explícitamente desde la respuesta
+                login(data.data.token, data.data.usuario);
                 setSuccessMessage("¡Registro exitoso! Redirigiendo...");
                 setTimeout(() => navigate('/'), 1500);
             }

@@ -4,15 +4,11 @@ import Users from "../models/user.js";
 // verifica el token y consulta el usuario actualizado en BD
 export const verificarToken = async (req, res, next) => {
     try {
-        // Leer token de cookies (HttpOnly) primero
-        let token = req.cookies?.token;
-
-        // Fallback al header Authorization
-        if (!token) {
-            const authHeader = req.headers["authorization"];
-            if (authHeader && authHeader.startsWith("Bearer")) {
-                token = authHeader.split(" ")[1];
-            }
+        // Solo usamos el header Authorization
+        let token;
+        const authHeader = req.headers["authorization"];
+        if (authHeader && authHeader.startsWith("Bearer")) {
+            token = authHeader.split(" ")[1];
         }
 
         if (!token) {

@@ -10,7 +10,16 @@ const GoogleSuccess = () => {
     useEffect(() => {
         const fetchUserAndLogin = async () => {
             try {
-                // Las cookies HttpOnly se envían automáticamente
+                // Extraer el token de la URL si viene desde Google OAuth
+                const params = new URLSearchParams(window.location.search);
+                const tokenUrl = params.get('token');
+                
+                if (tokenUrl) {
+                    // Guardamos el token en localStorage para que fetchAPI lo use
+                    localStorage.setItem('token', tokenUrl);
+                }
+
+                // Ahora fetchAPI enviará el token en el header Authorization
                 const data = await obtenerPerfil();
                 if (!data.success) throw new Error(data.mensaje);
 
@@ -18,7 +27,9 @@ const GoogleSuccess = () => {
 
                 // Si el perfil está incompleto, forzar esa ruta
                 const redirect = !usuario.perfilCompleto ? '/completar-perfil' : null;
-                login(true, usuario, redirect);
+                // Pasar el token extraído o el que ya esté en localStorage
+                const tokenToUse = tokenUrl || localStorage.getItem('token');
+                login(tokenToUse, usuario, redirect);
 
             } catch (error) {
                 console.error('Error al procesar login de Google:', error);

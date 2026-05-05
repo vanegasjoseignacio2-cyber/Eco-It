@@ -8,7 +8,6 @@ import { sendWelcomeEmail } from '../utils/emailService.js';
 import { buildVerificationEmailHTML } from '../utils/verificationEmailTemplate.js';
 import AuditLog from "../models/AuditLog.js";
 import { createAuditLog } from "../utils/auditLogger.js";
-import { cookieOptions } from "../utils/cookieConfig.js";
 
 // ─── Transporter lazy ────────────────────────────────────────────────────────
 const getTransporter = () => nodemailer.createTransport({
@@ -196,15 +195,13 @@ export const verificarYRegistrar = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Configurar cookie HttpOnly (sameSite/secure varían según NODE_ENV)
-        res.cookie('token', token, cookieOptions(7 * 24 * 60 * 60 * 1000));
-
         console.log(`✅ Usuario registrado y verificado: ${email}`);
 
         return res.status(201).json({
             success: true,
             mensaje: '¡Cuenta verificada y creada exitosamente!',
             data: {
+                token, // Retornamos el token en lugar de cookie
                 usuario: {
                     id:              nuevoUser._id,
                     nombre:          nuevoUser.nombre,

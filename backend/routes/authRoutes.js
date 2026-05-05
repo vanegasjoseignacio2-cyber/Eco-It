@@ -9,7 +9,6 @@ import passport from '../controllers/AutheticationGoogle.js';
 import { enviarCodigoRegistro, verificarYRegistrar, reenviarCodigoRegistro } from '../controllers/registerController.js';
 import { authLimiter } from '../middlewares/limiters.js';
 import { validarRegistro, validarLogin, validarPerfilCompleto } from '../middlewares/validation.js';
-import { cookieOptions } from '../utils/cookieConfig.js';
 const router = express.Router();
 
 // Rutas de autenticación
@@ -50,17 +49,14 @@ router.get(
             { expiresIn: '12h' }
         );
 
-        // Configurar cookie HttpOnly (sameSite/secure varían según NODE_ENV)
-        res.cookie('token', token, cookieOptions(12 * 60 * 60 * 1000));
-
-        // En lugar de hacer res.redirect que puede perder la cookie por seguridad cross-site en navegadores modernos,
-        // devolvemos un HTML que hace la redirección en el lado del cliente (después de que el navegador guarda la cookie).
+        // En lugar de usar cookies, pasamos el token en la URL de redirección
+        // Esto permite al frontend extraerlo y guardarlo en localStorage
         res.status(200).send(`
             <html>
                 <head><title>Autenticando...</title></head>
                 <body>
                     <script>
-                        window.location.href = "${FRONT}/auth/google/success";
+                        window.location.href = "${FRONT}/auth/google/success?token=${token}";
                     </script>
                 </body>
             </html>

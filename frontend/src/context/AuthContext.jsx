@@ -47,24 +47,25 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const cargarUsuario = useCallback(async () => {
-    // Si no hay indicador de sesión, evitamos la petición (y el 401 en consola)
-    if (!localStorage.getItem('sesionActiva')) {
+    // Si no hay token, evitamos la petición (y el 401 en consola)
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
       setLoading(false);
       return;
     }
     try {
       const response = await obtenerPerfil({ skipAuthError: true });
       if (response && response.data) {
-        setToken(true); // Solo usamos 'true' como flag visual, el token real está en la cookie
+        setToken(storedToken);
         setUsuario(response.data);
       } else {
-        localStorage.removeItem('sesionActiva');
+        localStorage.removeItem('token');
         setToken(null);
         setUsuario(null);
       }
     } catch (error) {
-      // Token expirado o inválido — limpiar el flag
-      localStorage.removeItem('sesionActiva');
+      // Token expirado o inválido — limpiar el token
+      localStorage.removeItem('token');
       setToken(null);
       setUsuario(null);
     } finally {
@@ -86,11 +87,11 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback((tokenNuevo, usuarioNuevo, redirectOverride = null) => {
     const isAdmin = usuarioNuevo.rol === "admin" || usuarioNuevo.rol === "superadmin";
 
-    // Marcar sesión activa para que cargarUsuario haga la petición al recargar
-    localStorage.setItem('sesionActiva', '1');
+    // Guardar token en localStorage
+    localStorage.setItem('token', tokenNuevo);
 
     // actualizar estado primero
-    setToken(true); // Flag de autenticado
+    setToken(tokenNuevo);
     setUsuario(usuarioNuevo);
 
     // permitir que React aplique el setState antes de navegar
@@ -118,7 +119,7 @@ export const AuthProvider = ({ children }) => {
         : '/api/auth/logout';
       await fetch(logoutUrl, {
         method: 'POST',
-        credentials: 'include'
+        // credentials: 'include' // Ya no se necesitan cookies
       });
     } catch (error) {
       console.error('Error al hacer logout en el servidor:', error);
@@ -126,7 +127,7 @@ export const AuthProvider = ({ children }) => {
 
     setToken(null);
     setUsuario(null);
-    localStorage.removeItem('sesionActiva');
+    localStorage.removeItem('token');
   }, []);
 
   const actualizarUsuario = useCallback((usuarioActualizado) => {

@@ -11,8 +11,6 @@ import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import { rateLimit } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
-import cookieParser from 'cookie-parser';
-import * as cookie from 'cookie';
 import { globalLimiter } from './middlewares/limiters.js';
 import mongoose from 'mongoose';
 import passport from 'passport';
@@ -50,18 +48,8 @@ export const io = new Server(httpServer, {
 
 // Middleware de autenticación para Socket.io
 io.use((socket, next) => {
-    // Intentar leer token de cookies primero
-    let token = null;
-    const cookiesStr = socket.request.headers.cookie;
-    if (cookiesStr) {
-        const parsedCookies = cookie.parse(cookiesStr);
-        token = parsedCookies.token;
-    }
-
-    // Fallback al viejo método por compatibilidad transitoria
-    if (!token) {
-        token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
-    }
+    // Ahora el token siempre debe venir explícitamente en el auth handshake
+    let token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
 
     if (!token) {
         console.log('Socket connection denied: No token provided');
@@ -176,7 +164,6 @@ app.use(cors({
 
 app.set("io", io); // Hacer Socket.io disponible en las rutas
 
-app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
