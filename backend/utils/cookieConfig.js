@@ -10,17 +10,28 @@
  *     → sameSite:'lax' + secure:false funciona sin HTTPS
  */
 
-const isProd = process.env.NODE_ENV === 'production';
+export const cookieOptions = (maxAgeMs) => {
+    // Evaluamos dinámicamente para asegurar que dotenv ya cargó las variables
+    const isProd = process.env.NODE_ENV === 'production' || 
+                   (process.env.FRONT_URL && process.env.FRONT_URL.startsWith('https://')) ||
+                   (process.env.BACK_URL && process.env.BACK_URL.startsWith('https://'));
 
-export const cookieOptions = (maxAgeMs) => ({
-    httpOnly: true,
-    secure: isProd,              // true en Railway (HTTPS), false en localhost (HTTP)
-    sameSite: isProd ? 'none' : 'lax', // 'none' requiere cross-origin; 'lax' para mismo origen
-    maxAge: maxAgeMs,
-});
+    return {
+        httpOnly: true,
+        secure: isProd,              // true en Railway (HTTPS), false en localhost (HTTP)
+        sameSite: isProd ? 'none' : 'lax', // 'none' requiere cross-origin; 'lax' para mismo origen
+        maxAge: maxAgeMs,
+    };
+};
 
-export const clearCookieOptions = () => ({
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
-});
+export const clearCookieOptions = () => {
+    const isProd = process.env.NODE_ENV === 'production' || 
+                   (process.env.FRONT_URL && process.env.FRONT_URL.startsWith('https://')) ||
+                   (process.env.BACK_URL && process.env.BACK_URL.startsWith('https://'));
+
+    return {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+    };
+};
