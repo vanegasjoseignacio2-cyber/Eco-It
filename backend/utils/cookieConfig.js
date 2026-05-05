@@ -12,7 +12,10 @@
 
 export const cookieOptions = (maxAgeMs) => {
     // Evaluamos dinámicamente para asegurar que dotenv ya cargó las variables
+    // Railway inyecta RAILWAY_ENVIRONMENT o RAILWAY_PROJECT_ID automáticamente
     const isProd = process.env.NODE_ENV === 'production' || 
+                   process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                   !!process.env.RAILWAY_PROJECT_ID ||
                    (process.env.FRONT_URL && process.env.FRONT_URL.startsWith('https://')) ||
                    (process.env.BACK_URL && process.env.BACK_URL.startsWith('https://'));
 
@@ -26,6 +29,8 @@ export const cookieOptions = (maxAgeMs) => {
 
 export const clearCookieOptions = () => {
     const isProd = process.env.NODE_ENV === 'production' || 
+                   process.env.RAILWAY_ENVIRONMENT === 'production' ||
+                   !!process.env.RAILWAY_PROJECT_ID ||
                    (process.env.FRONT_URL && process.env.FRONT_URL.startsWith('https://')) ||
                    (process.env.BACK_URL && process.env.BACK_URL.startsWith('https://'));
 
