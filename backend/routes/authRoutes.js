@@ -53,8 +53,18 @@ router.get(
         // Configurar cookie HttpOnly (sameSite/secure varían según NODE_ENV)
         res.cookie('token', token, cookieOptions(12 * 60 * 60 * 1000));
 
-        // Redirigir limpio sin tokens en la URL
-        res.redirect(`${FRONT}/auth/google/success`);
+        // En lugar de hacer res.redirect que puede perder la cookie por seguridad cross-site en navegadores modernos,
+        // devolvemos un HTML que hace la redirección en el lado del cliente (después de que el navegador guarda la cookie).
+        res.status(200).send(`
+            <html>
+                <head><title>Autenticando...</title></head>
+                <body>
+                    <script>
+                        window.location.href = "${FRONT}/auth/google/success";
+                    </script>
+                </body>
+            </html>
+        `);
     }
 );
 router.put('/completar-perfil', verificarToken, validarPerfilCompleto, async (req, res) => {
