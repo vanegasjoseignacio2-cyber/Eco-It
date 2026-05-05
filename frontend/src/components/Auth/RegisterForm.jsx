@@ -23,29 +23,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useCookieConsent } from "../../context/Cookieconsentcontext";
 
-// ─── Helpers de API ───────────────────────────────────────────────────────────
-const API = import.meta.env.VITE_API_URL || 'https://backend-production-1e6e.up.railway.app';
-
-const enviarCodigo = (datos) =>
-    fetch(`${API}/api/auth/enviar-codigo-registro`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos),
-    }).then(r => r.json());
-
-const verificarCodigo = (email, codigo) =>
-    fetch(`${API}/api/auth/verificar-registro`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, codigo }),
-    }).then(r => r.json());
-
-const reenviarCodigo = (email) =>
-    fetch(`${API}/api/auth/reenviar-codigo-registro`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-    }).then(r => r.json());
+import { fetchAPI } from "../../services/api";
 
 // ─── Temporizador desde localStorage ─────────────────────────────────────────
 const calcTimeLeft = () => {
@@ -179,28 +157,29 @@ export default function RegisterForm() {
 
         setLoading(true);
         try {
-            const data = await enviarCodigo({
-                nombre: name.trim(),
-                apellido: lastname.trim(),
-                email: email.trim().toLowerCase(),
-                telefono: phone.trim(),
-                password,
-                edad: parseInt(age),
+            const data = await fetchAPI('/auth/enviar-codigo-registro', {
+                method: 'POST',
+                body: JSON.stringify({
+                    nombre: name.trim(),
+                    apellido: lastname.trim(),
+                    email: email.trim().toLowerCase(),
+                    telefono: phone.trim(),
+                    password,
+                    edad: parseInt(age),
+                })
             });
 
             if (data.success) {
                 localStorage.setItem('reg_code_expiry', Date.now() + 3 * 60 * 1000);
                 setTimeLeft(180);
                 setStep('code');
-            } else {
-                if (data.mensaje?.includes('ya tiene una cuenta')) {
-                    setError("Este correo electrónico ya está registrado. ¿Quieres iniciar sesión?");
-                } else {
-                    setError(data.mensaje || "Error al enviar el código.");
-                }
             }
-        } catch {
-            setError("Error de conexión con el servidor");
+        } catch (err) {
+            if (err.data?.mensaje?.includes('ya tiene una cuenta')) {
+                setError("Este correo electrónico ya está registrado. ¿Quieres iniciar sesión?");
+            } else {
+                setError(err.message || "Error al enviar el código.");
+            }
         } finally {
             setLoading(false);
         }
@@ -219,18 +198,19 @@ export default function RegisterForm() {
 
         setLoading(true);
         try {
-            const data = await verificarCodigo(email.trim().toLowerCase(), codigo.trim());
+            const data = await fetchAPI('/auth/verificar-registro', {
+                method: 'POST',
+                body: JSON.stringify({ email: email.trim().toLowerCase(), codigo: codigo.trim() })
+            });
 
             if (data.success) {
                 localStorage.removeItem('reg_code_expiry');
-                login(data.data.token, data.data.usuario);
+                login(true, data.data.usuario);
                 setSuccessMessage("¡Registro exitoso! Redirigiendo...");
                 setTimeout(() => navigate('/'), 1500);
-            } else {
-                setError(data.mensaje || "Código incorrecto.");
             }
-        } catch {
-            setError("Error de conexión. Intenta de nuevo.");
+        } catch (err) {
+            setError(err.message || "Error de conexión. Intenta de nuevo.");
         } finally {
             setLoading(false);
         }
@@ -242,16 +222,17 @@ export default function RegisterForm() {
         setError("");
         setLoading(true);
         try {
-            const data = await reenviarCodigo(email.trim().toLowerCase());
+            const data = await fetchAPI('/auth/reenviar-codigo-registro', {
+                method: 'POST',
+                body: JSON.stringify({ email: email.trim().toLowerCase() })
+            });
             if (data.success) {
                 localStorage.setItem('reg_code_expiry', Date.now() + 3 * 60 * 1000);
                 setTimeLeft(180);
                 setCodigo("");
-            } else {
-                setError(data.mensaje || "Error al reenviar.");
             }
-        } catch {
-            setError("Error de conexión. Intenta de nuevo.");
+        } catch (err) {
+            setError(err.message || "Error de conexión. Intenta de nuevo.");
         } finally {
             setLoading(false);
         }

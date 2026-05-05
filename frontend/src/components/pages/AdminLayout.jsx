@@ -157,9 +157,8 @@ export default function AdminLayout() {
         // Borrado físico solo si es Superadmin
         if (usuario?.rol === 'superadmin') {
             try {
-                await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/admin/notifications/all`, {
-                    method: "DELETE",
-                    headers: { Authorization: `Bearer ${token}` }
+                await fetchAPI('/admin/notifications/all', {
+                    method: "DELETE"
                 });
                 setNotifications([]);
             } catch (error) {

@@ -119,7 +119,7 @@ export default function EditProfile() {
         e.preventDefault();
         setLoading(true);
         try {
-            const respuesta = await actualizarPerfil(token, formData);
+            const respuesta = await actualizarPerfil(formData);
             if (respuesta.success) {
                 actualizarUsuario({ ...usuario, ...formData });
                 showToast("Cambios guardados exitosamente!", "success");
@@ -137,7 +137,7 @@ export default function EditProfile() {
 
     const handleConfirmDelete = async () => {
         try {
-            const respuesta = await eliminarPerfil(token);
+            const respuesta = await eliminarPerfil();
             if (respuesta.success) {
                 showToast("Cuenta eliminada exitosamente", "success");
                 setTimeout(() => { logout(); navigate('/login'); }, 1500);

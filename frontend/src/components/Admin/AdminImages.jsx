@@ -118,7 +118,7 @@ export default function AdminImages() {
         if (!token) return;
         setLoading(true);
         try {
-            const data = await obtenerSlidesAdmin(token);
+            const data = await obtenerSlidesAdmin();
             if (data.success) {
                 setSlides(data.slides);
             } else {
@@ -229,13 +229,13 @@ export default function AdminImages() {
 
         try {
             if (editing) {
-                const res = await actualizarSlide(token, editing._id, form);
+                const res = await actualizarSlide(editing._id, form);
                 if (res.success) {
                     setSlides(slides.map((s) => s._id === editing._id ? res.slide : s));
                     showToast("Slide actualizado correctamente");
                 }
             } else {
-                const res = await crearSlide(token, form);
+                const res = await crearSlide(form);
                 if (res.success) {
                     setSlides([...slides, res.slide]);
                     showToast("Slide creado correctamente");
@@ -250,7 +250,7 @@ export default function AdminImages() {
     // ─── Toggle activo ────────────────────────────────────────────────────────
     const toggleActive = async (slide) => {
         try {
-            const res = await actualizarSlide(token, slide._id, { active: !slide.active });
+            const res = await actualizarSlide(slide._id, { active: !slide.active });
             if (res.success) {
                 setSlides(slides.map((s) => s._id === slide._id ? res.slide : s));
                 showToast(res.slide.active ? "Slide activado" : "Slide ocultado");
@@ -263,7 +263,7 @@ export default function AdminImages() {
         const { id, title } = deleteModal;
         setDeleteModal({ open: false, id: null, title: "" });
         try {
-            const res = await eliminarSlide(token, id);
+            const res = await eliminarSlide(id);
             if (res.success) {
                 setSlides(slides.filter((s) => s._id !== id));
                 showToast(`"${title}" eliminado`);
@@ -280,7 +280,7 @@ export default function AdminImages() {
         
         setSlides(swapped);
         try {
-            await reordenarSlidesAPI(token, swapped.map(s => s._id));
+            await reordenarSlidesAPI(swapped.map(s => s._id));
         } catch {
             showToast("Error al guardar el nuevo orden", "error");
             fetchSlides(); // Revertir
@@ -290,7 +290,7 @@ export default function AdminImages() {
     const handleReorder = async (newOrder) => {
         setSlides(newOrder);
         try {
-            await reordenarSlidesAPI(token, newOrder.map(s => s._id));
+            await reordenarSlidesAPI(newOrder.map(s => s._id));
         } catch {
             showToast("Error al guardar el nuevo orden", "error");
             fetchSlides(); // Revertir

@@ -51,7 +51,7 @@ export default function AIPage() {
     const loadChats = async () => {
         if (!estaAutenticado || !token) return;
         try {
-            const data = await obtenerChats(token);
+            const data = await obtenerChats();
             setChats(data);
         } catch (err) {
             if (checkBanError(err)) return;
@@ -80,7 +80,7 @@ export default function AIPage() {
     const handleSelectChat = async (chatId) => {
         if (!estaAutenticado) return;
         try {
-            const chatData = await obtenerChat(token, chatId);
+            const chatData = await obtenerChat(chatId);
             setActiveChatId(chatId);
             const mappedMessages = chatData.mensajes.map(m => ({
                 id: m._id || Date.now().toString() + Math.random(),
@@ -102,7 +102,7 @@ export default function AIPage() {
     const confirmDeleteChat = async () => {
         if (!chatIdToDelete) return;
         try {
-            await eliminarChat(token, chatIdToDelete);
+            await eliminarChat(chatIdToDelete);
             if (activeChatId === chatIdToDelete) handleNewChat();
             await loadChats();
             showToast("Chat eliminado correctamente", "success");
@@ -119,7 +119,7 @@ export default function AIPage() {
 
     const confirmDeleteAllChats = async () => {
         try {
-            await eliminarTodosLosChats(token);
+            await eliminarTodosLosChats();
             handleNewChat();
             await loadChats();
             showToast("Tu historial ha sido limpiado", "success");
@@ -173,7 +173,7 @@ export default function AIPage() {
 
         try {
             if (imagen) {
-                const response = await analizarImagen(token, imagen, pregunta || "", activeChatId, controller.signal);
+                const response = await analizarImagen(imagen, pregunta || "", activeChatId, controller.signal);
                 const respuesta = response.data.respuesta;
                 
                 if (respuesta.includes("ALERTA_OBSCENA:")) {
@@ -189,7 +189,7 @@ export default function AIPage() {
                 }
             } else {
                 let firstChatIdReceived = activeChatId;
-                await consultarIA(token, pregunta, activeChatId, (chunkContent, chunkChatId) => {
+                await consultarIA(pregunta, activeChatId, (chunkContent, chunkChatId) => {
                     if (chunkChatId && !firstChatIdReceived) {
                         firstChatIdReceived = chunkChatId;
                         setActiveChatId(chunkChatId);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { fetchAPI } from "../../services/api";
 import {
     Gamepad2,
     Plus,
@@ -72,10 +73,7 @@ export default function AdminEcojuego() {
         if (!token) return;
         setLoading(true);
         try {
-            const res = await fetch("https://backend-production-1e6e.up.railway.app/api/admin/game/stats", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const data = await fetchAPI('/admin/game/stats');
             if (data.success) {
                 // setMissions(data.missions);
             }
