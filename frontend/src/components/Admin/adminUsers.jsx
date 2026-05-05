@@ -99,6 +99,7 @@ export default function AdminUsers() {
     const [deleteModal, setDeleteModal] = useState({ open: false, userId: null, nombre: "" });
     const [banModal, setBanModal]       = useState({ open: false, userId: null, nombre: "" });
     const [banDias, setBanDias]         = useState("7");
+    const [banReason, setBanReason]     = useState("");
 
     const showToast  = (message, type = "success") => setToast({ message, type });
     const closeToast = () => setToast({ message: "", type: "success" });
@@ -157,12 +158,15 @@ export default function AdminUsers() {
     const confirmBan = async () => {
         const { userId, nombre } = banModal;
         const dias = parseInt(banDias);
+        const motivo = banReason.trim();
         setBanModal({ open: false, userId: null, nombre: "" });
+        setBanReason("");
+        
         if (!dias || dias < 1) return;
         try {
             const data = await fetchAPI(`/admin/users/${userId}/ban`, {
                 method: "PATCH",
-                body: JSON.stringify({ dias }),
+                body: JSON.stringify({ dias, motivo }),
             });
             if (data.success) {
                 setUsers((prev) => prev.map((u) => u._id === userId ? { ...u, status: "banned", banHasta: data.usuario.banHasta } : u));
@@ -254,21 +258,35 @@ export default function AdminUsers() {
             {/* Modal banear */}
             <ConfirmModal
                 isOpen={banModal.open}
-                onClose={() => setBanModal({ open: false, userId: null, nombre: "" })}
+                onClose={() => { setBanModal({ open: false, userId: null, nombre: "" }); setBanReason(""); }}
                 onConfirm={confirmBan}
                 title={`Banear a ${banModal.nombre}`}
                 confirmLabel="Aplicar ban"
             >
-                <div>
-                    <label className="text-xs font-semibold text-green-700 uppercase tracking-wide block mb-1.5">
-                        Duración del ban (días)
-                    </label>
-                    <input
-                        type="number" min="1" max="365"
-                        value={banDias}
-                        onChange={(e) => setBanDias(e.target.value)}
-                        className="w-full border border-green-200 rounded-xl px-3 py-2.5 text-sm text-green-900 focus:outline-none focus:ring-2 focus:ring-green-400/40 focus:border-green-400 transition-all"
-                    />
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-semibold text-green-700 uppercase tracking-wide block mb-1.5">
+                            Duración del ban (días)
+                        </label>
+                        <input
+                            type="number" min="1" max="365"
+                            value={banDias}
+                            onChange={(e) => setBanDias(e.target.value)}
+                            className="w-full border border-green-200 rounded-xl px-3 py-2.5 text-sm text-green-900 focus:outline-none focus:ring-2 focus:ring-green-400/40 focus:border-green-400 transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-green-700 uppercase tracking-wide block mb-1.5">
+                            Motivo del ban
+                        </label>
+                        <input
+                            type="text"
+                            value={banReason}
+                            onChange={(e) => setBanReason(e.target.value)}
+                            placeholder="Ej. Incumplimiento de normas..."
+                            className="w-full border border-green-200 rounded-xl px-3 py-2.5 text-sm text-green-900 focus:outline-none focus:ring-2 focus:ring-green-400/40 focus:border-green-400 transition-all"
+                        />
+                    </div>
                 </div>
             </ConfirmModal>
 

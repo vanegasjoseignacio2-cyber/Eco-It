@@ -35,6 +35,12 @@ export const fetchAPI = async (endpoint, options = {}) => {
       if (response.status === 401 && !options.skipAuthError) {
         window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       }
+      
+      // Dispatch global ban event
+      if (response.status === 403 && data.banned) {
+        window.dispatchEvent(new CustomEvent('USER_BANNED', { detail: data }));
+      }
+
       const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
       error.data = data;
       error.status = response.status;
@@ -152,6 +158,10 @@ export const consultarIA = async (pregunta, chatId, onChunk, signal) => {
     const data = await response.json();
     if (response.status === 401) {
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
+    // Dispatch global ban event
+    if (response.status === 403 && data.banned) {
+      window.dispatchEvent(new CustomEvent('USER_BANNED', { detail: data }));
     }
     const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
     error.data = data;

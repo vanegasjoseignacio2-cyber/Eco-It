@@ -20,6 +20,8 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   // renombrado a 'loading' para que coincida con consumidores (PrivateRoute)
   const [loading, setLoading] = useState(true);
+  const [banModalOpen, setBanModalOpen] = useState(false);
+  const [banInfo, setBanInfo] = useState(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -37,12 +39,19 @@ export const AuthProvider = ({ children }) => {
       navigate('/login', { replace: true });
     };
 
+    const handleUserBanned = (e) => {
+      setBanInfo(e.detail);
+      setBanModalOpen(true);
+    };
+
     window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
     window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    window.addEventListener('USER_BANNED', handleUserBanned);
 
     return () => {
       window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
       window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+      window.removeEventListener('USER_BANNED', handleUserBanned);
     };
   }, []);
 
@@ -191,5 +200,81 @@ export const AuthProvider = ({ children }) => {
     );
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {banModalOpen && banInfo && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '1rem',
+            padding: '2rem',
+            maxWidth: '24rem',
+            width: '90%',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '3rem',
+              height: '3rem',
+              borderRadius: '9999px',
+              backgroundColor: '#fee2e2',
+              color: '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem',
+              fontSize: '1.5rem',
+              fontWeight: 'bold'
+            }}>!</div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', marginBottom: '0.5rem' }}>Cuenta Suspendida</h3>
+            <p style={{ color: '#4b5563', fontSize: '0.875rem', marginBottom: '1rem' }}>
+              Tu acceso a la plataforma ha sido restringido temporalmente.
+            </p>
+            <div style={{ backgroundColor: '#f3f4f6', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+              <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Motivo de la suspensión:</p>
+              <p style={{ fontSize: '0.875rem', color: '#dc2626', fontWeight: 500 }}>{banInfo.banReason || 'Incumplimiento de las normas'}</p>
+              {banInfo.banHasta && (
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                  Restricción válida hasta: {new Date(banInfo.banHasta).toLocaleDateString('es-CO')}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setBanModalOpen(false);
+                setBanInfo(null);
+                logout();
+                navigate('/login', { replace: true });
+              }}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                backgroundColor: '#ef4444',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+    </AuthContext.Provider>
+  );
 };

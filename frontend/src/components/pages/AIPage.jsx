@@ -40,14 +40,6 @@ export default function AIPage() {
     // Referencia para cancelar petición actual
     const abortControllerRef = useRef(null);
 
-    const checkBanError = (err) => {
-        if (err?.data?.banned) {
-            showToast(`Acceso restringido: ${err.data.banReason || 'Contenido inapropiado'}`, "error");
-            return true;
-        }
-        return false;
-    };
-
     const loadChats = async () => {
         if (!estaAutenticado || !token) return;
         try {
@@ -208,13 +200,6 @@ export default function AIPage() {
                 if (!activeChatId) await loadChats();
             }
         } catch (err) {
-            if (checkBanError(err)) {
-                setMessages(prev => prev.map(msg =>
-                    msg.id === botMsgId ? { ...msg, content: `❌ Mensaje bloqueado. La imagen contenía material prohibido.` } : msg
-                ));
-                return;
-            }
-
             if (err.name === 'AbortError') {
                 console.log('Petición cancelada por el usuario');
                 // No mostramos error, simplemente dejamos el mensaje como está

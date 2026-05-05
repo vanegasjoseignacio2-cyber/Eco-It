@@ -24,6 +24,24 @@ export const verificarToken = async (req, res, next) => {
             return res.status(401).json({ message: "Usuario no encontrado"});
         }
 
+        // Verificación global de Baneo
+        if (usuario.status === 'banned') {
+            if (new Date() < new Date(usuario.banHasta)) {
+                return res.status(403).json({
+                    error: "Usuario baneado",
+                    banned: true,
+                    banReason: usuario.banReason,
+                    banHasta: usuario.banHasta
+                });
+            } else {
+                // Levantar el ban si ya expiró
+                usuario.status = 'active';
+                usuario.banHasta = null;
+                usuario.banReason = null;
+                await usuario.save();
+            }
+        }
+
         //Guardamos el usuario completo en req para usarlo en los controladores
         req.usuario = usuario;
         next();
