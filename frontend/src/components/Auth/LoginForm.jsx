@@ -57,7 +57,14 @@ export default function LoginForm() {
       showConsentRequiredToast();
       return;
     }
-    window.location.href = "https://backend-production-1e6e.up.railway.app/api/auth/google";
+    
+    // Si estamos en dev (sin VITE_BACKEND_URL), usa ruta relativa que Vite redirige a localhost:3000
+    // Si estamos en prod, usa la URL de Railway
+    const backendUrl = import.meta.env.VITE_BACKEND_URL 
+      ? import.meta.env.VITE_BACKEND_URL.replace('/api', '') 
+      : '';
+      
+    window.location.href = `${backendUrl}/api/auth/google`;
   };
 
   const handleSubmit = async (e) => {
