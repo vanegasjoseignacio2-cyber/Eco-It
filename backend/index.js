@@ -111,10 +111,10 @@ io.on('connection', (socket) => {
 
         // Refrescar el rol desde la BD para asegurar permisos actuales
         try {
-            const userInDb = await User.findById(userId).select('rol');
+            const userInDb = await User.findById(userId).select('rol email');
             if (userInDb && (userInDb.rol === 'admin' || userInDb.rol === 'superadmin')) {
                 socket.join('admins');
-                console.log(`Socket ${socket.id} unido a sala 'admins' (Rol: ${userInDb.rol})`);
+                console.log(`[Socket] Admin ${userInDb.email} unido a sala 'admins' (ID: ${socket.id})`);
             }
         } catch (e) {
             console.error('Error al verificar rol para sala admins:', e.message);

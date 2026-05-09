@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, AlertTriangle, Trash2 } from "lucide-react";
+import { Bell, X, AlertTriangle, Trash2, Check } from "lucide-react";
 import AdminSidebar from "../Admin/adminSlidebar";
 import AdminHero from "../Admin/adminHero";
 import AdminUsers from "../Admin/adminUsers";
@@ -19,6 +19,7 @@ export default function AdminLayout() {
     const [activeSection, setActiveSection] = useState("dashboard");
     const [notifications, setNotifications] = useState([]);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const [userSearchQuery, setUserSearchQuery] = useState("");
 
     const { showToast } = useToast();
     const { socket } = useSocket();
@@ -104,17 +105,36 @@ export default function AdminLayout() {
             }, ...prev]);
         };
         
+        const handleAlertaLenguaje = (data) => {
+            showToast(
+                `⚠️ ALERTA LENGUAJE: El usuario ${data.email || data.nombre} usó lenguaje inapropiado en la IA.`,
+                "warning",
+                10000
+            );
+
+            setNotifications(prev => [{
+                id: data.id || Date.now() + Math.random(),
+                type: "alerta_lenguaje",
+                email: data.email,
+                nombre: data.nombre,
+                fecha: data.fecha,
+                read: false
+            }, ...prev]);
+        };
+        
         socket.on("admin:alerta_obscena", handleAlertaStr);
         socket.on("admin:usuario_baneado", handleUsuarioBaneado);
+        socket.on("admin:alerta_lenguaje", handleAlertaLenguaje);
         return () => {
             socket.off("admin:alerta_obscena", handleAlertaStr);
             socket.off("admin:usuario_baneado", handleUsuarioBaneado);
+            socket.off("admin:alerta_lenguaje", handleAlertaLenguaje);
         };
     }, [socket, showToast]);
 
     const SECTIONS = {
         dashboard: <AdminHero />,
-        users: <AdminUsers />,
+        users: <AdminUsers initialSearch={userSearchQuery} />,
         estadisticas: <AdminEstadisticas />,
         ecojuego: <AdminEcojuego />,
         maps: <AdminMap/>,
@@ -167,12 +187,53 @@ export default function AdminLayout() {
         }
     };
 
+    const handleNotificationClick = async (notif) => {
+        // Redirigir a usuarios si es una alerta que requiere acción o baneo automático
+        if (notif.type === 'alerta_obscena' || notif.type === 'alerta_lenguaje' || notif.type === 'usuario_baneado') {
+            setUserSearchQuery(notif.email || notif.nombre || "");
+            setActiveSection('users');
+            setIsNotifOpen(false);
+        }
+        
+        // Marcar como leída en el backend si no lo está
+        if (!notif.read) {
+            try {
+                const id = notif._id || notif.id;
+                await fetchAPI(`/admin/notifications/${id}/mark-read`, {
+                    method: "PATCH"
+                });
+                setNotifications(prev => prev.map(n => 
+                    (n._id === id || n.id === id) ? {...n, read: true} : n
+                ));
+            } catch (error) {
+                console.error("Error al marcar notificación individual:", error);
+            }
+        }
+    };
+
+    const handleMarkAsRead = async (e, id) => {
+        e.stopPropagation();
+        try {
+            await fetchAPI(`/admin/notifications/${id}/mark-read`, {
+                method: "PATCH"
+            });
+            setNotifications(prev => prev.map(n => 
+                (n._id === id || n.id === id) ? {...n, read: true} : n
+            ));
+        } catch (error) {
+            console.error("Error al marcar notificación:", error);
+        }
+    };
+
     return (
         <div className="flex h-screen w-full overflow-hidden bg-green-50 relative">
             <AdminSessionTracker />
             <AdminSidebar
                 activeSection={activeSection}
-                setActiveSection={setActiveSection}
+                setActiveSection={(section) => {
+                    setUserSearchQuery(""); // Limpiar filtro al navegar manualmente
+                    setActiveSection(section);
+                }}
             />
             <main className="flex-1 overflow-y-auto relative">
                 {/* Floating Notification Bell */}
@@ -243,19 +304,31 @@ export default function AdminLayout() {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             key={notif._id || notif.id} 
-                                            className={`p-4 rounded-2xl border shadow-sm transition-all group/item ${
-                                                notif.read ? 'bg-white border-green-100' : 
-                                                (notif.type === 'alerta_obscena' ? 'bg-red-50 border-red-200 shadow-red-100' : 'bg-amber-50 border-amber-200 shadow-amber-100')
+                                            onClick={() => handleNotificationClick(notif)}
+                                            className={`p-4 rounded-2xl border shadow-sm transition-all group/item cursor-pointer hover:scale-[1.02] active:scale-95 ${
+                                                notif.read ? 'bg-white border-green-100 opacity-75' : 
+                                                (notif.type === 'alerta_obscena' ? 'bg-red-50 border-red-200 shadow-red-100 ring-1 ring-red-100' : 'bg-amber-50 border-amber-200 shadow-amber-100 ring-1 ring-amber-100')
                                             } relative`}
                                         >
-                                            {/* Botón eliminar individual */}
-                                            <button
-                                                onClick={() => handleDeleteNotification(notif._id || notif.id)}
-                                                className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white shadow-sm opacity-0 group-hover/item:opacity-100 transition-all z-10"
-                                                title="Eliminar notificación"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
+                                            {/* Botones de acción individual */}
+                                            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-all z-10">
+                                                {!notif.read && (
+                                                    <button
+                                                        onClick={(e) => handleMarkAsRead(e, notif._id || notif.id)}
+                                                        className="p-1.5 rounded-full bg-white/80 text-green-500 hover:text-green-600 hover:bg-white shadow-sm border border-green-100"
+                                                        title="Marcar como leída"
+                                                    >
+                                                        <Check className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteNotification(notif._id || notif.id); }}
+                                                    className="p-1.5 rounded-full bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white shadow-sm border border-red-50"
+                                                    title="Eliminar notificación"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
 
                                             {!notif.read && (
                                                 <span className="absolute top-4 right-4 flex h-2 w-2">
@@ -269,14 +342,16 @@ export default function AdminLayout() {
                                                     <AlertTriangle className="w-5 h-5" />
                                                 </div>
                                                 <div className="pr-4">
-                                                    <p className={`font-bold text-sm ${notif.type === 'alerta_obscena' ? 'text-red-900' : 'text-amber-900'}`}>
-                                                        {notif.type === 'alerta_obscena' ? 'Bloqueo de Seguridad IA' : 'Usuario Baneado'}
+                                                    <p className={`font-bold text-sm ${notif.type === 'alerta_obscena' ? 'text-red-900' : (notif.type === 'alerta_lenguaje' ? 'text-amber-900' : 'text-slate-900')}`}>
+                                                        {notif.type === 'alerta_obscena' ? 'Bloqueo de Seguridad (Imagen)' : notif.type === 'alerta_lenguaje' ? 'Alerta de Lenguaje Inapropiado' : 'Usuario Suspendido'}
                                                     </p>
                                                     <p className="text-xs text-slate-700 mt-1.5 leading-relaxed">
                                                         {notif.type === 'alerta_obscena' ? (
-                                                            <>El usuario <span className="font-bold text-slate-900">{notif.email || notif.nombre}</span> intentó analizar contenido obsceno. El evento fue interceptado.</>
+                                                            <>El usuario <span className="font-bold text-slate-900">{notif.email || notif.nombre}</span> ha sido **baneado automáticamente por 3 días** tras intentar analizar contenido obsceno.</>
+                                                        ) : notif.type === 'alerta_lenguaje' ? (
+                                                            <>El usuario <span className="font-bold text-slate-900">{notif.email || notif.nombre}</span> ha utilizado lenguaje inapropiado. Se recomienda revisar su historial y banear si es necesario.</>
                                                         ) : (
-                                                            <>El administrador <span className="font-bold text-slate-900">{notif.adminName}</span> ha baneado a <span className="font-bold text-slate-900">{notif.nombre || notif.email}</span> por <span className="font-bold">{notif.dias} días</span>.</>
+                                                            <>El administrador <span className="font-bold text-slate-900">{notif.adminName || 'Sistema'}</span> ha suspendido a <span className="font-bold text-slate-900">{notif.nombre || notif.email}</span> por <span className="font-bold text-red-600">{notif.dias || 'varios'} días</span>.</>
                                                         )}
                                                     </p>
                                                     <p className="text-[10px] text-slate-400 mt-3 font-semibold uppercase tracking-wider">

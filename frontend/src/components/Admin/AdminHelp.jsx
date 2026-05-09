@@ -345,7 +345,7 @@ const MANUAL_SECTIONS = [
 ];
 
 export default function AdminHelp() {
-    const [openSection, setOpenSection] = useState("dashboard");
+    const [openSection, setOpenSection] = useState(null);
 
     return (
         <div className="flex-1 overflow-y-auto bg-gradient-to-br from-green-50/60 via-white to-emerald-50/40 min-h-screen">
@@ -437,11 +437,16 @@ export default function AdminHelp() {
                                             initial={{ height: 0, opacity: 0 }}
                                             animate={{ height: "auto", opacity: 1 }}
                                             exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                            transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
                                         >
-                                            <div className="px-6 pb-6 pt-2 border-t border-green-50 ml-[68px]">
+                                            <motion.div 
+                                                initial={{ y: -10, opacity: 0 }}
+                                                animate={{ y: 0, opacity: 1 }}
+                                                transition={{ duration: 0.3, delay: 0.1 }}
+                                                className="px-6 pb-6 pt-2 border-t border-green-50 ml-[68px]"
+                                            >
                                                 {section.content}
-                                            </div>
+                                            </motion.div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

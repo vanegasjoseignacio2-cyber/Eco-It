@@ -4,7 +4,7 @@ const notificationSchema = new mongoose.Schema({
     type: { 
         type: String, 
         required: true,
-        enum: ['alerta_obscena', 'usuario_baneado']
+        enum: ['alerta_obscena', 'usuario_baneado', 'alerta_lenguaje']
     },
     email: { type: String },
     nombre: { type: String },

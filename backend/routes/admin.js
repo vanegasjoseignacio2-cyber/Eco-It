@@ -10,6 +10,7 @@ import {
     cambiarRolUsuario,
     obtenerNotificaciones,
     marcarNotificacionesLeidas,
+    marcarNotificacionLeida,
     eliminarNotificacion,
     eliminarTodasNotificaciones,
     obtenerAuditLogs,
@@ -34,6 +35,7 @@ router.get('/audit', verificarToken, soloAdmin, obtenerAuditLogs);
 router.delete('/audit/all', verificarToken, soloSuperadmin, eliminarTodosAuditLogs);
 router.delete('/audit/:id', verificarToken, soloSuperadmin, eliminarAuditLog);
 router.patch('/notifications/mark-read', verificarToken, soloAdmin, marcarNotificacionesLeidas);
+router.patch('/notifications/:id/mark-read', verificarToken, soloAdmin, marcarNotificacionLeida);
 router.delete('/notifications/all', verificarToken, soloSuperadmin, eliminarTodasNotificaciones);
 router.delete('/notifications/:id', verificarToken, soloSuperadmin, eliminarNotificacion);
 router.delete('/users/:id', verificarToken, soloAdmin, eliminarUsuarioAdmin);

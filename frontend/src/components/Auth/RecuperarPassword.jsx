@@ -50,6 +50,10 @@ export default function RecuperarPassword() {
     const [timeLeft, setTimeLeft] = useState(calcTimeLeft);
 
     useEffect(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }, [step]);
+
+    useEffect(() => {
         if (timeLeft > 0) {
             const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
             return () => clearTimeout(timer);

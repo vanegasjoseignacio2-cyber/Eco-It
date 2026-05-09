@@ -63,29 +63,38 @@ export const enviarCodigoRegistro = async (req, res) => {
         // Hashear contraseña antes de guardar temporalmente
         const passwordHasheada = await bcrypt.hash(password, 12);
 
-        // Generar código de 6 dígitos y hashearlo antes de guardarlo en BD
+        // Generar código de 6 dígitos y hashearlo before saving
         const codigo = Math.floor(100000 + Math.random() * 900000).toString();
         const codigoHash = crypto.createHash('sha256').update(codigo).digest('hex');
         const expira = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
 
-        // Guardar o actualizar el registro pendiente (se guarda el HASH, no el código plano)
+        // 1. Preparar correo de verificación
+        const html = buildVerificationEmailHTML({ nombre, codigo, fecha: fechaColombia() });
+
+        // 2. Intentar enviar el correo ANTES de guardar en BD
+        try {
+            await getTransporter().sendMail({
+                from:    `"Eco-It" <${process.env.EMAIL_USER}>`,
+                to:      email,
+                subject: `[Eco-It] Tu código de verificación: ${codigo}`,
+                html,
+            });
+            console.log(`📧 Código de registro enviado exitosamente a ${email}`);
+        } catch (emailError) {
+            console.error('❌ Error crítico enviando correo de registro:', emailError);
+            return res.status(500).json({ 
+                success: false, 
+                mensaje: 'No pudimos enviar el código a tu correo. Por favor verifica que el email sea correcto o intenta más tarde.',
+                error: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+            });
+        }
+
+        // 3. Si el correo se envió, guardar o actualizar el registro pendiente
         await PendingRegistration.findOneAndUpdate(
             { email },
             { nombre, apellido, edad: Number(edad), email, telefono, password: passwordHasheada, codigo: codigoHash, expira, intentos: 0 },
             { upsert: true, new: true }
         );
-
-        // Enviar correo de verificación
-        const html = buildVerificationEmailHTML({ nombre, codigo, fecha: fechaColombia() });
-
-        await getTransporter().sendMail({
-            from:    `"Eco-It" <${process.env.EMAIL_USER}>`,
-            to:      email,
-            subject: `[Eco-It] Tu código de verificación: ${codigo}`,
-            html,
-        });
-
-        console.log(`📧 Código de registro enviado a ${email}`);
 
         return res.status(200).json({
             success: true,
@@ -93,8 +102,8 @@ export const enviarCodigoRegistro = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error en enviarCodigoRegistro:', error);
-        return res.status(500).json({ success: false, mensaje: 'Error al enviar el código.', error: error.message });
+        console.error('❌ Error general en enviarCodigoRegistro:', error);
+        return res.status(500).json({ success: false, mensaje: 'Error interno al procesar el registro.', error: error.message });
     }
 };
 

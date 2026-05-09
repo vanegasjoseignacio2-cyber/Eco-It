@@ -43,17 +43,22 @@ export const reenviarCodigo = async (req, res) => {
         await user.save();
 
         // Enviar el nuevo código por correo
-        const emailResult = await sendRecoveryEmail(email, nuevoResetToken);
+        try {
+            await sendRecoveryEmail(email, nuevoResetToken);
+            
+            user.resetPasswordToken = nuevoResetTokenHash;
+            user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+            await user.save();
 
-        if (emailResult.success) {
             res.status(200).json({
                 success: true,
                 mensaje: 'Nuevo código enviado a tu correo electrónico'
             });
-        } else {
-            res.status(200).json({
-                success: true,
-                mensaje: 'Nuevo código generado (Error al enviar correo - Revisa logs)'
+        } catch (emailError) {
+            console.error('Error al enviar correo de reenvío:', emailError);
+            res.status(500).json({
+                success: false,
+                mensaje: 'No se pudo enviar el nuevo código. Intenta de nuevo más tarde.'
             });
         }
 
@@ -86,24 +91,23 @@ export const enviarCodigoRecuperacion = async (req, res) => {
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
         const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-        user.resetPasswordToken = resetTokenHash;
-        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutos
-
-        await user.save();
-
         // Usar el servicio de email centralizado
-        const emailResult = await sendRecoveryEmail(email, resetToken);
+        try {
+            await sendRecoveryEmail(email, resetToken);
+            
+            user.resetPasswordToken = resetTokenHash;
+            user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+            await user.save();
 
-        if (emailResult.success) {
             res.status(200).json({
                 success: true,
                 mensaje: 'Código enviado a tu correo electrónico'
             });
-        } else {
-            // Fallback para desarrollo (si falla el envío real)
-            res.status(200).json({
-                success: true,
-                mensaje: 'Código generado (Error al enviar correo - Revisa logs)'
+        } catch (emailError) {
+            console.error('Error al enviar correo de recuperación:', emailError);
+            res.status(500).json({
+                success: false,
+                mensaje: 'No se pudo enviar el código de recuperación. Intenta más tarde.'
             });
         }
 

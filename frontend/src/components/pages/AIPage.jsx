@@ -10,14 +10,18 @@ import ChatHeader from "../Eco-IA/Chatheader";
 import SuggestedQuestions from "../Eco-IA/Suggestedquestions";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { consultarIA, analizarImagen, obtenerChats, obtenerChat, eliminarChat, eliminarTodosLosChats } from "../../services/api";
+import { consultarIA, analizarImagen, obtenerChats, obtenerChat, eliminarChat, eliminarTodosLosChats, obtenerPerfil } from "../../services/api";
 import { AlertTriangle, Info, X, Menu, ChevronLeft, Cpu, CircuitBoard, Layers, Bot, Zap, Leaf, Brain, Sparkles, Recycle, Sprout, Trash2, Droplets, Square } from "lucide-react";
 import ConfirmationModal from "../ui/ConfirmationModal";
 import EcoFacts from "../Eco-IA/EcoFacts";
 
 export default function AIPage() {
-    const { token, estaAutenticado } = useAuth();
+    const { token, estaAutenticado, usuario } = useAuth();
     const { showToast } = useToast();
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const initialMessage = {
         id: "1",
@@ -32,6 +36,61 @@ export default function AIPage() {
     const [chats, setChats] = useState([]);
     const [activeChatId, setActiveChatId] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [bannedData, setBannedData] = useState(null);
+    const [timeLeft, setTimeLeft] = useState("");
+
+    useEffect(() => {
+        if (!bannedData?.hasta) return;
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const banTime = new Date(bannedData.hasta).getTime();
+            const distance = banTime - now;
+
+            if (distance <= 0) {
+                clearInterval(interval);
+                setBannedData(null); // Desbanear visualmente si expira mientras navega
+                return;
+            }
+
+            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+            let res = "";
+            if (d > 0) res += `${d.toString().padStart(2, '0')}d `;
+            res += `${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+            setTimeLeft(res);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [bannedData]);
+
+    useEffect(() => {
+        const verificarBaneo = async () => {
+            if (!estaAutenticado) return;
+            try {
+                const data = await obtenerPerfil();
+                if (data.success && data.data.status === 'banned') {
+                    setBannedData({
+                        hasta: data.data.banHasta,
+                        razon: data.data.banReason
+                    });
+                } else if (usuario && usuario.status === 'banned') {
+                    setBannedData({
+                        hasta: usuario.banHasta,
+                        razon: usuario.banReason
+                    });
+                }
+            } catch (error) {
+                if (error.status !== 403) {
+                    console.error("Error validando perfil", error);
+                }
+            }
+        };
+
+        verificarBaneo();
+    }, [estaAutenticado, usuario]);
 
     // Estados para confirmación de eliminación
     const [chatIdToDelete, setChatIdToDelete] = useState(null);
@@ -41,15 +100,21 @@ export default function AIPage() {
     const abortControllerRef = useRef(null);
 
     const checkBanError = (err) => {
-        if (err?.data?.banned) {
-            showToast(`Acceso restringido: ${err.data.banReason || 'Contenido inapropiado'}`, "error");
+        if (err?.data?.banned || err?.status === 403) {
+            if (err?.data?.banned) {
+                showToast(`Acceso restringido: ${err.data.banReason || 'Contenido inapropiado'}`, "error");
+                setBannedData({
+                    hasta: err.data.banHasta,
+                    razon: err.data.banReason
+                });
+            }
             return true;
         }
         return false;
     };
 
     const loadChats = async () => {
-        if (!estaAutenticado || !token) return;
+        if (!estaAutenticado || !token || usuario?.status === 'banned') return;
         try {
             const data = await obtenerChats();
             setChats(data);
@@ -60,14 +125,14 @@ export default function AIPage() {
     };
 
     useEffect(() => {
-        if (estaAutenticado) {
+        if (estaAutenticado && usuario?.status !== 'banned') {
             loadChats();
         } else {
             setChats([]);
             setActiveChatId(null);
             setMessages([initialMessage]);
         }
-    }, [estaAutenticado, token]);
+    }, [estaAutenticado, token, usuario?.status]);
 
     const handleNewChat = () => {
         setActiveChatId(null);
@@ -178,6 +243,13 @@ export default function AIPage() {
                 
                 if (respuesta.includes("ALERTA_OBSCENA:")) {
                     showToast("¡Advertencia! Se ha detectado contenido inapropiado en la imagen.", "warning");
+                    // Activar el banner en tiempo real
+                    const banHasta = new Date();
+                    banHasta.setDate(banHasta.getDate() + 3);
+                    setBannedData({
+                        hasta: banHasta.toISOString(),
+                        razon: "Sistema: Envío de imagen con contenido obsceno."
+                    });
                 }
 
                 setMessages(prev => prev.map(msg =>
@@ -361,6 +433,43 @@ export default function AIPage() {
                                     boxShadow: "0 40px 100px -20px rgba(6,78,59,0.12)",
                                 }}
                             >
+                                {bannedData && (
+                                    <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 backdrop-blur-md bg-white/40">
+                                        <motion.div 
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="bg-white overflow-hidden rounded-[32px] max-w-sm w-full text-center shadow-[0_20px_70px_-10px_rgba(239,68,68,0.25)] border border-red-100 flex flex-col"
+                                        >
+                                            {/* Header - Toast style */}
+                                            <div className="bg-red-50/80 px-8 py-6 border-b border-red-100/50 flex flex-col items-center">
+                                                <div className="w-14 h-14 bg-red-100 text-red-500 rounded-2xl flex items-center justify-center mb-4 rotate-3 shadow-inner">
+                                                    <AlertTriangle className="w-8 h-8" />
+                                                </div>
+                                                <h3 className="text-xl font-black text-red-700 tracking-tighter uppercase italic">CUENTA BANEADA</h3>
+                                            </div>
+                                            
+                                            {/* Body */}
+                                            <div className="px-8 py-8 bg-white flex-1 flex flex-col items-center">
+                                                <div className="mb-2">
+                                                    <span className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em]">Motivo de la sanción</span>
+                                                </div>
+                                                <p className="text-sm text-slate-800 font-bold leading-relaxed max-w-[240px]">
+                                                    {bannedData.razon || "Uso de contenido no permitido por la normativa de Eco-It."}
+                                                </p>
+                                            </div>
+                                            
+                                            {/* Footer (Countdown) - Red Card style */}
+                                            <div className="bg-red-600 px-8 py-5 flex flex-col items-center justify-center gap-1 shadow-[inset_0_2px_10px_rgba(0,0,0,0.1)]">
+                                                <div className="flex items-center gap-2 text-white/70">
+                                                    <span className="text-xs font-bold uppercase tracking-widest">Tiempo restante</span>
+                                                </div>
+                                                <div className="text-white font-mono font-bold text-2xl tracking-[0.15em] drop-shadow-md">
+                                                    {timeLeft || "CALCULANDO..."}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    </div>
+                                )}
                                 <ChatHeader />
                                 <div className="flex-1 overflow-hidden flex flex-col relative">
                                     <ChatWindow messages={messages} isTyping={isTyping} />
@@ -374,7 +483,7 @@ export default function AIPage() {
                                     selectedImage={selectedImage}
                                     onImageRemove={() => setSelectedImage(null)}
                                     isTyping={isTyping}
-                                    disabled={!estaAutenticado}
+                                    disabled={!estaAutenticado || usuario?.status === 'banned'}
                                 />
                                 
 
