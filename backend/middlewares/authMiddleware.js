@@ -4,15 +4,11 @@ import Users from "../models/user.js";
 // verifica el token y consulta el usuario actualizado en BD
 export const verificarToken = async (req, res, next) => {
     try {
-        // Leer token de cookies (HttpOnly) primero
-        let token = req.cookies?.token;
-
-        // Fallback al header Authorization
-        if (!token) {
-            const authHeader = req.headers["authorization"];
-            if (authHeader && authHeader.startsWith("Bearer")) {
-                token = authHeader.split(" ")[1];
-            }
+        // Solo usamos el header Authorization
+        let token;
+        const authHeader = req.headers["authorization"];
+        if (authHeader && authHeader.startsWith("Bearer")) {
+            token = authHeader.split(" ")[1];
         }
 
         if (!token) {
@@ -26,6 +22,24 @@ export const verificarToken = async (req, res, next) => {
         const usuario = await Users.findById(decoded.id).select("-password");
         if (!usuario) {
             return res.status(401).json({ message: "Usuario no encontrado"});
+        }
+
+        // Verificación global de Baneo
+        if (usuario.status === 'banned') {
+            if (new Date() < new Date(usuario.banHasta)) {
+                return res.status(403).json({
+                    error: "Usuario baneado",
+                    banned: true,
+                    banReason: usuario.banReason,
+                    banHasta: usuario.banHasta
+                });
+            } else {
+                // Levantar el ban si ya expiró
+                usuario.status = 'active';
+                usuario.banHasta = null;
+                usuario.banReason = null;
+                await usuario.save();
+            }
         }
 
         //Guardamos el usuario completo en req para usarlo en los controladores

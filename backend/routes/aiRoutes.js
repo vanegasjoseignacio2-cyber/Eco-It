@@ -6,29 +6,8 @@ import { verificarToken } from "../middlewares/authMiddleware.js";
 
 export const aiRouter = Router();
 
-// Middleware para verificar si el usuario está baneado
-const checkBan = async (req, res, next) => {
-  if (req.usuario.status === 'banned') {
-    if (new Date() < new Date(req.usuario.banHasta)) {
-      return res.status(403).json({
-        error: "Usuario baneado",
-        banned: true,
-        banReason: req.usuario.banReason,
-        banHasta: req.usuario.banHasta
-      });
-    } else {
-      // Levantar el ban si ya expiró
-      req.usuario.status = 'active';
-      req.usuario.banHasta = null;
-      req.usuario.banReason = null;
-      await req.usuario.save();
-    }
-  }
-  next();
-};
-
 // Aplicar verificación de baneo a todas las rutas de IA
-aiRouter.use(verificarToken, checkBan);
+aiRouter.use(verificarToken);
 
 const GEMINI_MODEL = "google/gemini-2.5-flash-lite";
 const FREE_MODEL = "openrouter/free";

@@ -280,13 +280,6 @@ export default function AIPage() {
                 if (!activeChatId) await loadChats();
             }
         } catch (err) {
-            if (checkBanError(err)) {
-                setMessages(prev => prev.map(msg =>
-                    msg.id === botMsgId ? { ...msg, content: `❌ Mensaje bloqueado. La imagen contenía material prohibido.` } : msg
-                ));
-                return;
-            }
-
             if (err.name === 'AbortError') {
                 console.log('Petición cancelada por el usuario');
                 // No mostramos error, simplemente dejamos el mensaje como está

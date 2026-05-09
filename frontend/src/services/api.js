@@ -10,12 +10,17 @@ export const fetchAPI = async (endpoint, options = {}) => {
     // Configurar opciones de fetch
     const fetchOptions = {
       method: options.method || 'GET',
-      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
     };
+
+    // Agregar token si existe en localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchOptions.headers['Authorization'] = `Bearer ${token}`;
+    }
 
     // Agregar body solo si existe
     if (options.body) {
@@ -30,6 +35,12 @@ export const fetchAPI = async (endpoint, options = {}) => {
       if (response.status === 401 && !options.skipAuthError) {
         window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       }
+      
+      // Dispatch global ban event
+      if (response.status === 403 && data.banned) {
+        window.dispatchEvent(new CustomEvent('USER_BANNED', { detail: data }));
+      }
+
       const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
       error.data = data;
       error.status = response.status;
@@ -129,12 +140,17 @@ export const restablecerPassword = async (email, codigo, password) => {
 // ============= IA =============
 
 export const consultarIA = async (pregunta, chatId, onChunk, signal) => {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${BASE_URL}/ai/consultar`, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({ pregunta, chatId }),
     signal,
   });
@@ -143,6 +159,10 @@ export const consultarIA = async (pregunta, chatId, onChunk, signal) => {
     const data = await response.json();
     if (response.status === 401) {
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
+    // Dispatch global ban event
+    if (response.status === 403 && data.banned) {
+      window.dispatchEvent(new CustomEvent('USER_BANNED', { detail: data }));
     }
     const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
     error.data = data;

@@ -72,6 +72,7 @@ export const banearUsuarioAdmin = async (req, res) => {
     try {
         const { id } = req.params;
         const diasDelBaneo = req.body.dias || 7;
+        const motivo = req.body.motivo || "Incumplimiento de las normas";
 
         if (req.usuario.id === id) {
             return res.status(400).json({ success: false, message: "No puedes banearte a ti mismo" });
@@ -86,6 +87,7 @@ export const banearUsuarioAdmin = async (req, res) => {
         const banHasta = new Date();
         banHasta.setDate(banHasta.getDate() + diasDelBaneo);
         usuario.banHasta = banHasta;
+        usuario.banReason = motivo;
 
         await usuario.save();
 
@@ -93,7 +95,7 @@ export const banearUsuarioAdmin = async (req, res) => {
         await createAuditLog(req.app, {
             type: 'ban',
             action: 'Usuario Baneado',
-            details: `${usuario.email} baneado por ${diasDelBaneo} días`,
+            details: `${usuario.email} baneado por ${diasDelBaneo} días. Motivo: ${motivo}`,
             user: req.usuario.nombre || req.usuario.email
         });
 
@@ -104,7 +106,7 @@ export const banearUsuarioAdmin = async (req, res) => {
             adminName: req.usuario.nombre,
             dias: diasDelBaneo,
             fecha: new Date(),
-            mensaje: `El usuario ${usuario.email} ha sido baneado por ${diasDelBaneo} días.`
+            mensaje: `El usuario ${usuario.email} ha sido baneado por ${diasDelBaneo} días. Motivo: ${motivo}`
         };
 
         const notificacion = await Notification.create(notificacionData);

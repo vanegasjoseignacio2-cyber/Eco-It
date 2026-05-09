@@ -94,7 +94,8 @@ export default function LoginForm() {
       showToast(`¡Bienvenido de vuelta, ${response.data.usuario.nombre}!`, 'success');
 
       // login() maneja la redirección según el rol (admin → /admin, usuario → /)
-      login(true, response.data.usuario);
+      // Pasamos el token explícitamente desde la respuesta
+      login(response.data.token, response.data.usuario);
 
     } catch (err) {
       console.error('Error en login:', err);
