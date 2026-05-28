@@ -6,7 +6,7 @@ import { useSocket } from "../../context/SocketContext";
 import Toast from "../ui/Toast";
 import {
     Users, Search, Filter, MoreVertical,
-    UserCheck, UserX, Trash2, RefreshCw,
+    UserCheck, UserX, Trash2, RefreshCw, X,
     Mail, ShieldCheck, ShieldOff, Zap, AlertTriangle,
 } from "lucide-react";
 import { TableSkeleton } from "./AdminSkeletons";
@@ -84,12 +84,12 @@ function ConfirmModal({ isOpen, onClose, onConfirm, title, message, confirmLabel
 }
 
 /* ─── Componente principal ────────────────────────────────────────────────── */
-export default function AdminUsers() {
+export default function AdminUsers({ initialSearch = "" }) {
     const { estaAutenticado, usuario: currentUser } = useAuth();
     const { socket }                      = useSocket();
     const [users, setUsers]               = useState([]);
     const [loading, setLoading]           = useState(true);
-    const [search, setSearch]             = useState("");
+    const [search, setSearch]             = useState(initialSearch);
     const [filterRole, setFilterRole]     = useState("all");
     const [filterStatus, setFilterStatus] = useState("all");
     const [openMenu, setOpenMenu]         = useState(null);
@@ -119,6 +119,12 @@ export default function AdminUsers() {
     useEffect(() => { 
         if (estaAutenticado) fetchUsers(); 
     }, [estaAutenticado]);
+
+    useEffect(() => {
+        if (initialSearch !== undefined) {
+            setSearch(initialSearch);
+        }
+    }, [initialSearch]);
 
     useEffect(() => {
         if (!socket) return;
@@ -338,8 +344,17 @@ export default function AdminUsers() {
                                 placeholder="Buscar por nombre o email..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-green-200 bg-white text-green-900 text-sm placeholder:text-green-300 focus:outline-none focus:ring-2 focus:ring-green-400/40 focus:border-green-400 transition-all shadow-sm"
+                                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-green-200 bg-white text-green-900 text-sm placeholder:text-green-300 focus:outline-none focus:ring-2 focus:ring-green-400/40 focus:border-green-400 transition-all shadow-sm"
                             />
+                            {search && (
+                                <button 
+                                    onClick={() => setSearch("")}
+                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-green-50 text-green-400 hover:text-green-600 transition-all"
+                                    title="Limpiar búsqueda"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
                         <div className="relative">
                             <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-green-400 pointer-events-none" />

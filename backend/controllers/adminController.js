@@ -118,6 +118,14 @@ export const banearUsuarioAdmin = async (req, res) => {
                 ...notificacionData,
                 id: notificacion._id
             });
+
+            // Notificar al usuario afectado en tiempo real
+            if (usuariosConectados.has(id)) {
+                const data = usuariosConectados.get(id);
+                data.sockets.forEach(socketId => {
+                    io.to(socketId).emit("user:banned");
+                });
+            }
         }
 
         res.status(200).json({ success: true, message: `Usuario baneado por ${diasDelBaneo} días`, usuario });
@@ -140,6 +148,16 @@ export const desbanearUsuarioAdmin = async (req, res) => {
         usuario.banHasta = null;
 
         await usuario.save();
+
+        // Notificar al usuario en tiempo real vía socket
+        const io = req.app.get("io");
+        if (io && usuariosConectados.has(id)) {
+            const data = usuariosConectados.get(id);
+            data.sockets.forEach(socketId => {
+                io.to(socketId).emit("user:unbanned");
+            });
+            console.log(`[Admin] Notificación de desbaneo enviada al usuario ${usuario.email}`);
+        }
 
         // Audit log
         await createAuditLog(req.app, {
@@ -409,6 +427,23 @@ export const marcarNotificacionesLeidas = async (req, res) => {
     } catch (error) {
         console.error("Error al marcar notificaciones:", error);
         res.status(500).json({ success: false, mensaje: "Error al marcar notificaciones como leídas" });
+    }
+};
+
+export const marcarNotificacionLeida = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.usuario._id || req.usuario.id;
+        
+        await Notification.findByIdAndUpdate(
+            id,
+            { $addToSet: { readBy: userId } }
+        );
+
+        res.json({ success: true, mensaje: "Notificación marcada como leída" });
+    } catch (error) {
+        console.error("Error al marcar notificación individual:", error);
+        res.status(500).json({ success: false, mensaje: "Error al marcar la notificación como leída" });
     }
 };
 

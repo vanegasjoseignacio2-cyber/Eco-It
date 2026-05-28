@@ -449,15 +449,6 @@ export default function AdminImages() {
                         )}
                     </div>
 
-                    {/* Nota */}
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                        className="mt-4 flex items-start gap-2.5 px-4 py-3 rounded-xl bg-lime-50 border border-lime-100">
-                        <Leaf className="w-4 h-4 text-lime-500 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-lime-700 leading-relaxed">
-                            <span className="font-bold">Backend conectado:</span> los slides se guardan en la base de datos de MongoDB
-                            y las imágenes residen en Cloudinary. Los cambios se verán reflejados en el Home inmediatamente.
-                        </p>
-                    </motion.div>
                 </div>
 
                 {/* Panel edición */}

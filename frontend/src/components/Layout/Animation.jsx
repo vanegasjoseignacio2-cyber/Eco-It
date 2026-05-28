@@ -1,29 +1,94 @@
 //animación de carga de inicio
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Leaf, Recycle } from "lucide-react";
 
-export default function LoadingScreen({ onComplete }) {
+/**
+ * LoadingScreen
+ * @param {boolean} isReady - Si se pasa, la animación esperará a que sea true antes de pasar a la etapa de texto.
+ * @param {function} onComplete - Callback al finalizar toda la animación.
+ */
+export default function LoadingScreen({ isReady, onComplete }) {
     const [stage, setStage] = useState("loading"); // loading | text | done
+    const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+    const [imagesLoaded, setImagesLoaded] = useState(false);
+
+    // Imágenes críticas para precargar (Slides del carrusel y assets principales)
+    const criticalImages = useMemo(() => [
+        "https://hjdoblekhuila.com/media/multimedia/DANTA_DE_MONTA%C3%91A.jpeg",
+        "https://elcampesino.co/wp-content/uploads/2018/12/oso_de_anteojos_foto_Giovanny_Pulido_33-2.jpg",
+        "https://www.agenciadeviajesyimmytours.com/wp-content/uploads/2023/01/paramo-de-miraflores_2.jpg",
+        "https://www.elnuevosiglo.com.co/sites/default/files/2020-05/09asfoto%20ambiente%20mayo%2030.jpg",
+        "https://tsmnoticias.com/wp-content/uploads/2020/01/En-peligro-el-parque-regional-Cerro-P%C3%A1ramo-de-Miraflores-7.jpeg"
+    ], []);
 
     useEffect(() => {
-        const timer1 = setTimeout(() => setStage("text"), 2000);
-        const timer2 = setTimeout(() => setStage("done"), 4000);
-        const timer3 = setTimeout(() => onComplete(), 4500);
+        // 1. Asegurar un tiempo mínimo de exposición para la animación estética (2s)
+        const timer = setTimeout(() => setMinTimeElapsed(true), 2000);
 
-        return () => {
-            clearTimeout(timer1);
-            clearTimeout(timer2);
-            clearTimeout(timer3);
-        };
-    }, [onComplete]);
+        // 2. Precarga de imágenes
+        let loadedCount = 0;
+        if (criticalImages.length === 0) {
+            setImagesLoaded(true);
+        } else {
+            criticalImages.forEach(src => {
+                const img = new Image();
+                img.src = src;
+                img.onload = () => {
+                    loadedCount++;
+                    if (loadedCount === criticalImages.length) {
+                        setImagesLoaded(true);
+                    }
+                };
+                img.onerror = () => {
+                    loadedCount++; // Seguimos aunque falle una
+                    if (loadedCount === criticalImages.length) {
+                        setImagesLoaded(true);
+                    }
+                };
+            });
+        }
+
+        return () => clearTimeout(timer);
+    }, [criticalImages]);
+
+    // Etapa 1 -> Etapa 2: Loading -> Text
+    useEffect(() => {
+        if (stage === "loading") {
+            const readyToTransition = minTimeElapsed && imagesLoaded && (isReady !== undefined ? isReady : true);
+            if (readyToTransition) {
+                setStage("text");
+            }
+        }
+    }, [minTimeElapsed, imagesLoaded, isReady, stage]);
+
+    // Etapa 2 -> Etapa 3: Text -> Done
+    useEffect(() => {
+        if (stage === "text") {
+            const timer = setTimeout(() => {
+                setStage("done");
+            }, 2500);
+            return () => clearTimeout(timer);
+        }
+    }, [stage]);
+
+    // Finalización: Done -> onComplete
+    useEffect(() => {
+        if (stage === "done") {
+            // Un pequeño delay para que la animación de salida de AnimatePresence pueda terminar
+            const timer = setTimeout(() => {
+                onComplete?.();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [stage, onComplete]);
 
     return (
         <AnimatePresence>
             {stage !== "done" && (
                 <motion.div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-100 to-green-200"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-100 to-green-200"
                     initial={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
@@ -60,7 +125,7 @@ export default function LoadingScreen({ onComplete }) {
                     <div className="relative flex flex-col items-center gap-8">
                         <AnimatePresence mode="wait">
 
-                            {/* ===== STAGE: LOADING ===== */}
+                            {/* ===== STAGE: LOADING (Imagen 2 del usuario) ===== */}
                             {stage === "loading" && (
                                 <motion.div
                                     key="loading"
@@ -90,7 +155,7 @@ export default function LoadingScreen({ onComplete }) {
                                         </motion.div>
                                     </motion.div>
 
-                                    {/* anilloos */}
+                                    {/* anillos */}
                                     <motion.div
                                         className="absolute -inset-4 rounded-full border-4 border-green-400/30"
                                         animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
@@ -111,10 +176,19 @@ export default function LoadingScreen({ onComplete }) {
                                     >
                                         <div className="w-32 h-32 rounded-full border-t-4 border-green-300 animate-spin" />
                                     </motion.div>
+
+                                    {/* Indicador de carga real */}
+                                    <motion.div 
+                                        className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-green-700 font-medium whitespace-nowrap"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                    >
+                                        {!imagesLoaded ? "Preparando recursos..." : "Iniciando sistema..."}
+                                    </motion.div>
                                 </motion.div>
                             )}
 
-                            {/* TEXTO  */}
+                            {/* TEXTO (Contenido de Imagen 1, pero con estilo premium) */}
                             {stage === "text" && (
                                 <motion.div
                                     key="text"

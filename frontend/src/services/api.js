@@ -49,10 +49,11 @@ export const fetchAPI = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
-    // Si es un 401 esperado (verificación de sesión al arrancar), no lo mostramos como error
-    if (options.skipAuthError && error.status === 401) {
-      // silencio intencional — no hay sesión activa
-    } else {
+    // Silenciamos errores esperados que no queremos que ensucien la consola del cliente
+    const isExpectedAuthError = options.skipAuthError && error.status === 401;
+    const isBannedError = error.status === 403;
+
+    if (!isExpectedAuthError && !isBannedError) {
       console.error('Error en fetchAPI:', error);
     }
     throw error;

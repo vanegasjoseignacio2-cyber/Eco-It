@@ -69,6 +69,18 @@ export default function RegisterForm() {
 
     // ── Temporizador ─────────────────────────────────────────────────────────
     useEffect(() => {
+        if (timeLeft > 0 && step === 'form') {
+            setStep('code');
+        }
+    }, []);
+
+    // ── Scroll to Top al cambiar de paso ──────────────────────────────────────
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [step]);
+
+    // ── Temporizador ─────────────────────────────────────────────────────────
+    useEffect(() => {
         if (timeLeft <= 0) return;
         const t = setTimeout(() => setTimeLeft(tl => tl - 1), 1000);
         return () => clearTimeout(t);
@@ -177,6 +189,12 @@ export default function RegisterForm() {
         } catch (err) {
             if (err.data?.mensaje?.includes('ya tiene una cuenta')) {
                 setError("Este correo electrónico ya está registrado. ¿Quieres iniciar sesión?");
+            } else if (err.status === 429) {
+                // Si el backend dice que hay que esperar, asumimos que el código ya fue enviado
+                // y movemos al usuario al paso de verificación para que no se quede bloqueado.
+                localStorage.setItem('reg_code_expiry', Date.now() + 3 * 60 * 1000);
+                setTimeLeft(180);
+                setStep('code');
             } else {
                 setError(err.message || "Error al enviar el código.");
             }

@@ -32,7 +32,7 @@ const promptSystem = `Eres EcoBot, un asistente virtual especializado EXCLUSIVAM
 REGLAS ESTRICTAS:
 1. SOLO puedes responder preguntas sobre: reciclaje, clasificación de residuos, compostaje, reducción de residuos, economía circular, contaminación ambiental, energías renovables y sostenibilidad.
 2. SÉ EXTREMADAMENTE CONCISO Y DIRECTO. Evita introducciones largas y ve directo al grano para optimizar la lectura.
-3. CERO TOLERANCIA A LENGUAJE INAPROPIADO: Si el usuario usa contenido ofensivo, obsceno, sexual, explícito o violento, NO GENERES NINGUNA RESPUESTA y devuelve estrictamente este texto: "ALERTA_LENGUAJE_INAPROPIADO: Por favor, usa un lenguaje adecuado. Tu cuenta ha sido reportada por uso de lenguaje inapropiado."
+3. CERO TOLERANCIA A CONTENIDO INAPROPIADO: Si el usuario menciona términos sexuales (como preservativos, condones, pornografía, órganos sexuales, actos sexuales, etc.), términos ofensivos, groserías, violencia o cualquier contenido que no sea apto para todo público, NO GENERES NINGUNA EXPLICACIÓN NI RESPUESTA y devuelve ÚNICAMENTE este texto: "ALERTA_LENGUAJE_INAPROPIADO: Por favor, usa un lenguaje adecuado. Tu cuenta ha sido reportada por uso de lenguaje inapropiado." Sé extremadamente estricto con las dobles intenciones o términos que tengan connotación sexual.
 4. Si el usuario pregunta sobre CUALQUIER otro tema (economía, tecnología, etc.), debes NEGARTE a responder.
 5. Responde siempre en español, con tono educado pero firme.
 6. CONTEXTO COLOMBIANO: Adapta TODAS tus respuestas a la normativa e información de reciclaje en Colombia. Haz énfasis en el código de colores de canecas usado en el país (Blanco: aprovechables como plástico, vidrio, metales; Negro: no aprovechables como papel higiénico, servilletas sucias; Verde: orgánicos aprovechables como restos de comida).
@@ -56,35 +56,75 @@ REGLAS ESTRICTAS:
 
 
 /**
- * Helper para registrar una alerta de contenido inapropiado sin banear al usuario
+ * Helper para registrar una alerta de contenido inapropiado sin banear al usuario (excepto imágenes)
  */
 async function registrarAlertaContenido(req, razon, imagen = null) {
-  const notifAlertaData = {
-    type: imagen ? "alerta_obscena" : "alerta_lenguaje",
-    email: req.usuario.email,
-    nombre: req.usuario.nombre,
-    fecha: new Date(),
-    mensaje: imagen 
-      ? "Se detectó el envío de una imagen con contenido obsceno/inapropiado."
-      : "Se detectó el uso de lenguaje inapropiado/sexual en el chat."
-  };
+  try {
+    const isImage = !!imagen;
+    console.log(`[EcoBot] Registrando alerta: ${isImage ? 'IMAGEN' : 'LENGUAJE'}. Razón: ${razon}`);
 
-  const notifAlerta = await Notification.create(notifAlertaData);
-
-  const io = req.app.get("io");
-  if (io) {
-    if (imagen) {
-      io.to("admins").emit("admin:alerta_obscena", {
-        ...notifAlertaData,
-        id: notifAlerta._id,
-        imagen: imagen
-      });
-    } else {
-      io.to("admins").emit("admin:alerta_lenguaje", {
-        ...notifAlertaData,
-        id: notifAlerta._id
-      });
+    // Baneo automático por 3 días si es imagen obscena
+    if (isImage) {
+      req.usuario.status = 'banned';
+      const banHasta = new Date();
+      banHasta.setDate(banHasta.getDate() + 3);
+      req.usuario.banHasta = banHasta;
+      req.usuario.banReason = "Sistema: Envío de imagen con contenido obsceno.";
+      await req.usuario.save();
+      console.log(`[EcoBot] Usuario ${req.usuario.email} baneado automáticamente.`);
     }
+
+    const notifAlertaData = {
+      type: isImage ? "alerta_obscena" : "alerta_lenguaje",
+      email: req.usuario.email,
+      nombre: req.usuario.nombre,
+      fecha: new Date(),
+      mensaje: isImage 
+        ? "Se detectó el envío de una imagen con contenido obsceno/inapropiado."
+        : "Se detectó el uso de lenguaje inapropiado/sexual en el chat."
+    };
+
+    const notifAlerta = await Notification.create(notifAlertaData);
+    console.log(`[EcoBot] Notificación guardada en BD con ID: ${notifAlerta._id}`);
+
+    const io = req.app.get("io");
+    if (io) {
+      const adminsRoom = io.sockets.adapter.rooms.get("admins");
+      console.log(`[EcoBot] Emitiendo eventos a sala 'admins' (Usuarios conectados: ${adminsRoom ? adminsRoom.size : 0})...`);
+      if (isImage) {
+        io.to("admins").emit("admin:alerta_obscena", {
+          ...notifAlertaData,
+          id: notifAlerta._id,
+          imagen: imagen
+        });
+        // Crear y guardar la notificación de baneo en la base de datos para que tenga un ID real
+        const notifBan = await Notification.create({
+          type: "usuario_baneado",
+          email: req.usuario.email,
+          nombre: req.usuario.nombre,
+          adminName: "Sistema Automático",
+          dias: 3,
+          fecha: new Date(),
+          mensaje: `Baneo automático de 3 días aplicado por el sistema.`
+        });
+
+        // Emitir la notificación de baneo con su ID de base de datos
+        io.to("admins").emit("admin:usuario_baneado", {
+          ...notifBan.toObject(),
+          id: notifBan._id
+        });
+      } else {
+        io.to("admins").emit("admin:alerta_lenguaje", {
+          ...notifAlertaData,
+          id: notifAlerta._id
+        });
+      }
+      console.log(`[EcoBot] Eventos emitidos exitosamente.`);
+    } else {
+      console.warn("[EcoBot] No se encontró el objeto IO en la aplicación.");
+    }
+  } catch (error) {
+    console.error("❌ Error en registrarAlertaContenido:", error);
   }
 }
 
@@ -267,15 +307,20 @@ aiRouter.post("/consultar", async (req, res) => {
 
     // 3. Guardar mensajes en la base de datos
     if (respuestaCompleta) {
-      // Verificar si hubo una alerta de lenguaje inapropiado
-      if (respuestaCompleta.includes("ALERTA_LENGUAJE_INAPROPIADO:")) {
-        await registrarAlertaContenido(req, "Lenguaje explícito e inapropiado");
-      }
+      try {
+        // Verificar si hubo una alerta de lenguaje inapropiado (insensible a mayúsculas)
+        const upperRes = respuestaCompleta.toUpperCase();
+        if (upperRes.includes("ALERTA_LENGUAJE_INAPROPIADO") || upperRes.includes("CONTENIDO INAPROPIADO")) {
+          await registrarAlertaContenido(req, "Lenguaje explícito e inapropiado");
+        }
 
-      chatActual.mensajes.push({ role: "user", content: pregunta });
-      chatActual.mensajes.push({ role: "bot", content: respuestaCompleta });
-      chatActual.updatedAt = Date.now();
-      await chatActual.save();
+        chatActual.mensajes.push({ role: "user", content: pregunta });
+        chatActual.mensajes.push({ role: "bot", content: respuestaCompleta });
+        chatActual.updatedAt = Date.now();
+        await chatActual.save();
+      } catch (saveError) {
+        console.error("Error al guardar mensajes en segundo plano:", saveError);
+      }
     }
 
     if (modeloUsado === GEMINI_MODEL) {
@@ -348,7 +393,7 @@ aiRouter.post("/analizar-imagen", async (req, res) => {
     // Verificar si la IA consideró la imagen obscena
     if (respuesta.includes("ALERTA_OBSCENA:")) {
       await registrarAlertaContenido(req, "Contenido imagen inapropiado", imagen);
-      // No baneamos, solo dejamos que la respuesta fluya para que el frontend muestre la advertencia
+      // El usuario fue baneado por el sistema en registrarAlertaContenido
     }
 
     // Guardar en la DB

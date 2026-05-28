@@ -45,6 +45,18 @@ export const SocketProvider = ({ children }) => {
       setUsuariosOnline(count);
     });
 
+    // Escuchar cuando el admin quita un baneo en tiempo real
+    newSocket.on('user:unbanned', () => {
+      console.log('🎉 Has sido desbaneado por un administrador.');
+      window.dispatchEvent(new Event('auth-change'));
+    });
+
+    // Escuchar cuando el usuario es baneado en tiempo real (opcional pero recomendado)
+    newSocket.on('user:banned', () => {
+      console.log('⚠️ Tu cuenta ha sido restringida.');
+      window.dispatchEvent(new Event('auth-change'));
+    });
+
     newSocket.on('disconnect', (reason) => {
       console.log('Socket desconectado:', reason);
     });
