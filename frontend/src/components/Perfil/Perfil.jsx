@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../Layout/Navbar";
 import Footer from "../Layout/Footer";
 import { useAuth } from "../../context/AuthContext";
 import {
     Mail, Phone, Calendar, Edit, LogOut,
     Leaf, TreePine, Award, Recycle, Sprout,
-    Trees, ArrowUpRight, Shield, Zap
+    Trees, ArrowUpRight, Shield, Zap, X
 } from "lucide-react";
+import AchievementsPreview from "../game/AchievementsPreview";
 
 // ── Partícula de fondo ────────────────────────────────────────────────────────
 function Particle({ style }) {
@@ -45,11 +46,13 @@ function AnimatedCounter({ value, delay = 0 }) {
 
 export default function ProfileEcoIt() {
     const { usuario, logout } = useAuth();
+    const navigate = useNavigate();
     const [userData, setUserData] = useState({
         nombre: "", email: "", edad: "", telefono: "", avatar: "U"
     });
     const [loading, setLoading] = useState(true);
     const [hoveredStat, setHoveredStat] = useState(null);
+    const [showLogrosModal, setShowLogrosModal] = useState(false);
 
     useEffect(() => {
         if (usuario) {
@@ -64,15 +67,49 @@ export default function ProfileEcoIt() {
         }
     }, [usuario]);
 
+    useEffect(() => {
+        if (showLogrosModal) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+        };
+    }, [showLogrosModal]);
+
     const handleLogout = () => {
-        logout();
-        window.location.href = "/";
+        logout(true);
+        navigate('/');
     };
 
+    const puntosJuego = usuario?.puntosJuego || 0;
+    const logrosCount = usuario?.logros?.length || 0;
+    const residuos   = usuario?.estadisticasJuego?.residuosRecolectados || 0;
+
+    // Niveles basados en la cantidad de Logros
+    const NIVELES = [
+        { nombre: 'Eco-Aprendiz',   min: 0,  max: 2 },
+        { nombre: 'Eco-Guerrero',   min: 3,  max: 5 },
+        { nombre: 'Eco-Defensor',   min: 6,  max: 8 },
+        { nombre: 'Eco-Champion',   min: 9,  max: 9 },
+        { nombre: 'Héroe del Planeta', min: 10, max: Infinity },
+    ];
+    // Find the level where the current count is between min and max (inclusive)
+    const nivelActual = NIVELES.findIndex(n => logrosCount >= n.min && logrosCount <= n.max);
+    const nivel = NIVELES[nivelActual] ?? NIVELES[0];
+    const nivelSig  = NIVELES[nivelActual + 1];
+    const progresoNivel  = nivelSig
+        ? Math.min(100, Math.round(((logrosCount - nivel.min) / (nivelSig.min - nivel.min)) * 100))
+        : 100;
+
     const stats = [
-        { icon: Recycle, label: "Reciclajes", value: "127", color: "#16a34a", bg: "rgba(220,252,231,0.8)" },
-        { icon: Award,   label: "Logros",     value: "12",  color: "#059669", bg: "rgba(209,250,229,0.8)" },
-        { icon: TreePine,label: "Puntos",     value: "450", color: "#047857", bg: "rgba(187,247,208,0.8)" },
+        { icon: Recycle,  label: 'Reciclajes', value: residuos,    color: '#16a34a', bg: 'rgba(220,252,231,0.8)' },
+        { icon: Award,    label: 'Logros',      value: logrosCount, color: '#059669', bg: 'rgba(209,250,229,0.8)' },
+        { icon: TreePine, label: 'Puntos',      value: puntosJuego, color: '#047857', bg: 'rgba(187,247,208,0.8)' },
     ];
 
     const infoFields = [
@@ -186,11 +223,7 @@ export default function ProfileEcoIt() {
                                 <div className="flex items-center gap-2 px-4 py-2 rounded-2xl"
                                      style={{ background: "rgba(220,252,231,0.8)", border: "1px solid rgba(74,222,128,0.35)" }}>
                                     <Zap className="w-4 h-4" style={{ color: "#16a34a" }} />
-                                    <span className="text-sm font-semibold" style={{ color: "#15803d" }}>Eco-Guerrero</span>
-                                    <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                                          style={{ background: "rgba(74,222,128,0.25)", color: "#15803d" }}>
-                                        Nv. 1
-                                    </span>
+                                    <span className="text-sm font-semibold" style={{ color: "#15803d" }}>{nivel.nombre}</span>
                                 </div>
                             </motion.div>
                         </motion.div>
@@ -400,43 +433,37 @@ export default function ProfileEcoIt() {
                                     </div>
                                 </div>
 
-                                {/* Banner eco */}
+                                {/* Botón Ver Logros */}
                                 <motion.div
                                     initial={{ opacity: 0, y: 16 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 1.1 }}
-                                    className="rounded-3xl p-5 flex items-center gap-4 relative overflow-hidden"
+                                    className="rounded-3xl p-5 flex items-center justify-between gap-4 relative overflow-hidden cursor-pointer"
+                                    onClick={() => setShowLogrosModal(true)}
+                                    whileHover={{ scale: 1.02 }}
                                     style={{
                                         background: "linear-gradient(135deg, rgba(220,252,231,0.9) 0%, rgba(187,247,208,0.8) 100%)",
                                         border: "1px solid rgba(74,222,128,0.35)",
                                     }}
                                 >
-                                    <div className="absolute right-0 top-0 bottom-0 w-32 opacity-5"
-                                         style={{ background: "radial-gradient(circle at right, #4ade80, transparent)" }} />
-
-                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                                         style={{ background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)" }}>
-                                        <Sprout className="w-6 h-6" style={{ color: "#4ade80" }} />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-sm mb-0.5" style={{ color: "#14532d" }}>
-                                            Nivel Eco-Guerrero
-                                        </p>
-                                        <p className="text-xs" style={{ color: "rgba(21,128,61,0.65)" }}>
-                                            300 puntos más para alcanzar Nivel 2
-                                        </p>
-                                        {/* Barra de progreso */}
-                                        <div className="mt-2 h-1.5 rounded-full overflow-hidden w-48"
-                                             style={{ background: "rgba(74,222,128,0.2)" }}>
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: "33%" }}
-                                                transition={{ delay: 1.3, duration: 1, ease: "easeOut" }}
-                                                className="h-full rounded-full"
-                                                style={{ background: "linear-gradient(90deg, #16a34a, #4ade80)" }}
-                                            />
+                                    <div className="flex items-center gap-4 relative z-10">
+                                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                                            style={{ background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.3)" }}>
+                                            <Award className="w-6 h-6" style={{ color: "#15803d" }} />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm mb-0.5" style={{ color: "#14532d" }}>
+                                                Mis Logros y Recompensas
+                                            </p>
+                                            <p className="text-xs" style={{ color: "rgba(21,128,61,0.65)" }}>
+                                                Mira qué logros has desbloqueado
+                                            </p>
                                         </div>
                                     </div>
+                                    <ArrowUpRight className="w-5 h-5 text-green-700 relative z-10" />
+
+                                    <div className="absolute right-0 top-0 bottom-0 w-32 opacity-5"
+                                         style={{ background: "radial-gradient(circle at right, #4ade80, transparent)" }} />
                                 </motion.div>
                             </motion.div>
                         </div>
@@ -445,6 +472,97 @@ export default function ProfileEcoIt() {
 
                 <Footer />
             </div>
+
+            {/* Modal de Logros */}
+            <AnimatePresence>
+                {showLogrosModal && (
+                    <>
+                        {/* Overlay */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowLogrosModal(false)}
+                            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
+                        />
+                        
+                        {/* Modal Container */}
+                        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none p-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="w-full max-w-2xl max-h-[90vh] flex flex-col relative pointer-events-auto"
+                            >
+                                <div className="overflow-hidden rounded-3xl shadow-2xl h-full flex flex-col bg-white">
+                                    {/* Cabecera del Nivel */}
+                                    <div className="relative px-6 py-5 md:px-8 md:py-6 bg-gradient-to-r from-lime-50 to-green-100 border-b border-lime-200 shrink-0">
+                                        {/* Botón de cerrar interno */}
+                                        <button
+                                            onClick={() => setShowLogrosModal(false)}
+                                            className="absolute top-4 right-4 md:top-6 md:right-6 w-8 h-8 bg-white/60 hover:bg-white rounded-full flex items-center justify-center text-green-700 shadow-sm transition-colors border border-lime-200 z-10"
+                                        >
+                                            <X className="w-4 h-4 md:w-5 md:h-5" />
+                                        </button>
+
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 pr-10 gap-2">
+                                            <div>
+                                                <p className="text-xs uppercase tracking-wider text-green-700 font-bold mb-1">Nivel Actual</p>
+                                                <h3 className="text-xl md:text-2xl font-bold text-green-900 flex items-center gap-2">
+                                                    <Zap className="w-5 h-5 md:w-6 md:h-6 text-lime-600" />
+                                                    {nivel.nombre}
+                                                </h3>
+                                            </div>
+                                            {nivelSig ? (
+                                                <div className="text-left sm:text-right mt-1 sm:mt-0">
+                                                    <span className="text-xs text-green-800 font-semibold bg-white/70 px-3 py-1.5 rounded-full border border-lime-200 inline-block shadow-sm">
+                                                        Faltan {nivelSig.min - logrosCount} logros para {nivelSig.nombre}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="text-left sm:text-right mt-1 sm:mt-0">
+                                                    <span className="text-xs text-yellow-800 font-bold bg-yellow-100 px-3 py-1.5 rounded-full border border-yellow-300 inline-block shadow-sm">
+                                                        🏆 Nivel Máximo
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {/* Barra de progreso de nivel con porcentaje */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-2.5 flex-1 bg-green-200/50 rounded-full overflow-hidden shadow-inner">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${progresoNivel}%` }}
+                                                    transition={{ duration: 1, delay: 0.3 }}
+                                                    className="h-full bg-gradient-to-r from-lime-500 to-green-500 rounded-full"
+                                                />
+                                            </div>
+                                            <span className="text-xs font-bold text-green-700 min-w-[32px] text-right">
+                                                {progresoNivel}%
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Cuerpo con AchievementsPreview */}
+                                    <div className="flex-1 overflow-y-auto hide-scrollbar bg-slate-50/50">
+                                        <AchievementsPreview />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            <style>{`
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
         </>
     );
 }

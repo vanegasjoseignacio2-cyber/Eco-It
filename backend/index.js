@@ -29,6 +29,8 @@ import admin from './routes/admin.js';
 import contactRoutes from './routes/contactRoutes.js';
 import carouselRoutes from './routes/carouselRoutes.js';
 import mapPublicRoutes from './routes/map.js';
+import gameRoutes from './routes/gameRoutes.js';
+import { obtenerOCrearTemporada } from './controllers/gameController.js';
 import './utils/cloudinary.js';
 
 // Importar configuración de passport
@@ -190,7 +192,15 @@ app.use(passport.session());
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ Conectado a MongoDB'))
+    .then(async () => {
+        console.log('✅ Conectado a MongoDB');
+        // Inicializar temporada activa si no existe
+        try {
+            await obtenerOCrearTemporada();
+        } catch (e) {
+            console.error('Error inicializando temporada:', e.message);
+        }
+    })
     .catch((error) => console.error('❌ Error al conectar a MongoDB:', error));
 
 // Rutas de la API
@@ -201,6 +211,7 @@ app.use('/api/admin', admin);
 app.use('/api/contact', contactRoutes);
 app.use('/api/carousel', carouselRoutes);
 app.use('/api/map', mapPublicRoutes);
+app.use('/api/game', gameRoutes);
 
 
 // Ruta raíz

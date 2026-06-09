@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { fetchAPI } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOfensiveValidator } from '../Contact/ContactForm';
@@ -99,6 +100,7 @@ export default function CompletarPerfil() {
     const { estaAutenticado, usuario, login } = useAuth();
     const navigate = useNavigate();
     const { validar } = useOfensiveValidator();
+    const { showToast } = useToast();
 
     const [form, setForm] = useState({ apellido: '', edad: '', telefono: '' });
     const [fieldErrors, setFieldErrors] = useState({ apellido: '', edad: '', telefono: '' });
@@ -195,12 +197,15 @@ export default function CompletarPerfil() {
             if (data.success) {
                 login(true, data.usuario);
                 setExito(true);
+                showToast("¡Perfil completado y cuenta activada con éxito! Bienvenido a Eco-It 🌿", "success");
                 setTimeout(() => navigate('/'), 1800);
             } else {
                 setSubmitError(data.mensaje || 'Error al guardar los datos.');
+                showToast(data.mensaje || 'Error al guardar los datos.', 'error');
             }
         } catch (error) {
             setSubmitError(error.message || 'Error de conexión. Intenta de nuevo.');
+            showToast(error.message || 'Error de conexión. Intenta de nuevo.', 'error');
         } finally {
             setCargando(false);
         }

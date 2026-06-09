@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useCookieConsent } from "../../context/Cookieconsentcontext";
+import { useToast } from "../../context/ToastContext";
 
 import { fetchAPI } from "../../services/api";
 
@@ -38,6 +39,7 @@ export default function RegisterForm() {
     const { login } = useAuth();
     const { isAccepted, showConsentRequiredToast } = useCookieConsent();
     const { validar, validarEmail } = useOfensiveValidator();
+    const { showToast: showGlobalToast } = useToast();
 
     // ── Paso ─────────────────────────────────────────────────────────────────
     const [step, setStep] = useState('form'); // 'form' | 'code'
@@ -226,10 +228,13 @@ export default function RegisterForm() {
                 // Pasamos el token explícitamente desde la respuesta
                 login(data.data.token, data.data.usuario);
                 setSuccessMessage("¡Registro exitoso! Redirigiendo...");
+                showGlobalToast("¡Cuenta creada exitosamente! Bienvenido a Eco-It 🌿", "success");
                 setTimeout(() => navigate('/'), 1500);
             }
         } catch (err) {
-            setError(err.message || "Error de conexión. Intenta de nuevo.");
+            const errorMsg = err.message || "Error de conexión. Intenta de nuevo.";
+            setError(errorMsg);
+            showGlobalToast(errorMsg, "error");
         } finally {
             setLoading(false);
         }

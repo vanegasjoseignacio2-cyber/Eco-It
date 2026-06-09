@@ -88,6 +88,33 @@ const userSchema = new mongoose.Schema({
     puntos: {
         type: Number,
         default: 0
+    },
+
+    // ── Juego / Temporadas ──────────────────────────────────────────────────────
+    puntosJuego: {
+        type: Number,
+        default: 0
+    },
+    puntosJuegoHistorico: {
+        type: Number,
+        default: 0
+    },
+    logros: [
+        {
+            achievementId: { type: String, required: true },
+            desbloqueadoEn: { type: Date, default: Date.now }
+        }
+    ],
+    estadisticasJuego: {
+        residuosRecolectados: { type: Number, default: 0 },
+        rachaMaxima: { type: Number, default: 0 },
+        partidasJugadas: { type: Number, default: 0 },
+        diasConsecutivos: { type: Number, default: 0 },
+        ultimaPartida: { type: Date, default: null },
+        partidasPerfectas: { type: Number, default: 0 },
+        erroresCometidos: { type: Number, default: 0 },
+        tiempoTotalJugado: { type: Number, default: 0 },
+        temporadaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Season', default: null }
     }
 
 }, {

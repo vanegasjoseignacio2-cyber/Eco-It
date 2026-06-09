@@ -2,6 +2,7 @@ import User from "../models/user.js";
 import Chat from "../models/chat.js";
 import Notification from "../models/notification.js";
 import AuditLog from "../models/AuditLog.js";
+import Mission from "../models/mission.js";
 import { createAuditLog } from "../utils/auditLogger.js";
 import { usuariosConectados } from "../index.js";
 
@@ -496,5 +497,119 @@ export const eliminarTodosAuditLogs = async (req, res) => {
     } catch (error) {
         console.error("Error al eliminar todos los audit logs:", error);
         res.status(500).json({ success: false, mensaje: "Error al eliminar los registros" });
+    }
+};
+
+// ─── ADMIN ECO-JUEGO (MISIONES Y ESTADÍSTICAS) ─────────────────────────────
+
+export const obtenerMisionesAdmin = async (req, res) => {
+    try {
+        const missions = await Mission.find().sort({ createdAt: -1 });
+        res.json({ success: true, missions });
+    } catch (error) {
+        console.error("Error al obtener misiones:", error);
+        res.status(500).json({ success: false, mensaje: "Error al obtener misiones" });
+    }
+};
+
+export const crearMisionAdmin = async (req, res) => {
+    try {
+        const { title, description, type, points, targetMetric, targetValue } = req.body;
+        
+        const nuevaMision = new Mission({
+            title, description, type, points, targetMetric, targetValue
+        });
+
+        await nuevaMision.save();
+
+        await createAuditLog(req.app, {
+            type: 'create_mission',
+            action: 'Misión Creada',
+            details: `Nueva misión: "${title}"`,
+            user: req.usuario.nombre || req.usuario.email
+        });
+
+        res.status(201).json({ success: true, mission: nuevaMision });
+    } catch (error) {
+        console.error("Error al crear misión:", error);
+        res.status(500).json({ success: false, mensaje: "Error al crear la misión" });
+    }
+};
+
+export const actualizarMisionAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        const mision = await Mission.findByIdAndUpdate(id, updates, { new: true });
+        if (!mision) return res.status(404).json({ success: false, mensaje: "Misión no encontrada" });
+
+        res.json({ success: true, mission: mision });
+    } catch (error) {
+        console.error("Error al actualizar misión:", error);
+        res.status(500).json({ success: false, mensaje: "Error al actualizar la misión" });
+    }
+};
+
+export const eliminarMisionAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const mision = await Mission.findByIdAndDelete(id);
+        
+        if (!mision) return res.status(404).json({ success: false, mensaje: "Misión no encontrada" });
+
+        await createAuditLog(req.app, {
+            type: 'delete_mission',
+            action: 'Misión Eliminada',
+            details: `Misión eliminada: "${mision.title}"`,
+            user: req.usuario.nombre || req.usuario.email
+        });
+
+        res.json({ success: true, mensaje: "Misión eliminada" });
+    } catch (error) {
+        console.error("Error al eliminar misión:", error);
+        res.status(500).json({ success: false, mensaje: "Error al eliminar la misión" });
+    }
+};
+
+export const obtenerGameStatsAdmin = async (req, res) => {
+    try {
+        // Stats basicas
+        const totalMissions = await Mission.countDocuments();
+        const activeMissions = await Mission.countDocuments({ active: true });
+
+        // Total Jugadores que han jugado (tienen puntos o estadisticas iniciadas)
+        const players = await User.find({ puntosJuego: { $gt: 0 } }).select('puntosJuego');
+        const totalPlayers = players.length;
+
+        const totalPoints = players.reduce((sum, p) => sum + p.puntosJuego, 0);
+        const avgPoints = totalPlayers > 0 ? Math.round(totalPoints / totalPlayers) : 0;
+
+        // Leaderboard (Top 10)
+        const leaderboardData = await User.find({ puntosJuego: { $gt: 0 } })
+            .sort({ puntosJuego: -1 })
+            .limit(10)
+            .select('nombre apellido puntosJuego logros');
+
+        const leaderboard = leaderboardData.map((jugador, i) => ({
+            name: `${jugador.nombre} ${jugador.apellido || ''}`.trim(),
+            points: jugador.puntosJuego,
+            rank: i + 1,
+            missions: jugador.logros ? jugador.logros.length : 0
+        }));
+
+        res.json({
+            success: true,
+            stats: {
+                totalMissions,
+                activeMissions,
+                totalPlayers,
+                avgPoints
+            },
+            leaderboard
+        });
+    } catch (error) {
+        console.error("Error al obtener stats de juego:", error);
+        res.status(500).json({ success: false, mensaje: "Error al obtener estadísticas del juego" });
     }
 };

@@ -36,7 +36,7 @@ export default function Navbar() {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout();
+        logout(true);
         setShowUserMenu(false);
         navigate('/login');
     };

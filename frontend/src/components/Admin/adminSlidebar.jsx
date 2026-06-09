@@ -31,7 +31,7 @@ export default function AdminSidebar({ activeSection, setActiveSection }) {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout();
+        logout(true);
         navigate('/login');
     };
 

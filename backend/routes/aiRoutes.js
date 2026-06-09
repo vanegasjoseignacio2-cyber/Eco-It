@@ -2,12 +2,15 @@ import { Router } from "express";
 import OpenAI from "openai";
 import Chat from "../models/chat.js";
 import Notification from "../models/notification.js";
-import { verificarToken } from "../middlewares/authMiddleware.js";
+import { verificarToken, verificarBaneo } from "../middlewares/authMiddleware.js";
 
 export const aiRouter = Router();
 
-// Aplicar verificación de baneo a todas las rutas de IA
+// Aplicar verificación de token a todas las rutas de IA
 aiRouter.use(verificarToken);
+// Aplicar verificación de baneo solo a los endpoints de generación/acción
+aiRouter.post("/consultar", verificarBaneo);
+aiRouter.post("/analizar-imagen", verificarBaneo);
 
 const GEMINI_MODEL = "google/gemini-2.5-flash-lite";
 const FREE_MODEL = "openrouter/free";

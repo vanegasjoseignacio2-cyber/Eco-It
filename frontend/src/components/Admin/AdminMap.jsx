@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { fetchAPI } from "../../services/api";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -233,6 +234,7 @@ function buildArrowMarkerIcon(type) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminMap() {
     const { estaAutenticado } = useAuth();
+    const { showToast } = useToast();
     const [points, setPoints] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -242,7 +244,6 @@ export default function AdminMap() {
     const [showForm, setShowForm] = useState(false);
     const [editingPoint, setEditingPoint] = useState(null);
     const [placingMode, setPlacingMode] = useState(false); // click en mapa para colocar pin
-    const [toast, setToast] = useState(null);
     const [collapsedTypes, setCollapsedTypes] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
@@ -300,11 +301,7 @@ export default function AdminMap() {
         return matchSearch && matchType && matchActive;
     });
 
-    // ─── Toast helper ──────────────────────────────────────────────────────
-    const showToast = (msg, type = "success") => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
-    };
+
 
     // ─── CRUD ──────────────────────────────────────────────────────────────
     const handleSave = async () => {
@@ -646,26 +643,7 @@ export default function AdminMap() {
                     )}
                 </AnimatePresence>
 
-                {/* Toast */}
-                <AnimatePresence>
-                    {toast && (
-                        <motion.div
-                            key="toast"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex items-center gap-2 px-5 py-3 rounded-full shadow-xl text-white text-sm font-semibold
-                                ${toast.type === "error"
-                                    ? "bg-red-500"
-                                    : "bg-gradient-to-r from-green-500 to-emerald-600"}`}
-                        >
-                            {toast.type === "error"
-                                ? <AlertCircle className="w-4 h-4" />
-                                : <CheckCircle2 className="w-4 h-4" />}
-                            {toast.msg}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+
             </div>
 
             {/* Modal de confirmación para eliminar */}

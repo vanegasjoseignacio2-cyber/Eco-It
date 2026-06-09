@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Target, Trophy, Users, Zap } from 'lucide-react';
+import { Target, Trophy, AlertTriangle, Zap } from 'lucide-react';
 import animations from '../animations/Animationgame';
 
 const GameFeatures = ({ features }) => {
@@ -8,7 +8,7 @@ const GameFeatures = ({ features }) => {
     const iconMap = {
         Target: Target,
         Trophy: Trophy,
-        Users: Users,
+        AlertTriangle: AlertTriangle,
         Zap: Zap,
     };
 

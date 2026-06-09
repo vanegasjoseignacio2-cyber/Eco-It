@@ -282,7 +282,9 @@ export default function AIPage() {
         } catch (err) {
             if (err.name === 'AbortError') {
                 console.log('Petición cancelada por el usuario');
-                // No mostramos error, simplemente dejamos el mensaje como está
+            } else if (checkBanError(err)) {
+                // El overlay de baneo se activará automáticamente
+                setMessages(prev => prev.filter(msg => msg.id !== botMsgId));
             } else {
                 setMessages(prev => prev.map(msg =>
                     msg.id === botMsgId ? { ...msg, content: `❌ Error: ${err.message || 'No pude procesar tu consulta.'}` } : msg

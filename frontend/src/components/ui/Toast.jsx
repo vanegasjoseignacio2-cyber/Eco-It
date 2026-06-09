@@ -69,15 +69,17 @@ export default function Toast({ message, type = "success", onClose, duration = 3
 
                         {/* Botón de acción opcional (ej: "Volver y aceptar") */}
                         {action && (
-                            <button
-                                onClick={() => {
-                                    action.onClick();
-                                    onClose();
-                                }}
-                                className="mt-2 text-sm font-semibold text-green-600 hover:text-green-700 underline underline-offset-2 transition-colors"
-                            >
-                                {action.label}
-                            </button>
+                            <div className="mt-3">
+                                <button
+                                    onClick={() => {
+                                        action.onClick();
+                                        onClose();
+                                    }}
+                                    className={`text-sm font-medium px-4 py-1.5 rounded-lg transition-colors shadow-sm ${type === 'warning' || type === 'error' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                                >
+                                    {action.label}
+                                </button>
+                            </div>
                         )}
                     </div>
 

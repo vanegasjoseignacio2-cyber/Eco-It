@@ -35,11 +35,6 @@ export const fetchAPI = async (endpoint, options = {}) => {
       if (response.status === 401 && !options.skipAuthError) {
         window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       }
-      
-      // Dispatch global ban event
-      if (response.status === 403 && data.banned) {
-        window.dispatchEvent(new CustomEvent('USER_BANNED', { detail: data }));
-      }
 
       const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
       error.data = data;
@@ -160,10 +155,6 @@ export const consultarIA = async (pregunta, chatId, onChunk, signal) => {
     if (response.status === 401) {
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
     }
-    // Dispatch global ban event
-    if (response.status === 403 && data.banned) {
-      window.dispatchEvent(new CustomEvent('USER_BANNED', { detail: data }));
-    }
     const error = new Error(data.message || data.mensaje || data.error || 'Error en la petición');
     error.data = data;
     error.status = response.status;
@@ -269,4 +260,25 @@ export const reordenarSlides = async (ids) => {
     method: 'PATCH',
     body: JSON.stringify({ slides: ids }),
   });
+};
+
+// ============= JUEGO =============
+
+export const guardarPuntajeJuego = async (datos) => {
+  return fetchAPI('/game/puntaje', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+};
+
+export const obtenerRankingReal = async () => {
+  return fetchAPI('/game/ranking', { method: 'GET' });
+};
+
+export const obtenerTemporadaActual = async () => {
+  return fetchAPI('/game/temporada', { method: 'GET' });
+};
+
+export const obtenerLogrosUsuario = async () => {
+  return fetchAPI('/game/logros', { method: 'GET' });
 };

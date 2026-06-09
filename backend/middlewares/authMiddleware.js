@@ -24,24 +24,6 @@ export const verificarToken = async (req, res, next) => {
             return res.status(401).json({ message: "Usuario no encontrado"});
         }
 
-        // Verificación global de Baneo
-        if (usuario.status === 'banned') {
-            if (new Date() < new Date(usuario.banHasta)) {
-                return res.status(403).json({
-                    error: "Usuario baneado",
-                    banned: true,
-                    banReason: usuario.banReason,
-                    banHasta: usuario.banHasta
-                });
-            } else {
-                // Levantar el ban si ya expiró
-                usuario.status = 'active';
-                usuario.banHasta = null;
-                usuario.banReason = null;
-                await usuario.save();
-            }
-        }
-
         //Guardamos el usuario completo en req para usarlo en los controladores
         req.usuario = usuario;
         next();
@@ -80,3 +62,28 @@ export const soloUser = (req, res, next) => {
     }
     next();
 }
+
+// Middleware específico para verificar si el usuario está baneado
+// Se usa en rutas sensibles (como IA) en lugar de ser global
+export const verificarBaneo = async (req, res, next) => {
+    if (!req.usuario) return next();
+
+    if (req.usuario.status === 'banned') {
+        if (new Date() < new Date(req.usuario.banHasta)) {
+            return res.status(403).json({
+                error: "Usuario baneado",
+                banned: true,
+                banReason: req.usuario.banReason,
+                banHasta: req.usuario.banHasta,
+                message: "Tu acceso a esta función ha sido restringido temporalmente."
+            });
+        } else {
+            // Levantar el ban si ya expiró
+            req.usuario.status = 'active';
+            req.usuario.banHasta = null;
+            req.usuario.banReason = null;
+            await req.usuario.save();
+        }
+    }
+    next();
+};

@@ -15,7 +15,12 @@ import {
     eliminarTodasNotificaciones,
     obtenerAuditLogs,
     eliminarAuditLog,
-    eliminarTodosAuditLogs
+    eliminarTodosAuditLogs,
+    obtenerMisionesAdmin,
+    crearMisionAdmin,
+    actualizarMisionAdmin,
+    eliminarMisionAdmin,
+    obtenerGameStatsAdmin
 } from '../controllers/adminController.js';
 import {
     crearPunto,
@@ -49,5 +54,12 @@ router.post('/map/points', verificarToken, soloAdmin, crearPunto);
 router.patch('/map/points/:id', verificarToken, soloAdmin, actualizarPunto);
 router.delete('/map/points/:id', verificarToken, soloAdmin, eliminarPunto);
 router.patch('/map/points/:id/toggle', verificarToken, soloAdmin, toggleActivoPunto);
+
+// ── Eco-Juego Misiones ─────────────────────────────────────────────────────
+router.get('/game/missions', verificarToken, soloAdmin, obtenerMisionesAdmin);
+router.post('/game/missions', verificarToken, soloAdmin, crearMisionAdmin);
+router.patch('/game/missions/:id', verificarToken, soloAdmin, actualizarMisionAdmin);
+router.delete('/game/missions/:id', verificarToken, soloAdmin, eliminarMisionAdmin);
+router.get('/game/stats', verificarToken, soloAdmin, obtenerGameStatsAdmin);
 
 export default router;
