@@ -20,10 +20,10 @@ const stats = [
 ];
 
 import { useEffect } from "react";
-import { useCookieConsent } from "../../context/Cookieconsentcontext";
+import { useConsent } from "../../context/ConsentContext";
 
 export default function Index() {
-    const { checkAndShow } = useCookieConsent();
+    const { checkAndShow } = useConsent();
 
     useEffect(() => {
         // Mostrar el banner si no hay consentimiento guardado

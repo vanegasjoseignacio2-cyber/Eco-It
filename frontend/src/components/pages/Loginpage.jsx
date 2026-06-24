@@ -4,12 +4,12 @@ import Footer from "../Layout/Footer";
 import LoginHero from "../Auth/LoginHero";
 import LoginForm from "../Auth/LoginForm";
 import { useToast } from '../../context/ToastContext';
-import { useCookieConsent } from '../../context/Cookieconsentcontext';
+import { useConsent } from '../../context/ConsentContext';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
     const { showToast } = useToast();
-    const { showConsentRequiredToast, getCookie } = useCookieConsent();
+    const { showConsentRequiredToast, getCookie } = useConsent();
     const { estaAutenticado } = useAuth();
 
     useEffect(() => {

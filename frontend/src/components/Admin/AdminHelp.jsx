@@ -217,17 +217,40 @@ const getManualSections = (onImageClick) => [
                     <li>
                         <strong>¿Cómo inventar un nuevo reto?</strong><br/>
                         Haz clic en el botón verde grande que dice "Nueva Misión". Se abrirá un formulario. Escribe el nombre del reto (ejemplo: 'Recicla 5 botellas'), explícalo un poco, elige cuántos puntos vas a regalar y presiona el botón "Crear". ¡El reto aparecerá de inmediato!
-                        <div className="mt-4 flex flex-col gap-4">
-                            {/* Imágenes pendientes para Eco-Juego */}
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <ManualImage 
+                                src="/Manual de usuario/crear_reto_1.jpeg" 
+                                alt="Crear reto paso 1" 
+                                onOpen={onImageClick} 
+                            />
+                            <ManualImage 
+                                src="/Manual de usuario/crear_reto_2.jpeg" 
+                                alt="Crear reto paso 2" 
+                                onOpen={onImageClick} 
+                            />
                         </div>
                     </li>
                     <li>
                         <strong>¿Cómo apagar un reto para que ya no salga?</strong><br/>
                         Busca el reto en la lista de misiones. A la derecha verás un pequeño interruptor. Si haces clic en él y lo apagas, el reto ya no le aparecerá a los jugadores, pero se quedará guardado ahí por si quieres volver a encenderlo mañana.
+                        <div className="mt-4 flex flex-col gap-4">
+                            <ManualImage 
+                                src="/Manual de usuario/apagar_reto.jpeg" 
+                                alt="Apagar reto" 
+                                onOpen={onImageClick} 
+                            />
+                        </div>
                     </li>
                     <li>
                         <strong>¿Cómo ver quién va ganando?</strong><br/>
                         Solo tienes que mirar la lista o tabla que dice "Ranking" o "Mejores Jugadores". Ahí verás ordenadas del primero al último a las personas que han ganado más puntos jugando.
+                        <div className="mt-4 flex flex-col gap-4">
+                            <ManualImage 
+                                src="/Manual de usuario/ver_ranking.jpeg" 
+                                alt="Ver ranking" 
+                                onOpen={onImageClick} 
+                            />
+                        </div>
                     </li>
                 </ul>
             </div>

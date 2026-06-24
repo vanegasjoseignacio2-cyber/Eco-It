@@ -6,7 +6,7 @@ import LoadingScreen from "../Layout/Animation";
 import Index from "../Home/Index";
 import Ecogame from "../Home/Game";
 import Section from "../Home/Section";
-import { useCookieConsent } from "../../context/Cookieconsentcontext";
+import { useConsent } from "../../context/ConsentContext";
 import EcoCarousel from "../ui/Carrusel";
 import Carrusel from "../ui/LogoCarousel";
 
@@ -15,7 +15,7 @@ export default function Home() {
         return !sessionStorage.getItem('hasSeenLoading');
     });
 
-    const { checkAndShow } = useCookieConsent();
+    const { checkAndShow } = useConsent();
 
     useEffect(() => {
         if (loading) {

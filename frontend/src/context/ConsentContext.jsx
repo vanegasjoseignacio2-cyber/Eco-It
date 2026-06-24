@@ -1,18 +1,18 @@
 /**
- * CookieConsentContext
+ * ConsentContext
  * ---------------------
- * Gestiona la visibilidad del banner de cookies de forma global.
+ * Gestiona la visibilidad del banner de consentimiento (cookies/privacidad) de forma global.
  * - checkAndShow()  → llámalo cuando la animación de carga termine (Home.jsx)
  * - openBanner()    → llámalo desde Login/Register si la cookie fue rechazada
  */
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useToast } from './ToastContext';
 
-const CookieConsentContext = createContext();
+const ConsentContext = createContext();
 
-export function useCookieConsent() {
-    const ctx = useContext(CookieConsentContext);
-    if (!ctx) throw new Error('useCookieConsent debe usarse dentro de CookieConsentProvider');
+export function useConsent() {
+    const ctx = useContext(ConsentContext);
+    if (!ctx) throw new Error('useConsent debe usarse dentro de ConsentProvider');
     return ctx;
 }
 
@@ -23,7 +23,7 @@ export function getCookie(name) {
     return null;
 }
 
-export function CookieConsentProvider({ children }) {
+export function ConsentProvider({ children }) {
     const { showToast } = useToast();
     const [bannerVisible, setBannerVisible] = useState(false);
     const [isAccepted, setIsAccepted] = useState(() => {
@@ -64,7 +64,7 @@ export function CookieConsentProvider({ children }) {
     }, [showToast, openBanner]);
 
     return (
-        <CookieConsentContext.Provider value={{ 
+        <ConsentContext.Provider value={{ 
             bannerVisible, 
             isAccepted, 
             checkAndShow, 
@@ -75,6 +75,6 @@ export function CookieConsentProvider({ children }) {
             getCookie 
         }}>
             {children}
-        </CookieConsentContext.Provider>
+        </ConsentContext.Provider>
     );
 }
