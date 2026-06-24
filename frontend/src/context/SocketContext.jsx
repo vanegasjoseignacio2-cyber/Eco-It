@@ -25,7 +25,7 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const backend = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+    const backend = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:3000');
 
     // Create socket with token in auth (server should validate)
     const newSocket = io(backend, {
