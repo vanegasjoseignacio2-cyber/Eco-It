@@ -104,8 +104,8 @@
       } else {
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
 
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
       }
 
       loadingBar.style.display = "block";
@@ -120,6 +120,9 @@
                 loadingBar.style.display = "none";
                 fullscreenButton.onclick = () => {
                   unityInstance.SetFullscreen(1);
+                  if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(function() {});
+                  }
                 };
               }).catch((message) => {
                 alert(message);
@@ -129,11 +132,22 @@
       window.addEventListener("message", (event) => {
         if (event.data === "requestFullscreen" && myUnityInstance) {
           myUnityInstance.SetFullscreen(1);
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(function() {});
+          }
         }
       });
 
-      canvas.addEventListener("click", () => {
-        if (canvas.requestPointerLock) {
+      document.addEventListener("fullscreenchange", function() {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(function() {});
+          }
+        }
+      });
+
+      canvas.addEventListener("click", (e) => {
+        if (e.isTrusted && canvas.requestPointerLock) {
           canvas.requestPointerLock();
         }
       });

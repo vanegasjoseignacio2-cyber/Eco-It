@@ -104,3 +104,8 @@ html, body {
     #eff6ff 100%
   );
 }
+
+/* Hide navbar in mobile game landscape mode */
+body.game-landscape-mode nav {
+  display: none !important;
+}

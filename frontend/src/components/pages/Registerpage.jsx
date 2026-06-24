@@ -5,12 +5,12 @@ import RegisterForm from "../Auth/RegisterForm";
 import Footer from "../Layout/Footer";
 import EfectoEcoOndas from "../animations/FondoRegister";
 import { useToast } from '../../context/ToastContext';
-import { useCookieConsent } from '../../context/Cookieconsentcontext';
+import { useConsent } from '../../context/ConsentContext';
 import { useAuth } from '../../context/AuthContext';
 
 export default function RegisterPage() {
     const { showToast } = useToast();
-    const { openBanner, getCookie } = useCookieConsent();
+    const { openBanner, getCookie } = useConsent();
     const { estaAutenticado } = useAuth();
 
     useEffect(() => {

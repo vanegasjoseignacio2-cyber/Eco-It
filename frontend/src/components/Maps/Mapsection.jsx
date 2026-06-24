@@ -51,12 +51,15 @@ export default function MapSection() {
     }, [isMapActive]);
 
     useEffect(() => {
-        fetch("https://backend-production-1e6e.up.railway.app/api/map/points")
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || '/api';
+        const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+
+        fetch(`${backendUrl}/map/points`)
             .then(r => r.json())
             .then(data => { if (data.success) setAllPoints(data.puntos); })
             .catch(console.error);
 
-        const socket = io("https://backend-production-1e6e.up.railway.app");
+        const socket = io(socketUrl);
         socket.on("map:updated", ({ puntos }) => setAllPoints(puntos));
         return () => socket.disconnect();
     }, []);

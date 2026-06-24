@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, LogIn, CheckCircle } from "lucide-react";
 import { iniciarSesion } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { useCookieConsent } from "../../context/Cookieconsentcontext";
+import { useConsent } from "../../context/ConsentContext";
 import { useToast } from "../../context/ToastContext";
 
 export default function LoginForm() {
   const { login } = useAuth();
-  const { isAccepted, showConsentRequiredToast } = useCookieConsent();
+  const { isAccepted, showConsentRequiredToast } = useConsent();
   const { showToast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);

@@ -1,15 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../context/ToastContext';
-import { useCookieConsent } from '../../context/Cookieconsentcontext';
+import { useConsent } from '../../context/ConsentContext';
 
 function setCookie(name, value, days = 365) {
   const maxAge = days * 24 * 60 * 60;
   document.cookie = `${name}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Strict`;
 }
 
-export default function CookieConsent() {
-  const { bannerVisible, closeBanner, openBanner, updateConsentState } = useCookieConsent();
+export default function ConsentBanner() {
+  const { bannerVisible, closeBanner, openBanner, updateConsentState } = useConsent();
   const { showToast } = useToast();
 
   const handleAccept = () => {

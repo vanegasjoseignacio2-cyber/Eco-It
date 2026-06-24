@@ -36,10 +36,6 @@ export default function Ecogame() {
                         transition={{ duration: 0.8 }}
                         className="text-center lg:text-left flex flex-col items-center lg:items-start"
                     >
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-lime-100 text-lime-700 text-sm font-medium mb-5">
-                            <Gamepad2 className="w-4 h-4" />
-                            Próximamente
-                        </span>
 
                         <h2 className="text-4xl md:text-5xl font-bold text-green-900 mb-6">
                             Aprende Jugando con{" "}
@@ -57,7 +53,6 @@ export default function Ecogame() {
                             {[
                                 "Desafíos de reciclaje interactivos",
                                 "Puntos y recompensas ecológicas",
-                                "Competencias con amigos",
                                 "Misiones para salvar el planeta",
                             ].map((item, index) => (
                                 <motion.li
@@ -81,7 +76,7 @@ export default function Ecogame() {
                             className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-lime-500 to-green-600 text-white font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
                         >
                             <Gamepad2 className="w-5 h-5" />
-                            Ver Adelanto
+                            Ir a jugar
                             <ArrowRight className="w-5 h-5" />
                         </Link>
                     </motion.div>

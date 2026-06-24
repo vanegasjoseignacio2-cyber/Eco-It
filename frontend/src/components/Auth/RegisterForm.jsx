@@ -21,7 +21,7 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { useCookieConsent } from "../../context/Cookieconsentcontext";
+import { useConsent } from "../../context/ConsentContext";
 import { useToast } from "../../context/ToastContext";
 
 import { fetchAPI } from "../../services/api";
@@ -37,7 +37,7 @@ const calcTimeLeft = () => {
 export default function RegisterForm() {
     const navigate = useNavigate();
     const { login } = useAuth();
-    const { isAccepted, showConsentRequiredToast } = useCookieConsent();
+    const { isAccepted, showConsentRequiredToast } = useConsent();
     const { validar, validarEmail } = useOfensiveValidator();
     const { showToast: showGlobalToast } = useToast();
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
-import { useCookieConsent } from "../../context/Cookieconsentcontext";
+import { useConsent } from "../../context/ConsentContext";
 import {
     Leaf,
     Menu,
@@ -32,7 +32,7 @@ export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const { usuario, estaAutenticado, logout } = useAuth();
-    const { isAccepted, showConsentRequiredToast } = useCookieConsent();
+    const { isAccepted, showConsentRequiredToast } = useConsent();
     const navigate = useNavigate();
 
     const handleLogout = () => {
