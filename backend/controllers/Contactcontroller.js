@@ -1,14 +1,4 @@
-import nodemailer from 'nodemailer';
-
-// ─── Transporter lazy ────────────────────────────────────────────────────────
-const getTransporter = () => nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
-
+import { sendEmail } from '../utils/emailService.js';
 
 // Celda ícono con emoji (100% compatible con Gmail)
 const iconCell = (emoji) =>
@@ -251,10 +241,9 @@ export const enviarMensajeContacto = async (req, res) => {
             suggestion: 'Sugerencia',   partnership: 'Colaboración',
         };
 
-        await getTransporter().sendMail({
-            from:    `"Eco-It Contacto" <${process.env.EMAIL_USER}>`,
+        await sendEmail({
             to:      process.env.ADMIN_EMAIL || 'ecoit4167@gmail.com',
-            replyTo: email,
+            replyTo: email, // responder va directo a quien escribió el mensaje
             subject: `[Eco-It] ${subjectLabels[subject] || subject} — ${name}`,
             html,
         });

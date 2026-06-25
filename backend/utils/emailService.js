@@ -56,15 +56,16 @@ const buttonStyles = `
 // Función genérica para enviar correos con Resend.
 // Lee EMAIL_FROM/RESEND_API_KEY en tiempo de ejecución (después de dotenv).
 // Lanza un error si Resend reporta fallo, para que los controladores lo capturen.
-export const sendEmail = async ({ to, subject, html }) => {
+export const sendEmail = async ({ to, subject, html, replyTo }) => {
     const from = process.env.EMAIL_FROM || 'Eco-It <onboarding@resend.dev>';
-    // Las direcciones @ecoit.site son solo de envío; si el usuario responde,
-    // el correo se redirige a un buzón real (EMAIL_REPLY_TO o, en su defecto, ADMIN_EMAIL).
-    const replyTo = process.env.EMAIL_REPLY_TO || process.env.ADMIN_EMAIL;
+    // Las direcciones @ecoit.site son solo de envío; si alguien responde, el correo
+    // se redirige a un buzón real: replyTo explícito (p.ej. quien escribe en contacto),
+    // o en su defecto EMAIL_REPLY_TO / ADMIN_EMAIL.
+    const finalReplyTo = replyTo || process.env.EMAIL_REPLY_TO || process.env.ADMIN_EMAIL;
     const resend = getResend();
 
     const payload = { from, to, subject, html };
-    if (replyTo) payload.replyTo = replyTo;
+    if (finalReplyTo) payload.replyTo = finalReplyTo;
 
     const { data, error } = await resend.emails.send(payload);
 
