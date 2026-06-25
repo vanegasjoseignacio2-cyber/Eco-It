@@ -7,12 +7,21 @@ export const reenviarCodigo = async (req, res) => {
         const { email } = req.body;
         console.log(`Solicitud de reenvío de código para: ${email}`);
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).select('+password');
 
         if (!user) {
             return res.status(404).json({
                 success: false,
                 mensaje: 'No existe un usuario con ese email'
+            });
+        }
+
+        // Cuenta de Google (sin contraseña): no se puede recuperar/cambiar contraseña
+        if (!user.password) {
+            return res.status(403).json({
+                success: false,
+                googleAccount: true,
+                mensaje: 'Esta cuenta inicia sesión con Google y no tiene contraseña. Usa el botón de Google para entrar.'
             });
         }
 
@@ -78,12 +87,21 @@ export const enviarCodigoRecuperacion = async (req, res) => {
         const { email } = req.body;
         console.log(`Solicitud de recuperación para: ${email}`);
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).select('+password');
 
         if (!user) {
             return res.status(404).json({
                 success: false,
                 mensaje: 'No existe un usuario con ese email'
+            });
+        }
+
+        // Cuenta de Google (sin contraseña): no se puede recuperar/cambiar contraseña
+        if (!user.password) {
+            return res.status(403).json({
+                success: false,
+                googleAccount: true,
+                mensaje: 'Esta cuenta inicia sesión con Google y no tiene contraseña. Usa el botón de Google para entrar.'
             });
         }
 

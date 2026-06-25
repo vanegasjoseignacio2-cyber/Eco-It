@@ -19,10 +19,11 @@ export const loginUsuario = async (req, res) => {
             return res.status(401).json({ message: "Correo o contraseña incorrectos" });
         }
 
-        // Verificar si el usuario tiene contraseña (para evitar errores con usuarios de Google)
+        // Cuenta de Google (no tiene contraseña): no puede iniciar con correo/contraseña
         if (!usuario.password) {
-            return res.status(401).json({ 
-                message: "Este usuario se registró con Google. Por favor, inicia sesión con Google." 
+            return res.status(401).json({
+                googleAccount: true,
+                message: "Esta cuenta inicia sesión con Google. Usa el botón de Google para entrar."
             });
         }
 
