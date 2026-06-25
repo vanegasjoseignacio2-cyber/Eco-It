@@ -97,7 +97,7 @@ function FieldError({ msg }) {
 }
 
 export default function CompletarPerfil() {
-    const { estaAutenticado, usuario, login } = useAuth();
+    const { estaAutenticado, usuario, actualizarUsuario } = useAuth();
     const navigate = useNavigate();
     const { validar } = useOfensiveValidator();
     const { showToast } = useToast();
@@ -195,7 +195,9 @@ export default function CompletarPerfil() {
                 }),
             });
             if (data.success) {
-                login(true, data.usuario);
+                // Actualizamos el usuario en el contexto SIN tocar el token (sigue siendo el de Google).
+                // Antes se llamaba login(true, ...) que sobrescribía el token con "true" y obligaba a re-loguear.
+                actualizarUsuario(data.usuario);
                 setExito(true);
                 showToast("¡Perfil completado y cuenta activada con éxito! Bienvenido a Eco-It 🌿", "success");
                 setTimeout(() => navigate('/'), 1800);
