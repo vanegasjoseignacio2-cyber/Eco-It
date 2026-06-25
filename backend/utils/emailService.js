@@ -58,9 +58,15 @@ const buttonStyles = `
 // Lanza un error si Resend reporta fallo, para que los controladores lo capturen.
 export const sendEmail = async ({ to, subject, html }) => {
     const from = process.env.EMAIL_FROM || 'Eco-It <onboarding@resend.dev>';
+    // Las direcciones @ecoit.site son solo de envío; si el usuario responde,
+    // el correo se redirige a un buzón real (EMAIL_REPLY_TO o, en su defecto, ADMIN_EMAIL).
+    const replyTo = process.env.EMAIL_REPLY_TO || process.env.ADMIN_EMAIL;
     const resend = getResend();
 
-    const { data, error } = await resend.emails.send({ from, to, subject, html });
+    const payload = { from, to, subject, html };
+    if (replyTo) payload.replyTo = replyTo;
+
+    const { data, error } = await resend.emails.send(payload);
 
     if (error) {
         console.error(`Error enviando correo a ${to}:`, error);
