@@ -3,20 +3,10 @@ import User from "../models/user.js";
 import PendingRegistration from "../models/PendingRegistration.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
-import { sendWelcomeEmail } from '../utils/emailService.js';
+import { sendWelcomeEmail, sendEmail } from '../utils/emailService.js';
 import { buildVerificationEmailHTML } from '../utils/verificationEmailTemplate.js';
 import AuditLog from "../models/AuditLog.js";
 import { createAuditLog } from "../utils/auditLogger.js";
-
-// ─── Transporter lazy ────────────────────────────────────────────────────────
-const getTransporter = () => nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
 
 // ─── Helper: fecha legible Colombia ──────────────────────────────────────────
 const fechaColombia = () =>
@@ -72,8 +62,7 @@ export const enviarCodigoRegistro = async (req, res) => {
 
         // 2. Intentar enviar el correo ANTES de guardar en BD
         try {
-            await getTransporter().sendMail({
-                from:    `"Eco-It" <${process.env.EMAIL_USER}>`,
+            await sendEmail({
                 to:      email,
                 subject: `[Eco-It] Tu código de verificación: ${codigo}`,
                 html,
@@ -267,8 +256,7 @@ export const reenviarCodigoRegistro = async (req, res) => {
 
         const html = buildVerificationEmailHTML({ nombre: pendiente.nombre, codigo: nuevoCodigo, fecha: fechaColombia() });
 
-        await getTransporter().sendMail({
-            from:    `"Eco-It" <${process.env.EMAIL_USER}>`,
+        await sendEmail({
             to:      email,
             subject: `[Eco-It] Tu nuevo código de verificación: ${nuevoCodigo}`,
             html,
