@@ -1,0 +1,27 @@
+# Eco-It
+
+> Plataforma digital para la gestión del reciclaje y la sostenibilidad ambiental en Colombia.
+
+Eco-It conecta ciudadanos, recicladores y organizaciones ambientales. Permite encontrar puntos de reciclaje en el mapa, participar en retos ecológicos, acceder a un asistente de inteligencia artificial ambiental y jugar un videojuego educativo sobre reciclaje.
+
+## Páginas principales
+
+- [Inicio](https://ecoit.site/): presentación de la plataforma y sus funcionalidades.
+- [Mapa de reciclaje](https://ecoit.site/maps): localización interactiva de puntos de reciclaje.
+- [Contacto](https://ecoit.site/contact): formulario de contacto con el equipo de Eco-It.
+- [Registro](https://ecoit.site/register): creación de cuenta de usuario.
+- [Política de privacidad](https://ecoit.site/politicadeprivacidad): términos de tratamiento de datos.
+- [Términos y condiciones](https://ecoit.site/terminosycondiciones): condiciones de uso de la plataforma.
+
+## Funcionalidades
+
+- Mapa interactivo de puntos de reciclaje con filtros por tipo de material.
+- Sistema de retos ecológicos con ranking de usuarios.
+- Asistente de IA especializado en temas ambientales (requiere cuenta).
+- Videojuego educativo sobre reciclaje (Unity WebGL).
+- Autenticación con Google OAuth y registro por correo electrónico.
+
+## Contacto
+
+- Sitio web: https://ecoit.site
+- Correo: soporte@ecoit.site
