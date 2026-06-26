@@ -2,7 +2,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { lazy, Suspense } from "react";
 
 // ── Páginas (lazy — cada ruta carga su chunk solo cuando se visita) ───────────
-const Home            = lazy(() => import("./components/pages/Home"));
+import Home            from "./components/pages/Home";
 const Register        = lazy(() => import("./components/pages/Registerpage"));
 const Contact         = lazy(() => import("./components/pages/Contactpage"));
 const Mapapage        = lazy(() => import("./components/pages/Mapapage"));

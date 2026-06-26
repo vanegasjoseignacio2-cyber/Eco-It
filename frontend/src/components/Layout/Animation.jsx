@@ -24,30 +24,29 @@ export default function LoadingScreen({ isReady, onComplete }) {
     ], []);
 
     useEffect(() => {
-        // 1. Asegurar un tiempo mínimo de exposición para la animación estética (2s)
-        const timer = setTimeout(() => setMinTimeElapsed(true), 2000);
+        // Tiempo mínimo de exposición para la animación estética
+        const timer = setTimeout(() => setMinTimeElapsed(true), 600);
 
-        // 2. Precarga de imágenes
+        // Precarga de imágenes con timeout máximo de 1500ms
         let loadedCount = 0;
+        const finish = () => setImagesLoaded(true);
+
         if (criticalImages.length === 0) {
-            setImagesLoaded(true);
+            finish();
         } else {
+            const maxWait = setTimeout(finish, 1500);
             criticalImages.forEach(src => {
                 const img = new Image();
                 img.src = src;
-                img.onload = () => {
+                img.onload = img.onerror = () => {
                     loadedCount++;
                     if (loadedCount === criticalImages.length) {
-                        setImagesLoaded(true);
-                    }
-                };
-                img.onerror = () => {
-                    loadedCount++; // Seguimos aunque falle una
-                    if (loadedCount === criticalImages.length) {
-                        setImagesLoaded(true);
+                        clearTimeout(maxWait);
+                        finish();
                     }
                 };
             });
+            return () => { clearTimeout(timer); clearTimeout(maxWait); };
         }
 
         return () => clearTimeout(timer);
@@ -68,7 +67,7 @@ export default function LoadingScreen({ isReady, onComplete }) {
         if (stage === "text") {
             const timer = setTimeout(() => {
                 setStage("done");
-            }, 2500);
+            }, 700);
             return () => clearTimeout(timer);
         }
     }, [stage]);
