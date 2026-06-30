@@ -35,6 +35,13 @@ const CONTROL_LABELS = {
 // Margen seguro inferior para que los botones no queden bajo la barra de Safari (iOS).
 const safeBottom = (px) => `calc(${px}px + env(safe-area-inset-bottom, 0px))`;
 
+// En el modo horizontal por software el juego se rota 90°, así que el movimiento
+// del dedo (coordenadas de pantalla) debe rotarse al sistema del juego para que
+// el joystick y la cámara no queden con los ejes cruzados/invertidos.
+// Si un eje quedara al revés, invertir el signo aquí (probar: { x: sy, y: -sx }).
+const rotateForLandscape = (sx, sy, isLandscape) =>
+    isLandscape ? { x: -sy, y: sx } : { x: sx, y: sy };
+
 const loadSettings = () => {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -56,7 +63,7 @@ const saveSettings = (s) => {
 };
 
 // ── Joystick (outside GameHero to prevent re-mount on state change) ────────────
-const Joystick = memo(({ isEditing, opacity, isSelected, onSelect, onDirection }) => {
+const Joystick = memo(({ isEditing, opacity, isSelected, onSelect, onDirection, isLandscape }) => {
     const joystickRef = useRef(null);
     const [knobPos, setKnobPos] = useState({ x: 0, y: 0 });
 
@@ -69,11 +76,14 @@ const Joystick = memo(({ isEditing, opacity, isSelected, onSelect, onDirection }
         const maxR = rect.width / 2;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
+        // El knob visual sigue al dedo en pantalla (sin rotar).
         setKnobPos({ x: dx, y: dy });
-        const nx = dx / maxR; const ny = dy / maxR; const t = 0.3;
-        onDirection('left', nx < -t); onDirection('right', nx > t);
-        onDirection('up',   ny < -t); onDirection('down',  ny > t);
-    }, [isEditing, onDirection]);
+        // La dirección enviada al juego sí se rota si está en modo horizontal.
+        const { x: gx, y: gy } = rotateForLandscape(dx / maxR, dy / maxR, isLandscape);
+        const t = 0.3;
+        onDirection('left', gx < -t); onDirection('right', gx > t);
+        onDirection('up',   gy < -t); onDirection('down',  gy > t);
+    }, [isEditing, onDirection, isLandscape]);
 
     const handleTouchEnd = useCallback(() => {
         setKnobPos({ x: 0, y: 0 });
@@ -175,7 +185,7 @@ const WeaponButton = memo(({ weapon, isEditing, isSelected, opacity, onPress, on
 ));
 
 // ── CameraLookPad — zona táctil derecha para mirar/girar la cámara sin disparar ─
-const CameraLookPad = memo(({ onLook, onLookEnd }) => {
+const CameraLookPad = memo(({ onLook, onLookEnd, isLandscape }) => {
     const lastRef = useRef(null);
 
     const handleStart = useCallback((e) => {
@@ -189,8 +199,11 @@ const CameraLookPad = memo(({ onLook, onLookEnd }) => {
         const dx = t.clientX - lastRef.current.x;
         const dy = t.clientY - lastRef.current.y;
         lastRef.current = { x: t.clientX, y: t.clientY };
-        if (dx !== 0 || dy !== 0) onLook(dx, dy);
-    }, [onLook]);
+        if (dx !== 0 || dy !== 0) {
+            const { x: gx, y: gy } = rotateForLandscape(dx, dy, isLandscape);
+            onLook(gx, gy);
+        }
+    }, [onLook, isLandscape]);
 
     const handleEnd = useCallback(() => {
         lastRef.current = null;
@@ -857,7 +870,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                     {/* Panel de cámara (lado derecho): mirar/girar sin disparar.
                                         Va PRIMERO en el DOM para quedar por debajo de los botones. */}
                                     {!isEditingControls && (
-                                        <CameraLookPad onLook={simulateMouseMove} onLookEnd={handleLookEnd} />
+                                        <CameraLookPad onLook={simulateMouseMove} onLookEnd={handleLookEnd} isLandscape={isLandscapeMode} />
                                     )}
 
                                     {/* Joystick */}
@@ -878,6 +891,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                             opacity={cs.joystick.opacity}
                                             onDirection={updateDirection}
                                             onSelect={selectJoystick}
+                                            isLandscape={isLandscapeMode}
                                         />
                                     </motion.div>
 
@@ -886,7 +900,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`agarrar-${resetKey}`}
                                         {...draggable('agarrar')}
                                         style={{
-                                            position: 'absolute', right: 82, bottom: safeBottom(80),
+                                            position: 'absolute', right: 116, bottom: safeBottom(80),
                                             scale: cs.agarrar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -910,7 +924,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`disparar-${resetKey}`}
                                         {...draggable('disparar')}
                                         style={{
-                                            position: 'absolute', right: 16, bottom: safeBottom(80),
+                                            position: 'absolute', right: 50, bottom: safeBottom(80),
                                             scale: cs.disparar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -934,7 +948,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`soltar-${resetKey}`}
                                         {...draggable('soltar')}
                                         style={{
-                                            position: 'absolute', right: 148, bottom: safeBottom(80),
+                                            position: 'absolute', right: 182, bottom: safeBottom(80),
                                             scale: cs.soltar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -958,7 +972,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`saltar-${resetKey}`}
                                         {...draggable('saltar')}
                                         style={{
-                                            position: 'absolute', right: 44, bottom: safeBottom(16),
+                                            position: 'absolute', right: 78, bottom: safeBottom(16),
                                             scale: cs.saltar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -983,7 +997,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`arma-${resetKey}`}
                                         {...draggable('arma')}
                                         style={{
-                                            position: 'absolute', right: 16, bottom: safeBottom(152),
+                                            position: 'absolute', right: 50, bottom: safeBottom(152),
                                             scale: cs.arma.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
