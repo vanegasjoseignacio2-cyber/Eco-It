@@ -146,7 +146,7 @@ const MobileActionButton = memo(({
     </button>
 ));
 
-// ── WeaponButton — cicla entre armas 1/2/3 (teclas numéricas) ──────────────────
+// ── WeaponButton — cicla entre armas 1/2/3/4 (teclas numéricas) ────────────────
 const WeaponButton = memo(({ weapon, isEditing, isSelected, opacity, onPress, onSelect }) => (
     <button
         onPointerDown={(e) => {
@@ -497,13 +497,13 @@ const GameHero = ({ onPuntajeGuardado }) => {
         simulateKeyEvent(alt, ac, press);
     }, [simulateKeyEvent]);
 
-    // Cambiar de arma: cicla 1 → 2 → 3 → 1 y presiona la tecla numérica correspondiente.
+    // Cambiar de arma: cicla 1 → 2 → 3 → 4 → 1 y presiona la tecla numérica correspondiente.
     const handleWeaponSwitch = useCallback(() => {
         if (isEditingRef.current) return;
         setCurrentWeapon(prev => {
-            const next = (prev % 3) + 1;
+            const next = (prev % 4) + 1;
             const key = String(next);
-            const kc = 48 + next; // 49=Digit1, 50=Digit2, 51=Digit3
+            const kc = 48 + next; // 49=Digit1 … 52=Digit4
             simulateKeyEvent(key, kc, true);
             setTimeout(() => simulateKeyEvent(key, kc, false), 60);
             return next;
