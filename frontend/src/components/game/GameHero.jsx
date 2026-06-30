@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS = {
     disparar: { ...CTRL_DEFAULT },
     saltar:   { ...CTRL_DEFAULT },
     soltar:   { ...CTRL_DEFAULT },
+    arma:     { ...CTRL_DEFAULT },
 };
 
 const CONTROL_LABELS = {
@@ -28,7 +29,11 @@ const CONTROL_LABELS = {
     disparar: '🔫 Disparar',
     saltar:   '⬆ Saltar',
     soltar:   '👇 Soltar',
+    arma:     '🔁 Arma',
 };
+
+// Margen seguro inferior para que los botones no queden bajo la barra de Safari (iOS).
+const safeBottom = (px) => `calc(${px}px + env(safe-area-inset-bottom, 0px))`;
 
 const loadSettings = () => {
     try {
@@ -140,6 +145,72 @@ const MobileActionButton = memo(({
         ) : label}
     </button>
 ));
+
+// ── WeaponButton — cicla entre armas 1/2/3 (teclas numéricas) ──────────────────
+const WeaponButton = memo(({ weapon, isEditing, isSelected, opacity, onPress, onSelect }) => (
+    <button
+        onPointerDown={(e) => {
+            e.preventDefault();
+            if (isEditing) { onSelect(); return; }
+            onPress();
+        }}
+        style={{ opacity }}
+        className={`w-14 h-14 bg-violet-600/85 rounded-full flex flex-col items-center justify-center gap-0
+            border-2 ${isEditing && isSelected ? 'border-emerald-400' : isEditing ? 'border-white/30 border-dashed' : 'border-white/20'}
+            select-none touch-none ${isEditing ? 'cursor-grab' : 'active:scale-95'}
+            transition-all backdrop-blur-md shadow-xl text-white pointer-events-auto`}
+    >
+        {isEditing ? (
+            <>
+                <span className="text-sm">✥</span>
+                <span className={`text-[9px] leading-tight ${isSelected ? 'text-emerald-300' : 'text-white/60'}`}>Arma</span>
+            </>
+        ) : (
+            <>
+                <span className="text-[8px] leading-none uppercase font-bold tracking-wide opacity-80">Arma</span>
+                <span className="text-lg leading-none font-black">{weapon}</span>
+            </>
+        )}
+    </button>
+));
+
+// ── CameraLookPad — zona táctil derecha para mirar/girar la cámara sin disparar ─
+const CameraLookPad = memo(({ onLook, onLookEnd }) => {
+    const lastRef = useRef(null);
+
+    const handleStart = useCallback((e) => {
+        const t = e.touches[0];
+        lastRef.current = { x: t.clientX, y: t.clientY };
+    }, []);
+
+    const handleMove = useCallback((e) => {
+        if (!lastRef.current) return;
+        const t = e.touches[0];
+        const dx = t.clientX - lastRef.current.x;
+        const dy = t.clientY - lastRef.current.y;
+        lastRef.current = { x: t.clientX, y: t.clientY };
+        if (dx !== 0 || dy !== 0) onLook(dx, dy);
+    }, [onLook]);
+
+    const handleEnd = useCallback(() => {
+        lastRef.current = null;
+        onLookEnd?.();
+    }, [onLookEnd]);
+
+    return (
+        <div
+            onTouchStart={handleStart}
+            onTouchMove={handleMove}
+            onTouchEnd={handleEnd}
+            onTouchCancel={handleEnd}
+            style={{
+                position: 'absolute', top: 0, right: 0, bottom: 0, left: '42%',
+                pointerEvents: 'auto', touchAction: 'none',
+                background: 'transparent',
+            }}
+        />
+    );
+});
 
 // ── ControlEditPanel (outside GameHero) ───────────────────────────────────────
 const ControlEditPanel = memo(({ selectedKey, selectedCtrl, onPropChange, onReset, onClose }) => {
@@ -278,6 +349,8 @@ const GameHero = ({ onPuntajeGuardado }) => {
     const [isFullscreen, setIsFullscreen]           = useState(false);
     // Detect touch/mobile device dynamically
     const [isTouchDevice, setIsTouchDevice]         = useState(false);
+    // Arma seleccionada actualmente (1, 2, 3) para el botón de cambio de arma
+    const [currentWeapon, setCurrentWeapon]         = useState(1);
 
     const iframeContainerRef = useRef(null);
     const iframeRef          = useRef(null);
@@ -343,11 +416,48 @@ const GameHero = ({ onPuntajeGuardado }) => {
             if (key === ' ') code = 'Space';
             else if (key.length === 1 && key >= 'a' && key <= 'z') code = `Key${key.toUpperCase()}`;
             else if (key.length === 1 && key >= 'A' && key <= 'Z') code = `Key${key}`;
+            else if (key.length === 1 && key >= '0' && key <= '9') code = `Digit${key}`;
             target.dispatchEvent(new KeyboardEvent(isKeyDown ? 'keydown' : 'keyup', {
                 bubbles: true, cancelable: true, key, code, keyCode, which: keyCode,
             }));
         } catch (e) { console.error('simulateKeyEvent', e); }
     }, []);
+
+    // Mueve la cámara enviando un mousemove con deltas (movementX/Y) y posición
+    // absoluta acumulada, SIN ningún botón presionado (buttons:0) para que NO dispare.
+    const lookPosRef = useRef(null);
+    const simulateMouseMove = useCallback((dx, dy) => {
+        if (!iframeRef.current || isEditingRef.current) return;
+        try {
+            const doc = iframeRef.current.contentDocument;
+            if (!doc) return;
+            const canvas = doc.getElementById('unity-canvas');
+            // Mantener el pointer lock desactivado (consistente con el disparo)
+            if (canvas && !canvas.pointerLockDisabled) {
+                canvas.requestPointerLock = () => {};
+                canvas.pointerLockDisabled = true;
+                doc.exitPointerLock?.();
+            }
+            const target = canvas || doc;
+            const rect = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
+            const SENS = 1.4; // sensibilidad de la cámara táctil
+            const mx = dx * SENS;
+            const my = dy * SENS;
+            // Acumular una posición absoluta dentro del canvas (por si el juego lee posición y no delta)
+            if (!lookPosRef.current) {
+                lookPosRef.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            }
+            lookPosRef.current.x = Math.max(rect.left, Math.min(rect.left + rect.width, lookPosRef.current.x + mx));
+            lookPosRef.current.y = Math.max(rect.top,  Math.min(rect.top + rect.height, lookPosRef.current.y + my));
+            target.dispatchEvent(new MouseEvent('mousemove', {
+                bubbles: true, cancelable: true, button: 0, buttons: 0,
+                clientX: lookPosRef.current.x, clientY: lookPosRef.current.y,
+                movementX: mx, movementY: my,
+            }));
+        } catch (e) { console.error('simulateMouseMove', e); }
+    }, []);
+
+    const handleLookEnd = useCallback(() => { lookPosRef.current = null; }, []);
 
     const simulateMouseEvent = useCallback((eventType, buttonType = 0) => {
         if (!iframeRef.current || isEditingRef.current) return;
@@ -387,6 +497,19 @@ const GameHero = ({ onPuntajeGuardado }) => {
         simulateKeyEvent(alt, ac, press);
     }, [simulateKeyEvent]);
 
+    // Cambiar de arma: cicla 1 → 2 → 3 → 1 y presiona la tecla numérica correspondiente.
+    const handleWeaponSwitch = useCallback(() => {
+        if (isEditingRef.current) return;
+        setCurrentWeapon(prev => {
+            const next = (prev % 3) + 1;
+            const key = String(next);
+            const kc = 48 + next; // 49=Digit1, 50=Digit2, 51=Digit3
+            simulateKeyEvent(key, kc, true);
+            setTimeout(() => simulateKeyEvent(key, kc, false), 60);
+            return next;
+        });
+    }, [simulateKeyEvent]);
+
     // ── Settings helpers ───────────────────────────────────────────────────────
     // Update a single property (scale/opacity) for the selected control
     const handlePropChange = useCallback((prop, value) => {
@@ -422,6 +545,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
     const selectDisparar  = useCallback(() => selectControl('disparar'), [selectControl]);
     const selectSaltar    = useCallback(() => selectControl('saltar'),   [selectControl]);
     const selectSoltar    = useCallback(() => selectControl('soltar'),   [selectControl]);
+    const selectArma      = useCallback(() => selectControl('arma'),     [selectControl]);
 
     // ── Fullscreen / Reload ────────────────────────────────────────────────────
     const handleFullscreen = useCallback(() => {
@@ -730,12 +854,18 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                 {/* ── Controles móviles (touch devices) ── */}
                                 <div className={`absolute inset-0 pointer-events-none z-10 ${isTouchDevice ? '' : 'hidden'}`}>
 
+                                    {/* Panel de cámara (lado derecho): mirar/girar sin disparar.
+                                        Va PRIMERO en el DOM para quedar por debajo de los botones. */}
+                                    {!isEditingControls && (
+                                        <CameraLookPad onLook={simulateMouseMove} onLookEnd={handleLookEnd} />
+                                    )}
+
                                     {/* Joystick */}
                                     <motion.div
                                         key={`joystick-${resetKey}`}
                                         {...draggable('joystick')}
                                         style={{
-                                            position: 'absolute', left: 16, bottom: 16,
+                                            position: 'absolute', left: 16, bottom: safeBottom(16),
                                             scale: cs.joystick.scale,
                                             transformOrigin: 'bottom left',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -756,7 +886,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`agarrar-${resetKey}`}
                                         {...draggable('agarrar')}
                                         style={{
-                                            position: 'absolute', right: 82, bottom: 80,
+                                            position: 'absolute', right: 82, bottom: safeBottom(80),
                                             scale: cs.agarrar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -780,7 +910,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`disparar-${resetKey}`}
                                         {...draggable('disparar')}
                                         style={{
-                                            position: 'absolute', right: 16, bottom: 80,
+                                            position: 'absolute', right: 16, bottom: safeBottom(80),
                                             scale: cs.disparar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -804,7 +934,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`soltar-${resetKey}`}
                                         {...draggable('soltar')}
                                         style={{
-                                            position: 'absolute', right: 148, bottom: 80,
+                                            position: 'absolute', right: 148, bottom: safeBottom(80),
                                             scale: cs.soltar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -828,7 +958,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                         key={`saltar-${resetKey}`}
                                         {...draggable('saltar')}
                                         style={{
-                                            position: 'absolute', right: 44, bottom: 16,
+                                            position: 'absolute', right: 44, bottom: safeBottom(16),
                                             scale: cs.saltar.scale,
                                             transformOrigin: 'center',
                                             cursor: isEditingControls ? 'grab' : 'default',
@@ -845,6 +975,28 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                             onKeyEvent={simulateKeyEvent}
                                             onMouseEvent={simulateMouseEvent}
                                             onSelect={selectSaltar}
+                                        />
+                                    </motion.div>
+
+                                    {/* Botón Cambiar Arma (teclas 1/2/3) */}
+                                    <motion.div
+                                        key={`arma-${resetKey}`}
+                                        {...draggable('arma')}
+                                        style={{
+                                            position: 'absolute', right: 16, bottom: safeBottom(152),
+                                            scale: cs.arma.scale,
+                                            transformOrigin: 'center',
+                                            cursor: isEditingControls ? 'grab' : 'default',
+                                            pointerEvents: 'auto',
+                                        }}
+                                    >
+                                        <WeaponButton
+                                            weapon={currentWeapon}
+                                            isEditing={isEditingControls}
+                                            isSelected={selectedControl === 'arma'}
+                                            opacity={cs.arma.opacity}
+                                            onPress={handleWeaponSwitch}
+                                            onSelect={selectArma}
                                         />
                                     </motion.div>
                                 </div>
