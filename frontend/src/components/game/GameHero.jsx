@@ -35,12 +35,13 @@ const CONTROL_LABELS = {
 // Margen seguro inferior para que los botones no queden bajo la barra de Safari (iOS).
 const safeBottom = (px) => `calc(${px}px + env(safe-area-inset-bottom, 0px))`;
 
-// En el modo horizontal por software el juego se rota 90°, así que el movimiento
-// del dedo (coordenadas de pantalla) debe rotarse al sistema del juego para que
-// el joystick y la cámara no queden con los ejes cruzados/invertidos.
-// Si un eje quedara al revés, invertir el signo aquí (probar: { x: sy, y: -sx }).
+// En el modo horizontal por software el juego se rota 90° (CSS), así que TANTO el
+// movimiento del dedo COMO la respuesta del juego (cámara/personaje) aparecen
+// girados en pantalla. Esta rotación de los deltas compensa ambas para que los
+// ejes coincidan con lo que ve el usuario.
+// (Sentido confirmado empíricamente; si algún día se invirtiera, probar { x: -sy, y: sx }.)
 const rotateForLandscape = (sx, sy, isLandscape) =>
-    isLandscape ? { x: -sy, y: sx } : { x: sx, y: sy };
+    isLandscape ? { x: sy, y: -sx } : { x: sx, y: sy };
 
 const loadSettings = () => {
     try {
@@ -76,9 +77,10 @@ const Joystick = memo(({ isEditing, opacity, isSelected, onSelect, onDirection, 
         const maxR = rect.width / 2;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
-        // El knob visual sigue al dedo en pantalla (sin rotar).
-        setKnobPos({ x: dx, y: dy });
-        // La dirección enviada al juego sí se rota si está en modo horizontal.
+        // El knob está dentro del contenedor rotado; aplicamos la misma rotación
+        // a su posición para que VISUALMENTE siga al dedo en pantalla.
+        setKnobPos(rotateForLandscape(dx, dy, isLandscape));
+        // La dirección enviada al juego usa la misma rotación.
         const { x: gx, y: gy } = rotateForLandscape(dx / maxR, dy / maxR, isLandscape);
         const t = 0.3;
         onDirection('left', gx < -t); onDirection('right', gx > t);
