@@ -61,7 +61,6 @@ export default function AdminEstadisticas() {
         setRefreshing(true);
         try {
             const data = await fetchAPI('/admin/stats');
-            console.log("Respuesta API:", data);
             if (data.success) {
                 setStats({
                     totalUsuarios: data.totalUsuarios?.toString() || "0",
