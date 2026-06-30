@@ -45,8 +45,8 @@ export const botResponses = {
     "¿Quieres que te explique mejor cómo reciclarlo?"
 };
 export const suggestedQuestions = [
-  "¿Cómo reciclo plástico correctamente?",
-  "¿Qué materiales van en cada contenedor?",
-  "¿Cómo puedo reducir mi huella de carbono?",
-  "¿Dónde puedo reciclar electrónicos?",
+  "¿De qué color es la caneca para el papel y el cartón en Colombia?",
+  "Ideas para hacer una matera con botellas plásticas",
+  "¿Dónde queda la eco botella más cercana?",
+  "¿Qué hago con el aceite de cocina usado?",
 ];

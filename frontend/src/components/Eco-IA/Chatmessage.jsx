@@ -1,5 +1,47 @@
 import { motion } from "framer-motion";
-import { Bot, User } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Bot, User, MapPin, Youtube } from "lucide-react";
+
+const MAP_MARKER = "[VER_MAPA]";
+const PILL_CLASS = "inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-full text-xs font-bold text-white align-middle";
+
+function renderBotContent(content) {
+    const markerRegex = /\[VER_MAPA\]|\[VER_VIDEO:\s*([^\]]+)\]/g;
+    if (!markerRegex.test(content)) {
+        return <span style={{ whiteSpace: "pre-line" }}>{content}</span>;
+    }
+    markerRegex.lastIndex = 0;
+
+    const nodes = [];
+    let lastIndex = 0;
+    let match;
+    let key = 0;
+    while ((match = markerRegex.exec(content)) !== null) {
+        if (match.index > lastIndex) {
+            nodes.push(<span key={key++}>{content.slice(lastIndex, match.index)}</span>);
+        }
+        if (match[0] === MAP_MARKER) {
+            nodes.push(
+                <Link key={key++} to="/maps" className={PILL_CLASS} style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
+                    <MapPin size={12} /> Ver en el mapa
+                </Link>
+            );
+        } else {
+            const query = match[1].trim();
+            const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+            nodes.push(
+                <a key={key++} href={url} target="_blank" rel="noopener noreferrer" className={PILL_CLASS} style={{ background: "linear-gradient(135deg, #dc2626, #ef4444)" }}>
+                    <Youtube size={12} /> Ver tutoriales
+                </a>
+            );
+        }
+        lastIndex = markerRegex.lastIndex;
+    }
+    if (lastIndex < content.length) {
+        nodes.push(<span key={key++}>{content.slice(lastIndex)}</span>);
+    }
+    return <span style={{ whiteSpace: "pre-line" }}>{nodes}</span>;
+}
 
 export function MessageSkeleton() {
     return (
@@ -131,7 +173,9 @@ export default function ChatMessage({ message }) {
                         />
                     )}
 
-                    <span style={{ whiteSpace: "pre-line" }}>{message.content}</span>
+                    {isUser
+                        ? <span style={{ whiteSpace: "pre-line" }}>{message.content}</span>
+                        : renderBotContent(message.content)}
 
                     {/* Glow decorativo usuario */}
                     {isUser && (

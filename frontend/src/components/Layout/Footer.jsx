@@ -104,7 +104,7 @@ export default function Footer() {
                         <ul className="space-y-4">
                             <li className="flex items-start gap-3 text-green-100/70 group cursor-pointer hover:text-white transition-colors">
                                 <Mail className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-green-300 transition-transform duration-300" />
-                                <a href="mailto:contacto@eco-it.com" className="break-all sm:break-normal">contacto@eco-it.com</a>
+                                <a href="mailto:ecoit4167@gmail.com" className="break-all sm:break-normal">ecoit4167@gmail.com</a>
                             </li>
                             <li className="flex items-start gap-3 text-green-100/70 group cursor-pointer hover:text-white transition-colors">
                                 <Phone className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5 group-hover:scale-110 group-hover:text-green-300 transition-transform duration-300" />

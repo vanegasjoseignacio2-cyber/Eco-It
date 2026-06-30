@@ -53,10 +53,27 @@ const buttonStyles = `
     margin-top: 20px;
 `;
 
+// Genera una versión de texto plano a partir del HTML (fallback si no se pasa `text`).
+// Los correos sin parte text-only (multipart/alternative) son una señal de spam
+// para muchos filtros (Gmail, SpamAssassin-based), por eso siempre se incluye una.
+const htmlToPlainText = (html) =>
+    html
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<(br|tr|p|div|h[1-6])[^>]*>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .split('\n')
+        .map(line => line.trim())
+        .join('\n')
+        .trim();
+
 // Función genérica para enviar correos con Resend.
 // Lee EMAIL_FROM/RESEND_API_KEY en tiempo de ejecución (después de dotenv).
 // Lanza un error si Resend reporta fallo, para que los controladores lo capturen.
-export const sendEmail = async ({ to, subject, html, replyTo }) => {
+export const sendEmail = async ({ to, subject, html, replyTo, text }) => {
     const from = process.env.EMAIL_FROM || 'Eco-It <onboarding@resend.dev>';
     // Las direcciones @ecoit.site son solo de envío; si alguien responde, el correo
     // se redirige a un buzón real: replyTo explícito (p.ej. quien escribe en contacto),
@@ -64,7 +81,7 @@ export const sendEmail = async ({ to, subject, html, replyTo }) => {
     const finalReplyTo = replyTo || process.env.EMAIL_REPLY_TO || process.env.ADMIN_EMAIL;
     const resend = getResend();
 
-    const payload = { from, to, subject, html };
+    const payload = { from, to, subject, html, text: text || htmlToPlainText(html) };
     if (finalReplyTo) payload.replyTo = finalReplyTo;
 
     const { data, error } = await resend.emails.send(payload);

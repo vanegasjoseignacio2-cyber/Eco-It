@@ -6,7 +6,7 @@ export default function ContactInfoCards() {
         {
             icon: Mail,
             title: "Correo Electrónico",
-            value: "contacto@eco-it.com",
+            value: "ecoit4167@gmail.com",
             description: "Responderemos en menos de 24 horas",
             color: "from-green-400 to-emerald-500",
         },
