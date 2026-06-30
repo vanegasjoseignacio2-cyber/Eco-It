@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /ai
+Disallow: /perfil
+Disallow: /editarperfil
+Disallow: /game
+Disallow: /completar-perfil
+Disallow: /verificar-codigo
+Disallow: /auth/
+
+Sitemap: https://ecoit.site/sitemap.xml

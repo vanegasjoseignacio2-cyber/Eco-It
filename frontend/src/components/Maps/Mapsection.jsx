@@ -52,7 +52,7 @@ export default function MapSection() {
 
     useEffect(() => {
         const backendUrl = import.meta.env.VITE_BACKEND_URL || '/api';
-        const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
+        const socketUrl = import.meta.env.VITE_SOCKET_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:3000');
 
         fetch(`${backendUrl}/map/points`)
             .then(r => r.json())

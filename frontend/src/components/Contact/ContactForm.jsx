@@ -408,16 +408,12 @@ export function useOfensiveValidator() {
             }
         }
 
-        const colapsado = textoProc.replace(/[\s.,\-_'"!¡¿?0-9]/g, '');
-        const matchColapsado = colapsado.match(regexEmail) || [];
-        if (matchColapsado.length > 0) {
-            // Para el modo colapsado es más difícil filtrar safe words,
-            // pero podemos intentar ver si el match es parte de una safe word también
-            const realesCol = matchColapsado.filter(p => !SAFE_WORDS.some(safe => safe.includes(p)));
-            if (realesCol.length > 0) {
-                return { valido: false, palabras: realesCol, mensaje: 'Tu mensaje contiene lenguaje ofensivo' };
-            }
-        }
+        // NOTA: se eliminó el antiguo chequeo "colapsado" (regexEmail por subcadena sobre el
+        // texto sin espacios) porque causaba falsos positivos. Palabras de la lista como
+        // 'ñera'/'ñero' se normalizan a "nera"/"nero" y, al matchear por subcadena, marcaban
+        // palabras comunes como "manera", "dinero", "primero", "número", etc.
+        // El chequeo principal (regexTexto: límites de palabra + separadores/repetición/leet)
+        // ya cubre las evasiones reales sin bloquear texto legítimo.
         return { valido: true, palabras: [], mensajeLimpio: limpiarMensaje(texto) };
     }
 

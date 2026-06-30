@@ -5,9 +5,11 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Leaf, Eye, EyeOff, Lock, Check } from "lucide-react"; // Added Eye, EyeOff, Lock, Check
 import { recuperarPassword, verificarCodigo, restablecerPassword, reenviarCodigo } from "../../services/api"; // Added restablecerPassword, reenviarCodigo
+import { useToast } from "../../context/ToastContext";
 export default function RecuperarPassword() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { showToast } = useToast();
 
     // Si el usuario llega directo a /verificar-codigo sin email guardado, redirigir
     const savedEmail = localStorage.getItem("recovery_email");
@@ -109,7 +111,12 @@ export default function RecuperarPassword() {
                 setError(data.mensaje || "Error al enviar código");
             }
         } catch (err) {
-            setError("Error de conexión con el servidor");
+            // Cuenta de Google: no tiene contraseña que recuperar → toast informativo
+            if (err?.data?.googleAccount) {
+                showToast(err.message, 'info', 5000);
+            } else {
+                setError("Error de conexión con el servidor");
+            }
         } finally {
             setLoading(false);
         }

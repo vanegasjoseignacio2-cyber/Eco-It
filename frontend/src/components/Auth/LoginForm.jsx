@@ -101,6 +101,12 @@ export default function LoginForm() {
       console.error('Error en login:', err);
       const errorMsg = err.message || "Error al iniciar sesión. Verifica tu conexión.";
 
+      // Cuenta de Google: solo toast informativo, sin error inline rojo
+      if (err?.data?.googleAccount) {
+        showToast(err.message, 'info', 5000);
+        return;
+      }
+
       if (err.message.includes('Credenciales inválidas')) {
         setError("Email o contraseña incorrectos. Verifica tus datos.");
       } else if (err.message.includes('email')) {

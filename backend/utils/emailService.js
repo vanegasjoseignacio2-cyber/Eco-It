@@ -1,24 +1,12 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Configuración del transporter (Singleton)
-let transporter = null;
-
-const createTransporter = () => {
-    if (!transporter) {
-        transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587, // STARTTLS
-            secure: false, // false para puerto 587
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-            connectionTimeout: 5000, // 5 seconds timeout
-            greetingTimeout: 5000,
-            socketTimeout: 5000
-        });
+// Cliente Resend (singleton, lazy para leer la API key DESPUÉS de dotenv)
+let resendClient = null;
+const getResend = () => {
+    if (!resendClient) {
+        resendClient = new Resend(process.env.RESEND_API_KEY);
     }
-    return transporter;
+    return resendClient;
 };
 
 // Estilos base para los correos
@@ -65,24 +53,29 @@ const buttonStyles = `
     margin-top: 20px;
 `;
 
-// Función genérica para enviar correos
-const sendEmail = async ({ to, subject, html }) => {
-    const transport = createTransporter();
-    const mailOptions = {
-        from: `"Eco-It System" <${process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        html
-    };
+// Función genérica para enviar correos con Resend.
+// Lee EMAIL_FROM/RESEND_API_KEY en tiempo de ejecución (después de dotenv).
+// Lanza un error si Resend reporta fallo, para que los controladores lo capturen.
+export const sendEmail = async ({ to, subject, html, replyTo }) => {
+    const from = process.env.EMAIL_FROM || 'Eco-It <onboarding@resend.dev>';
+    // Las direcciones @ecoit.site son solo de envío; si alguien responde, el correo
+    // se redirige a un buzón real: replyTo explícito (p.ej. quien escribe en contacto),
+    // o en su defecto EMAIL_REPLY_TO / ADMIN_EMAIL.
+    const finalReplyTo = replyTo || process.env.EMAIL_REPLY_TO || process.env.ADMIN_EMAIL;
+    const resend = getResend();
 
-    try {
-        await transport.sendMail(mailOptions);
-        console.log(`Correo enviado a ${to}: ${subject}`);
-        return { success: true };
-    } catch (error) {
+    const payload = { from, to, subject, html };
+    if (finalReplyTo) payload.replyTo = finalReplyTo;
+
+    const { data, error } = await resend.emails.send(payload);
+
+    if (error) {
         console.error(`Error enviando correo a ${to}:`, error);
-        return { success: false, error };
+        throw new Error(error.message || JSON.stringify(error));
     }
+
+    console.log(`Correo enviado a ${to}: ${subject} (id: ${data?.id})`);
+    return { success: true, id: data?.id };
 };
 
 // ==========================================
@@ -90,6 +83,7 @@ const sendEmail = async ({ to, subject, html }) => {
 // ==========================================
 
 export const sendWelcomeEmail = async (email, nombre) => {
+    const FRONT = (process.env.FRONT_URL || 'http://localhost:5173').replace(/\/$/, '');
     const html = `
         <div style="${emailStyles}">
             <div style="${headerStyles}">
@@ -105,7 +99,7 @@ export const sendWelcomeEmail = async (email, nombre) => {
                     <li>Localizar puntos de reciclaje cercanos.</li>
                 </ul>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="${process.env.FRONT_URL}login" style="${buttonStyles}">Iniciar Sesión</a>
+                    <a href="${FRONT}/login" style="${buttonStyles}">Iniciar Sesión</a>
                 </div>
                 <p>¡Esperamos que disfrutes de la experiencia!</p>
             </div>

@@ -17,6 +17,8 @@ const GoogleSuccess = () => {
                 if (tokenUrl) {
                     // Guardamos el token en localStorage para que fetchAPI lo use
                     localStorage.setItem('token', tokenUrl);
+                    // Quitar el token de la URL para que no quede visible en la barra ni en el historial
+                    window.history.replaceState({}, document.title, window.location.pathname);
                 }
 
                 // Ahora fetchAPI enviará el token en el header Authorization

@@ -113,9 +113,11 @@ export default function Navbar() {
                                     {/* Avatar */}
                                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-semibold text-sm">
                                         {usuario?.avatar ? (
-                                            <img 
-                                                src={usuario.avatar} 
+                                            <img
+                                                src={usuario.avatar}
                                                 alt={usuario.nombre}
+                                                width="32"
+                                                height="32"
                                                 className="w-full h-full rounded-full object-cover"
                                             />
                                         ) : (
@@ -251,9 +253,11 @@ export default function Navbar() {
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-semibold">
                                             {usuario?.avatar ? (
-                                                <img 
-                                                    src={usuario.avatar} 
+                                                <img
+                                                    src={usuario.avatar}
                                                     alt={usuario.nombre}
+                                                    width="40"
+                                                    height="40"
                                                     className="w-full h-full rounded-full object-cover"
                                                 />
                                             ) : (
