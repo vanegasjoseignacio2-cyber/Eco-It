@@ -3,6 +3,7 @@ import Chat from "../models/chat.js";
 import Notification from "../models/notification.js";
 import AuditLog from "../models/AuditLog.js";
 import Mission from "../models/mission.js";
+import PuntoReciclaje from "../models/puntoReciclaje.js";
 import { createAuditLog } from "../utils/auditLogger.js";
 import { usuariosConectados } from "../index.js";
 
@@ -240,16 +241,30 @@ export const obtenerStats = async (req, res) => {
         hoy.setHours(0, 0, 0, 0);
         const añoActual = hoy.getFullYear();
 
+        const inicioAño = new Date(añoActual, 0, 1);
+
         // 1. Ejecutar consultas básicas en paralelo para KPI Cards
         const [
             totalUsuarios,
-            puntosResult,
+            totalPuntosReciclaje,
+            topUsuarios,
+            avgPointsResult,
             nuevosHoy,
-            chatStats
+            chatStats,
+            usuariosPorMesAgg
         ] = await Promise.all([
             User.countDocuments(),
+            // KPI "Puntos Reciclaje": nº de ubicaciones en el mapa
+            PuntoReciclaje.countDocuments({ activo: true }),
+            // Top Usuarios: ranking por puntos del Eco-Juego
+            User.find({ puntosJuego: { $gt: 0 } })
+                .sort({ puntosJuego: -1 })
+                .limit(5)
+                .select("nombre apellido puntosJuego"),
+            // KPI "Puntos Promedio": promedio de puntosJuego entre jugadores activos
             User.aggregate([
-                { $group: { _id: null, totalPuntos: { $sum: "$puntos" } } }
+                { $match: { puntosJuego: { $gt: 0 } } },
+                { $group: { _id: null, avg: { $avg: "$puntosJuego" } } }
             ]),
             User.countDocuments({ createdAt: { $gte: hoy } }),
             Chat.aggregate([
@@ -299,12 +314,26 @@ export const obtenerStats = async (req, res) => {
                     consultasHoy: { $sum: "$hoyCount" },
                     allMeses: { $push: "$meses" }
                 }}
+            ]),
+            // Usuarios registrados por mes, para el gráfico "Este año"
+            User.aggregate([
+                { $match: { createdAt: { $gte: inicioAño } } },
+                { $group: {
+                    _id: { $month: "$createdAt" },
+                    count: { $sum: 1 }
+                }}
             ])
         ]);
 
-        const totalPuntos = puntosResult[0]?.totalPuntos || 0;
         const totalConsultas = chatStats[0]?.totalConsultas || 0;
         const consultasHoy = chatStats[0]?.consultasHoy || 0;
+        const avgPoints = Math.round(avgPointsResult[0]?.avg || 0);
+
+        // Formatear ranking de usuarios para el frontend
+        const topUsuariosFormato = topUsuarios.map((u) => ({
+            name: `${u.nombre} ${u.apellido || ""}`.trim(),
+            points: u.puntosJuego,
+        }));
 
         // 2. Obtener datos para gráficos (Últimos 30 días) en paralelo
         const hace30dias = new Date();
@@ -342,6 +371,9 @@ export const obtenerStats = async (req, res) => {
             });
         }
 
+        const usuariosPorMes = Array(12).fill(0);
+        usuariosPorMesAgg.forEach(r => { usuariosPorMes[r._id - 1] = r.count; });
+
         const diasLabels30 = [];
         const usuariosPorDia = {};
         const consultasPorDia = {};
@@ -353,12 +385,12 @@ export const obtenerStats = async (req, res) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
             const key = d.toISOString().split('T')[0];
-            const label = `${d.getDate()}/${d.getMonth() + 1}`;
+            const label = `${d.getDate()} ${mesesLabel[d.getMonth()]}`;
             diasLabels30.push({ key, label });
         }
 
         const chartData = {
-            users: mesesLabel.map((m, i) => ({ label: m, value: 0 })), // Opcional: implementar activos por mes
+            users: mesesLabel.map((m, i) => ({ label: m, value: usuariosPorMes[i] })),
             queries: mesesLabel.map((m, i) => ({ label: m, value: consultasPorMes[i] })),
             usersMonth: diasLabels30.map(d => ({ label: d.label, value: usuariosPorDia[d.key] || 0 })),
             queriesMonth: diasLabels30.map(d => ({ label: d.label, value: consultasPorDia[d.key] || 0 })),
@@ -366,15 +398,22 @@ export const obtenerStats = async (req, res) => {
             queriesWeek: diasLabels30.slice(23).map(d => ({ label: d.label, value: consultasPorDia[d.key] || 0 })),
         };
 
+        // Métricas clave: mejor mes del año (más registros) y pico diario (últimos 30 días)
+        const maxUsuariosMes = Math.max(...usuariosPorMes);
+        const mejorMes = maxUsuariosMes > 0 ? mesesLabel[usuariosPorMes.indexOf(maxUsuariosMes)] : "—";
+        const picoDiario = Object.values(usuariosPorDia).reduce((max, v) => Math.max(max, v), 0);
+
         res.json({
             success: true,
             totalUsuarios,
             usuariosOnline: usuariosConectados.size,
             consultasHoy,
-            mejorMes: '—',
-            picoDiario: 0,
+            mejorMes,
+            picoDiario,
             nuevosHoy,
-            totalPuntos,
+            totalPuntos: totalPuntosReciclaje,
+            topUsuarios: topUsuariosFormato,
+            avgPoints,
             totalConsultas,
             chartData
         });

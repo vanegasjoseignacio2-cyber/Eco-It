@@ -521,17 +521,7 @@ function UserRow({ user, index, isOpen, onToggleMenu, onCloseMenu, onDelete, onB
 
             {/* Puntos */}
             <div className="col-span-2">
-                <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 rounded-full bg-green-100 overflow-hidden max-w-14">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(((user.puntos || 0) / 1000) * 100, 100)}%` }}
-                            transition={{ delay: Math.min(index * 0.04, 0.35) + 0.3, duration: 0.7, ease: "easeOut" }}
-                            className="h-full rounded-full bg-gradient-to-r from-lime-400 to-green-500"
-                        />
-                    </div>
-                    <span className="text-xs text-green-700 font-semibold tabular-nums">{user.puntos || 0}</span>
-                </div>
+                <span className="text-sm text-green-700 font-semibold tabular-nums">{user.puntosJuego || 0} pts</span>
             </div>
 
             {/* Fecha */}

@@ -88,6 +88,10 @@ export default function AdminEcojuego() {
             });
             if (res.success) {
                 setMissions(prev => prev.map(m => m._id === id ? { ...m, active: !currentActive } : m));
+                setGameStats(prev => ({
+                    ...prev,
+                    activeMissions: prev.activeMissions + (currentActive ? -1 : 1)
+                }));
             }
         } catch (error) {
             console.error('Error al togglear misión:', error);

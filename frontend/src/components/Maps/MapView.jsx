@@ -69,11 +69,25 @@ function buildMarkerIcon(color, type) {
 const DEFAULT_CENTER = { lat: 2.195, lng: -75.627 };
 const MAP_BOUNDS = L.latLngBounds([2.140, -75.690], [2.240, -75.560]);
 
+// Distancia aproximada en km entre dos coordenadas (fórmula de Haversine)
+function distanceKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function MapView({ points, selectedPlace, onMarkerClick }) {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersRef = useRef([]);
     const userMarkerRef = useRef(null);
+    const lastPlaceRef = useRef(null);
 
     // ─── Inicializar mapa ──────────────────────────────────────────────────
     useEffect(() => {
@@ -81,15 +95,15 @@ export default function MapView({ points, selectedPlace, onMarkerClick }) {
 
         mapInstanceRef.current = L.map(mapRef.current, {
             zoomControl: false,
-            minZoom: 13,
+            minZoom: 4,
             maxBounds: MAP_BOUNDS,
-            maxBoundsViscosity: 1.0,
+            maxBoundsViscosity: 0.6,
         }).setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], 14);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors",
             maxZoom: 19,
-            minZoom: 13,
+            minZoom: 4,
         }).addTo(mapInstanceRef.current);
 
         L.control.zoom({ position: "bottomright" }).addTo(mapInstanceRef.current);
@@ -156,13 +170,21 @@ export default function MapView({ points, selectedPlace, onMarkerClick }) {
     useEffect(() => {
         if (!selectedPlace || !mapInstanceRef.current) return;
         if (isNaN(selectedPlace.lat) || isNaN(selectedPlace.lng)) return;
-        
+
+        // Este efecto también corre cuando cambian los `points` (para poder
+        // encuadrar la ubicación con los puntos cercanos). Si el lugar
+        // seleccionado no cambió, no movemos la vista para no interrumpir
+        // al usuario en cada actualización en tiempo real.
+        const placeChanged = lastPlaceRef.current !== selectedPlace;
+        lastPlaceRef.current = selectedPlace;
+        if (!placeChanged) return;
+
         const { lat, lng, name } = selectedPlace;
 
-        // Si es "Mi ubicación", mostrar punto azul
+        // Si es "Mi ubicación", mostrar punto azul + encuadrar con los puntos cercanos
         if (name === "Mi ubicación") {
             if (userMarkerRef.current) userMarkerRef.current.remove();
-            
+
             const userIcon = L.divIcon({
                 className: 'user-location-marker',
                 html: `
@@ -179,16 +201,50 @@ export default function MapView({ points, selectedPlace, onMarkerClick }) {
                 .addTo(mapInstanceRef.current)
                 .bindPopup("<b>Estás aquí</b>")
                 .openPopup();
-        } else {
-            // Limpiar marcador de usuario si se selecciona otro punto
-            if (userMarkerRef.current) {
-                userMarkerRef.current.remove();
-                userMarkerRef.current = null;
+
+            // Puntos válidos con coordenadas
+            const validPoints = (points || []).filter(
+                (p) => typeof p.lat === "number" && typeof p.lng === "number" &&
+                       !isNaN(p.lat) && !isNaN(p.lng)
+            );
+
+            // La ubicación real del usuario puede estar fuera de la zona de
+            // puntos (Pitalito). Liberamos los límites del mapa para poder
+            // encuadrar la ubicación junto con los puntos cercanos.
+            mapInstanceRef.current.setMaxBounds(null);
+
+            if (validPoints.length > 0) {
+                // Ordenar por cercanía y tomar los más próximos para encuadrar
+                const nearest = [...validPoints]
+                    .map((p) => ({ ...p, _dist: distanceKm(lat, lng, p.lat, p.lng) }))
+                    .sort((a, b) => a._dist - b._dist)
+                    .slice(0, 8);
+
+                // Encuadrar tu ubicación junto con los puntos cercanos
+                const bounds = L.latLngBounds([[lat, lng]]);
+                nearest.forEach((p) => bounds.extend([p.lat, p.lng]));
+                mapInstanceRef.current.fitBounds(bounds, {
+                    padding: [50, 50],
+                    maxZoom: 16,
+                    animate: true,
+                });
+            } else {
+                // Sin puntos: solo centrar en el usuario
+                mapInstanceRef.current.setView([lat, lng], 15, { animate: true });
             }
+            return;
         }
 
+        // Limpiar marcador de usuario si se selecciona otro punto
+        if (userMarkerRef.current) {
+            userMarkerRef.current.remove();
+            userMarkerRef.current = null;
+        }
+
+        // Restaurar los límites de la zona al navegar a un punto concreto
+        mapInstanceRef.current.setMaxBounds(MAP_BOUNDS);
         mapInstanceRef.current.setView([lat, lng], 18, { animate: true });
-    }, [selectedPlace]);
+    }, [selectedPlace, points]);
 
     return (
         <div style={{ position: "relative", width: "100%", height: "100%", zIndex: 1 }}>

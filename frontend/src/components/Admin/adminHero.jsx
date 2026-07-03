@@ -67,8 +67,6 @@ const kpis = [
     },
 ];
 
-const topUsers = [];
-
 const containerVariants = {
     hidden: {},
     show: { transition: { staggerChildren: 0.05 } },
@@ -85,6 +83,7 @@ export default function AdminHero() {
     const [totalUsuarios, setTotalUsuarios] = useState(0);
     const [consultasHoy, setConsultasHoy] = useState(0);
     const [totalPuntos, setTotalPuntos] = useState(0);
+    const [topUsers, setTopUsers] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [allLogs, setAllLogs] = useState([]);
     const [showAudit, setShowAudit] = useState(false);
@@ -127,6 +126,7 @@ export default function AdminHero() {
                 setTotalUsuarios(data.totalUsuarios);
                 setConsultasHoy(data.consultasHoy || 0);
                 setTotalPuntos(data.totalPuntos || 0);
+                setTopUsers(data.topUsuarios || []);
             }
 
             if (dataAudit.success) {
@@ -403,14 +403,8 @@ function TopUserRow({ name, points, index }) {
             <span className="text-lg">{medals[index] || `#${index + 1}`}</span>
             <div className="flex-1">
                 <p className="text-sm font-semibold text-green-900">{name}</p>
-                <p className="text-xs text-green-500">{points} puntos</p>
             </div>
-            <div className="w-16 h-1.5 rounded-full bg-green-100 overflow-hidden">
-                <div
-                    className="h-full rounded-full bg-gradient-to-r from-lime-400 to-green-500"
-                    style={{ width: `${Math.min((points / 1500) * 100, 100)}%` }}
-                />
-            </div>
+            <span className="text-sm font-bold text-green-700 tabular-nums">{points} pts</span>
         </div>
     );
 }

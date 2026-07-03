@@ -54,6 +54,7 @@ export default function AdminEstadisticas() {
         mejorMes: "—",
         picoDiario: 0,
         nuevosHoy: 0,
+        avgPoints: 0,
         chartData: null,
     });
 
@@ -69,6 +70,7 @@ export default function AdminEstadisticas() {
                     mejorMes: data.mejorMes || "—",
                     picoDiario: data.picoDiario || 0,
                     nuevosHoy: data.nuevosHoy || 0,
+                    avgPoints: data.avgPoints || 0,
                     chartData: data.chartData || null,
                 });
             }
@@ -149,7 +151,7 @@ export default function AdminEstadisticas() {
         {
             id: "avg_points",
             label: "Puntos Promedio",
-            value: "0",
+            value: stats.avgPoints.toString(),
             change: "0%",
             up: true,
             icon: Award,
@@ -334,12 +336,12 @@ export default function AdminEstadisticas() {
                                     transition={{ duration: 0.2 }}
                                     className="relative"
                                 >
-                                    {/* Eje Y: etiquetas de porcentaje + líneas guía */}
+                                    {/* Eje Y: etiquetas de valores reales + líneas guía */}
                                     <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-2">
-                                        {[100, 75, 50, 25, 0].map((pctLabel) => (
-                                            <div key={pctLabel} className="flex items-center gap-1">
+                                        {[1, 0.75, 0.5, 0.25, 0].map((frac) => (
+                                            <div key={frac} className="flex items-center gap-1">
                                                 <span className="w-7 text-right text-[9px] font-semibold text-green-500 shrink-0">
-                                                    {pctLabel}%
+                                                    {Math.round(maxVal * frac)}
                                                 </span>
                                                 <div className="flex-1 h-px border-t border-dashed border-green-100" />
                                             </div>
@@ -374,11 +376,9 @@ export default function AdminEstadisticas() {
                                                         }}
                                                     />
                                                     {/* Label */}
-                                                    <span className={`font-medium absolute -bottom-6 whitespace-nowrap ${
-                                                        bars.length > 12
-                                                            ? 'text-[7px] text-green-500'
-                                                            : 'text-[9px] text-green-500'
-                                                    } ${bars.length > 20 && i % 2 !== 0 ? 'hidden' : ''}`}>
+                                                    <span className={`font-medium absolute -bottom-6 whitespace-nowrap text-[9px] text-green-600 ${
+                                                        bars.length > 12 && i % Math.ceil(bars.length / 6) !== 0 ? 'hidden' : ''
+                                                    }`}>
                                                         {bar.label}
                                                     </span>
                                                 </div>

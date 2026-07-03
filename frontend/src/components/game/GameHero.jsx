@@ -227,6 +227,73 @@ const CameraLookPad = memo(({ onLook, onLookEnd, isLandscape }) => {
     );
 });
 
+// ── GameOverScreen (outside GameHero) ──────────────────────────────────────────
+const GameOverScreen = memo(({ resultado, onPlayAgain, onExit }) => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/90 backdrop-blur-sm px-4"
+        style={{ pointerEvents: 'auto' }}
+    >
+        <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="w-full max-w-sm bg-gradient-to-br from-slate-900 to-slate-950 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden text-center"
+        >
+            <div className="bg-gradient-to-br from-lime-500/20 to-emerald-600/20 px-6 pt-8 pb-6 border-b border-emerald-500/20">
+                <motion.div
+                    initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.15 }}
+                    className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-lime-400 to-green-500 flex items-center justify-center shadow-xl mb-3"
+                >
+                    <Trophy className="w-8 h-8 text-white" />
+                </motion.div>
+                <h2 className="text-2xl font-extrabold text-white tracking-tight">¡Partida Terminada!</h2>
+                {resultado ? (
+                    <>
+                        <p className="text-4xl font-black text-lime-400 mt-3">+{resultado.puntos.toLocaleString()} pts</p>
+                        <p className="text-xs text-emerald-300/80 mt-1">Total en temporada: {resultado.puntosTemporada.toLocaleString()} pts</p>
+                    </>
+                ) : (
+                    <p className="text-sm text-slate-300 mt-3">Inicia sesión para guardar tu puntaje.</p>
+                )}
+            </div>
+
+            {resultado?.nuevosLogros?.length > 0 && (
+                <div className="px-6 py-4 space-y-1.5 border-b border-slate-800">
+                    <p className="text-xs font-semibold text-yellow-400 flex items-center justify-center gap-1 mb-2">
+                        <Star className="w-3.5 h-3.5" /> ¡Logros desbloqueados!
+                    </p>
+                    {resultado.nuevosLogros.map((l) => (
+                        <div key={l.id} className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-1.5">
+                            <Star className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                            <span className="text-xs font-medium text-yellow-200 truncate">{l.nombre}</span>
+                            <span className="ml-auto text-xs text-yellow-400 font-bold shrink-0">+{l.puntos} pts</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="p-5 flex flex-col gap-2.5">
+                <button
+                    onClick={onPlayAgain}
+                    className="w-full py-3 rounded-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-white font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                    <RotateCcw className="w-4 h-4" /> Jugar de nuevo
+                </button>
+                <button
+                    onClick={onExit}
+                    className="w-full py-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                    <ArrowLeft className="w-4 h-4" /> Salir al menú
+                </button>
+            </div>
+        </motion.div>
+    </motion.div>
+));
+
 // ── ControlEditPanel (outside GameHero) ───────────────────────────────────────
 const ControlEditPanel = memo(({ selectedKey, selectedCtrl, onPropChange, onReset, onClose }) => {
     const [isMinimized, setIsMinimized] = useState(false);
@@ -355,6 +422,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
     const [isPlaying, setIsPlaying]                 = useState(false);
     const [guardando, setGuardando]                 = useState(false);
     const [resultadoPartida, setResultadoPartida]   = useState(null);
+    const [showGameOver, setShowGameOver]           = useState(false);
     const [isEditingControls, setIsEditingControls] = useState(false);
     const [selectedControl, setSelectedControl]     = useState(null); // 'joystick'|'agarrar'|'disparar'|'saltar'|'soltar'
     const [controlSettings, setControlSettings]     = useState(loadSettings);
@@ -375,6 +443,20 @@ const GameHero = ({ onPuntajeGuardado }) => {
     const activeDirections = useRef({ up: false, down: false, left: false, right: false });
     const isEditingRef     = useRef(isEditingControls);
     useEffect(() => { isEditingRef.current = isEditingControls; }, [isEditingControls]);
+    const gameOverRef      = useRef(showGameOver);
+    useEffect(() => { gameOverRef.current = showGameOver; }, [showGameOver]);
+
+    // Al mostrar el Game Over, liberar el pointer lock del iframe para que el
+    // cursor del mouse vuelva a estar libre y se puedan pulsar los botones del overlay.
+    useEffect(() => {
+        if (!showGameOver) return;
+        try {
+            const doc = iframeRef.current?.contentDocument;
+            doc?.exitPointerLock?.();
+        } catch (_) { /* ignore */ }
+        // También liberar el pointer lock a nivel del documento principal por si acaso.
+        try { document.exitPointerLock?.(); } catch (_) { /* ignore */ }
+    }, [showGameOver]);
 
     // Dynamic touch device detection
     useEffect(() => {
@@ -421,7 +503,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
 
     // ── Key / Mouse simulation ─────────────────────────────────────────────────
     const simulateKeyEvent = useCallback((key, keyCode, isKeyDown) => {
-        if (!iframeRef.current || isEditingRef.current) return;
+        if (!iframeRef.current || isEditingRef.current || gameOverRef.current) return;
         try {
             const doc = iframeRef.current.contentDocument;
             if (!doc) return;
@@ -442,7 +524,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
     // absoluta acumulada, SIN ningún botón presionado (buttons:0) para que NO dispare.
     const lookPosRef = useRef(null);
     const simulateMouseMove = useCallback((dx, dy) => {
-        if (!iframeRef.current || isEditingRef.current) return;
+        if (!iframeRef.current || isEditingRef.current || gameOverRef.current) return;
         try {
             const doc = iframeRef.current.contentDocument;
             if (!doc) return;
@@ -475,7 +557,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
     const handleLookEnd = useCallback(() => { lookPosRef.current = null; }, []);
 
     const simulateMouseEvent = useCallback((eventType, buttonType = 0) => {
-        if (!iframeRef.current || isEditingRef.current) return;
+        if (!iframeRef.current || isEditingRef.current || gameOverRef.current) return;
         try {
             const doc = iframeRef.current.contentDocument;
             if (!doc) return;
@@ -499,7 +581,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
     }, []);
 
     const updateDirection = useCallback((dir, press) => {
-        if (activeDirections.current[dir] === press || isEditingRef.current) return;
+        if (activeDirections.current[dir] === press || isEditingRef.current || gameOverRef.current) return;
         activeDirections.current[dir] = press;
         const MAP = {
             left:  ['ArrowLeft',  37, 'a', 65],
@@ -514,7 +596,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
 
     // Cambiar de arma: cicla 1 → 2 → 3 → 4 → 1 y presiona la tecla numérica correspondiente.
     const handleWeaponSwitch = useCallback(() => {
-        if (isEditingRef.current) return;
+        if (isEditingRef.current || gameOverRef.current) return;
         setCurrentWeapon(prev => {
             const next = (prev % 4) + 1;
             const key = String(next);
@@ -600,6 +682,16 @@ const GameHero = ({ onPuntajeGuardado }) => {
         if (iframeRef.current) iframeRef.current.src = iframeRef.current.src;
     }, []);
 
+    const handlePlayAgain = useCallback(() => {
+        setShowGameOver(false);
+        handleReload();
+    }, [handleReload]);
+
+    const handleExitFromGameOver = useCallback(() => {
+        setShowGameOver(false);
+        setIsPlaying(false);
+    }, []);
+
     // ── Game message listener ──────────────────────────────────────────────────
     const handleGameMessage = useCallback(async (event) => {
         if (event.data?.source !== 'react-devtools-bridge' && event.data?.type !== 'webpackOk') {
@@ -609,7 +701,12 @@ const GameHero = ({ onPuntajeGuardado }) => {
         if (typeof data === 'string') { try { data = JSON.parse(data); } catch (_) { /* */ } }
         if (!data || typeof data !== 'object') return;
         if (data.type !== 'GAME_OVER' && data.type !== 'setScore') return;
-        if (!estaAutenticado) return;
+
+        if (!estaAutenticado) {
+            setResultadoPartida(null);
+            setShowGameOver(true);
+            return;
+        }
 
         let puntos = 0, residuosRecolectados = 0, errores = 0, rachaMaxima = 0, tiempoJugado = 0;
         if (data.type === 'setScore') {
@@ -629,6 +726,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                     puntosTemporada: response.data.puntosTemporada,
                     nuevosLogros: response.data.nuevosLogros || [],
                 });
+                setShowGameOver(true);
                 if (onPuntajeGuardado) onPuntajeGuardado();
             }
         } catch (err) { console.error('Error guardando puntaje:', err); }
@@ -759,7 +857,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
 
                                 <motion.button
                                     {...animations.buttonHover}
-                                    onClick={() => { setIsPlaying(true); setResultadoPartida(null); }}
+                                    onClick={() => { setIsPlaying(true); setResultadoPartida(null); setShowGameOver(false); }}
                                     className="px-8 py-4 bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 text-white rounded-full font-bold shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 mx-auto text-lg cursor-pointer"
                                 >
                                     <Play className="w-6 h-6 fill-white" /> ¡JUGAR AHORA!
@@ -778,7 +876,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                         >
                             {/* Toolbar */}
                             <div className="bg-slate-950 px-4 py-3 flex items-center justify-between border-b border-slate-800">
-                                <button onClick={() => setIsPlaying(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-semibold cursor-pointer">
+                                <button onClick={handleExitFromGameOver} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-semibold cursor-pointer">
                                     <ArrowLeft className="w-4 h-4" /> Salir del juego
                                 </button>
                                 <div className="text-emerald-400 font-bold text-sm hidden sm:flex items-center gap-2">
@@ -793,7 +891,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                     >
                                         <Settings className="w-4 h-4" />
                                     </button>
-                                    <button onClick={handleReload} title="Reiniciar Juego" className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"><RotateCcw className="w-4 h-4" /></button>
+                                    <button onClick={handlePlayAgain} title="Reiniciar Juego" className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"><RotateCcw className="w-4 h-4" /></button>
                                     <button
                                         onClick={handleFullscreen}
                                         title={isTouchDevice ? (isLandscapeMode ? 'Salir del modo horizontal' : 'Modo horizontal') : 'Pantalla Completa'}
@@ -837,9 +935,21 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                     src="/eco-juego/index.html"
                                     title="Eco Juego WebGL"
                                     className="w-full h-full border-0"
+                                    style={{ pointerEvents: showGameOver ? 'none' : 'auto' }}
                                     allowFullScreen
                                     allow="autoplay; fullscreen; xr-spatial-tracking; pointer-lock; orientation-lock"
                                 />
+
+                                {/* Pantalla de Game Over */}
+                                <AnimatePresence>
+                                    {showGameOver && (
+                                        <GameOverScreen
+                                            resultado={resultadoPartida}
+                                            onPlayAgain={handlePlayAgain}
+                                            onExit={handleExitFromGameOver}
+                                        />
+                                    )}
+                                </AnimatePresence>
 
                                 {/* Panel de edición */}
                                 <AnimatePresence>
@@ -867,7 +977,7 @@ const GameHero = ({ onPuntajeGuardado }) => {
                                 )}
 
                                 {/* ── Controles móviles (touch devices) ── */}
-                                <div className={`absolute inset-0 pointer-events-none z-10 ${isTouchDevice ? '' : 'hidden'}`}>
+                                <div className={`absolute inset-0 pointer-events-none z-10 ${isTouchDevice && !showGameOver ? '' : 'hidden'}`}>
 
                                     {/* Panel de cámara (lado derecho): mirar/girar sin disparar.
                                         Va PRIMERO en el DOM para quedar por debajo de los botones. */}
